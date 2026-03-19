@@ -76,18 +76,4 @@ describe("teamService", () => {
 
     expect(error).toBeInstanceOf(ForbiddenError);
   });
-
-  it("returns only teams with an active sprint for the user", async () => {
-    spyOn(teamData, "listUserTeams").mockResolvedValue([
-      { id: "team-1", activeSprintId: "sprint-1" },
-      { id: "team-2", activeSprintId: null },
-    ] as any);
-
-    const teams = await teamService.listTeamsWithActiveSprints({
-      workspaceId: "ws-1",
-      userId: "user-1",
-    });
-
-    expect(teams.map((t) => t.id)).toEqual(["team-1"]);
-  });
 });

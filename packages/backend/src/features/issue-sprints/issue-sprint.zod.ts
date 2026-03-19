@@ -80,6 +80,7 @@ export const issueSprintResponseSchema = z.object({
 export const issueSprintWithIssuesSchema = z.object({
   sprint: issueSprintSchema,
   issues: z.array(issueSchema),
+  nextCursor: z.string().nullable(),
 });
 
 export const issueSprintCompleteContextSchema = z.object({

@@ -104,16 +104,43 @@ export default function SprintDetailPage() {
   const isActiveSprint = () => sprint()?.status === "active";
   const isPlanned = () => sprint()?.status === "planned";
   const isCompleted = () => sprint()?.status === "completed";
-  const issues = () => (data()?.issues ?? []) as IssueForDataTable[];
   const openSprints = createMemo(() =>
     (sprints() ?? []).filter((item) => item.status !== "completed"),
   );
-  const stats = () => calculateEstimationStats(issues());
+
+  const [extraIssues, setExtraIssues] = createSignal<IssueForDataTable[]>([]);
+  const [cursor, setCursor] = createSignal<string | null | undefined>(undefined);
+
+  createEffect(() => {
+    if (data()?.issues !== undefined) {
+      setExtraIssues([]);
+      setCursor(data()?.nextCursor);
+    }
+  });
+
+  const allIssues = createMemo(() => [
+    ...((data()?.issues ?? []) as IssueForDataTable[]),
+    ...extraIssues(),
+  ]);
+
+  const handleLoadMore = async () => {
+    const cur = cursor();
+    if (!cur) return;
+    const res = await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].$get({
+      param: { teamKey: params.teamKey!, sprintId: params.sprintId! },
+      query: { cursor: cur },
+    });
+    const result = await res.json();
+    setExtraIssues((prev) => [...prev, ...(result.issues as IssueForDataTable[])]);
+    setCursor(result.nextCursor);
+  };
+
+  const stats = () => calculateEstimationStats(allIssues());
   const rowSelection = createRowSelection();
 
   const selectedIssues = createMemo(() => {
     const selectedIds = rowSelection.getSelectedRowIds();
-    const issueMap = new Map(issues().map((issue) => [issue.id, issue]));
+    const issueMap = new Map(allIssues().map((issue) => [issue.id, issue]));
     return selectedIds
       .map((id) => issueMap.get(id))
       .filter((issue): issue is IssueForDataTable => !!issue);
@@ -295,11 +322,13 @@ export default function SprintDetailPage() {
               />
             </Show>
 
-            <Show when={issues().length > 0} fallback={<SprintIssuesEmpty />}>
+            <Show when={allIssues().length > 0} fallback={<SprintIssuesEmpty />}>
               <IssueDataTable
-                issues={issues()}
+                issues={allIssues()}
                 workspaceSlug={params.workspaceSlug!}
                 rowSelection={rowSelection}
+                onLoadMore={handleLoadMore}
+                hasMore={!!cursor()}
               />
             </Show>
           </div>

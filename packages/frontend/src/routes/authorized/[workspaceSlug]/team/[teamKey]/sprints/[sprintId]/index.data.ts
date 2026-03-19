@@ -5,6 +5,7 @@ import { query } from "@solidjs/router";
 export const sprintDetailLoader = query(async (teamKey: string, sprintId: string) => {
   const res = await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].$get({
     param: { teamKey, sprintId },
+    query: {},
   });
 
   if (!res.ok) {

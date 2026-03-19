@@ -111,10 +111,18 @@ const issueSprintRoutes = new Hono<AppEnv>()
       },
     }),
     validator("param", z.object({ teamKey: z.string(), sprintId: z.string() })),
+    validator(
+      "query",
+      z.object({
+        cursor: z.string().optional(),
+        limit: z.coerce.number().int().positive().optional().default(50),
+      }),
+    ),
     async (c) => {
       const workspace = c.get("workspace");
       const user = c.get("user")!;
       const { teamKey, sprintId } = c.req.valid("param");
+      const { cursor, limit } = c.req.valid("query");
 
       const team = await teamData.getTeamForUser({
         workspaceId: workspace.id,
@@ -131,13 +139,15 @@ const issueSprintRoutes = new Hono<AppEnv>()
         teamId: team.id,
       });
 
-      const issues = await issueData.listIssuesInSprint({
+      const { issues, nextCursor } = await issueData.listIssuesInSprint({
         workspaceId: workspace.id,
         teamId: team.id,
         sprintId,
+        cursor,
+        limit,
       });
 
-      return c.json({ sprint, issues });
+      return c.json({ sprint, issues, nextCursor });
     },
   )
   /**

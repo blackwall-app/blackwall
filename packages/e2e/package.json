@@ -1,0 +1,22 @@
+{
+  "name": "@blackwall/e2e",
+  "private": true,
+  "scripts": {
+    "e2e:seed": "bun run scenarios/seed.ts",
+    "test": "bun --env-file=.env.e2e run node ./node_modules/.bin/playwright test",
+    "test:ui": "bun --env-file=.env.e2e run node ./node_modules/.bin/playwright test --ui",
+    "test:debug": "bun --env-file=.env.e2e run node ./node_modules/.bin/playwright test --debug",
+    "report": "node ./node_modules/.bin/playwright show-report",
+    "typecheck": "bun run --bun tsc --noEmit"
+  },
+  "dependencies": {
+    "@blackwall/database": "workspace:*",
+    "@blackwall/shared": "workspace:*",
+    "drizzle-orm": "^1.0.0-beta.12-a5629fb"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/bun": "latest",
+    "@types/node": "^22.0.0"
+  }
+}

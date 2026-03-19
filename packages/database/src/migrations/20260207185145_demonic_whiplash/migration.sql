@@ -1,0 +1,1 @@
+ALTER TABLE `issue_sprint` ADD `status` text DEFAULT 'planned' NOT NULL;

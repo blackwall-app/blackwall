@@ -1,0 +1,41 @@
+{
+  "name": "@blackwall/backend",
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun --env-file=../../.env run --hot src/index.ts",
+    "dev:e2e": "bun run src/index.ts",
+    "typecheck": "bun run --bun tsc --noEmit",
+    "lint": "bun run --bun oxlint",
+    "test": "bun test",
+    "test:unit": "bun test __tests__/unit",
+    "test:integration": "bun test __tests__/integration",
+    "test:watch": "bun test --watch"
+  },
+  "dependencies": {
+    "@blackwall/database": "workspace:*",
+    "@blackwall/email": "workspace:*",
+    "@blackwall/queue": "workspace:*",
+    "@blackwall/shared": "workspace:*",
+    "@hono/standard-validator": "^0.2.2",
+    "@hono/zod-validator": "^0.7.6",
+    "@scalar/hono-api-reference": "^0.9.39",
+    "@standard-community/standard-json": "^0.3.5",
+    "@standard-community/standard-openapi": "^0.2.9",
+    "@tiptap/core": "^3.19.0",
+    "@tiptap/starter-kit": "^3.18.0",
+    "@tiptap/static-renderer": "^3.18.0",
+    "better-auth": "^1.4.17",
+    "date-fns": "^4.1.0",
+    "drizzle-orm": "^1.0.0-beta.12-a5629fb",
+    "drizzle-zod": "^1.0.0-beta.12-a5629fb",
+    "hono": "^4.11.5",
+    "hono-openapi": "^1.2.0",
+    "nodemailer": "^6.9.16",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemailer": "^6.4.17"
+  }
+}

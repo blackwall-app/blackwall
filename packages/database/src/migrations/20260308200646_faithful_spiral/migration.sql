@@ -1,0 +1,1 @@
+ALTER TABLE `issue` RENAME COLUMN `order` TO `sort_order`;

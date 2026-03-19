@@ -1,0 +1,21 @@
+{
+  "name": "blackwall",
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "blackwall": "bun --env-file=../../.env run src/index.ts",
+    "dev": "bun --env-file=../../.env --hot src/index.ts serve",
+    "build": "bun --env-file=../../.env run scripts/build.ts",
+    "typecheck": "bun run --bun tsc --noEmit"
+  },
+  "dependencies": {
+    "@blackwall/backend": "workspace:*",
+    "@blackwall/database": "workspace:*",
+    "@blackwall/queue": "workspace:*",
+    "commander": "^14.0.2",
+    "hono": "^4.11.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

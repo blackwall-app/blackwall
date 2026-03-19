@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("preferred-theme") || "system";
+        var resolved = theme;
+        if (theme === "system") {
+          resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.body && document.body.setAttribute("data-theme-system", "");
+        }
+        document.documentElement.setAttribute("data-theme", resolved);
+        window.__applyTheme = function (themeId) {
+          var r = themeId;
+          if (themeId === "system") {
+            r = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            document.body && document.body.setAttribute("data-theme-system", "");
+            document.documentElement.setAttribute("data-theme-system", "");
+          } else {
+            document.body && document.body.removeAttribute("data-theme-system");
+            document.documentElement.removeAttribute("data-theme-system");
+          }
+          document.documentElement.setAttribute("data-theme", r);
+          if (document.body) document.body.setAttribute("data-theme", r);
+          localStorage.setItem("preferred-theme", themeId);
+        };
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root" class="h-screen"></div>
+    <script>
+      (function () {
+        var theme = document.documentElement.getAttribute("data-theme");
+        if (theme) document.body.setAttribute("data-theme", theme);
+        var stored = localStorage.getItem("preferred-theme");
+        if (stored === "system") document.body.setAttribute("data-theme-system", "");
+      })();
+    </script>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

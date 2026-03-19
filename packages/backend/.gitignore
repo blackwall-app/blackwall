@@ -1,0 +1,7 @@
+# deps
+node_modules/
+
+db.sqlite*
+
+# test uploads
+.test-uploads/

@@ -1,0 +1,44 @@
+{
+  "name": "blackwall",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev:all": "bun run --filter '*' dev",
+    "dev": "bun run --filter 'frontend' --filter '@blackwall/backend' dev",
+    "blackwall": "bun run --elide-lines=0 --filter blackwall blackwall",
+    "dev:backend": "bun run --filter '@blackwall/backend' dev",
+    "dev:frontend": "bun run --filter 'frontend' dev",
+    "build": "bun run --filter blackwall build",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "format": "oxfmt .",
+    "db:seed": "bun run --filter '@blackwall/database' db:seed",
+    "db:generate": "bun run --filter '@blackwall/database' db:generate",
+    "db:migrate": "bun run --filter '@blackwall/database' db:migrate",
+    "typecheck": "bun run --filter '*' typecheck",
+    "typecheck:frontend": "bun run --filter frontend typecheck",
+    "typecheck:backend": "bun run --filter @blackwall/backend typecheck",
+    "typecheck:shared": "bun run --filter @blackwall/shared typecheck",
+    "typecheck:database": "bun run --filter @blackwall/database typecheck",
+    "typecheck:queue": "bun run --filter @blackwall/queue typecheck",
+    "typecheck:email": "bun run --filter @blackwall/email typecheck",
+    "typecheck:blackwall": "bun run --filter blackwall typecheck",
+    "typecheck:e2e": "bun run --filter '@blackwall/e2e' typecheck",
+    "test": "bun test packages/backend packages/frontend packages/database packages/queue packages/shared",
+    "test:unit": "bun test __tests__/unit",
+    "test:integration": "bun test __tests__/integration",
+    "test:e2e": "bun run --env-file=packages/e2e/.env.e2e --filter '@blackwall/e2e' test",
+    "test:e2e:ui": "bun run --env-file=packages/e2e/.env.e2e --filter '@blackwall/e2e' test:ui"
+  },
+  "dependencies": {
+    "@solidjs/meta": "^0.29.4",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0"
+  },
+  "patchedDependencies": {
+    "tinykeys@3.0.0": "patches/tinykeys@3.0.0.patch"
+  }
+}

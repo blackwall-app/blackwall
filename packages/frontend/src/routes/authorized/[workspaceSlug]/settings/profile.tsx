@@ -1,0 +1,378 @@
+import { UserAvatar } from "@/components/custom-ui/avatar";
+import { toast } from "@/components/custom-ui/toast";
+import {
+  SettingsCard,
+  SettingsPage,
+  SettingsRow,
+  SettingsSection,
+} from "@/components/settings/settings-sections";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { TanStackTextField } from "@/components/ui/text-field";
+import { useAppForm } from "@/context/form-context";
+import { useSessionData } from "@/context/session-context";
+import { api } from "@/lib/api";
+import { backendUrl } from "@/lib/env";
+import { cn } from "@/lib/utils";
+import { Title, Meta } from "@solidjs/meta";
+import { m } from "@/paraglide/messages.js";
+import Trash2 from "lucide-solid/icons/trash-2";
+import { createSignal, Show } from "solid-js";
+import * as z from "zod";
+
+const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export default function ProfileSettingsPage() {
+  const session = useSessionData();
+  const ids = {
+    displayName: {
+      field: "profile-display-name",
+      description: "profile-display-name-description",
+    },
+  } as const;
+
+  return (
+    <>
+      <Title>{m.meta_title_profile()}</Title>
+      <Meta name="description" content={m.meta_desc_profile()} />
+      <SettingsPage title={m.settings_profile_page_title()}>
+        <SettingsSection title={m.settings_profile_section_account()}>
+          <SettingsCard>
+            <SettingsRow
+              title={m.settings_profile_display_name_title()}
+              description={m.settings_profile_display_name_description()}
+              htmlFor={ids.displayName.field}
+              descriptionId={ids.displayName.description}
+            >
+              <DisplayNameForm
+                defaultName={session().user.name}
+                inputId={ids.displayName.field}
+                descriptionId={ids.displayName.description}
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              title={m.settings_profile_avatar_title()}
+              description={m.settings_profile_avatar_description()}
+            >
+              <AvatarUpload />
+            </SettingsRow>
+          </SettingsCard>
+        </SettingsSection>
+
+        <SettingsSection title={m.settings_profile_section_security()}>
+          <SettingsCard>
+            <SettingsRow
+              title={m.settings_profile_password_title()}
+              description={m.settings_profile_password_description()}
+            >
+              <PasswordChangeDialog />
+            </SettingsRow>
+          </SettingsCard>
+        </SettingsSection>
+      </SettingsPage>
+    </>
+  );
+}
+
+type DisplayNameFormProps = {
+  defaultName: string;
+  inputId: string;
+  descriptionId: string;
+};
+
+function DisplayNameForm(props: DisplayNameFormProps) {
+  const form = useAppForm(() => ({
+    defaultValues: {
+      name: props.defaultName,
+    },
+    validators: {
+      onSubmit: z.object({
+        name: z
+          .string()
+          .min(2, m.settings_profile_name_min())
+          .max(100, m.settings_profile_name_max()),
+      }),
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        await api.api.settings.profile.$patch({
+          json: { name: value.name },
+        });
+        toast.success(m.settings_profile_toast_name_updated());
+        form.reset({ name: value.name });
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      }
+    },
+  }));
+
+  const submitOnBlur = () => {
+    queueMicrotask(() => {
+      const state = form.state;
+      if (state.canSubmit && state.isDirty && !state.isSubmitting) {
+        form.handleSubmit();
+      }
+    });
+  };
+
+  return (
+    <form
+      class="contents"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <form.AppField name="name">
+        {() => (
+          <TanStackTextField
+            id={props.inputId}
+            describedBy={props.descriptionId}
+            label={m.settings_profile_display_name_title()}
+            placeholder={m.settings_profile_display_name_placeholder()}
+            autocomplete="name"
+            labelClass="sr-only"
+            onBlur={submitOnBlur}
+          />
+        )}
+      </form.AppField>
+    </form>
+  );
+}
+
+function AvatarUpload() {
+  const session = useSessionData();
+  let fileInputRef: HTMLInputElement | undefined;
+
+  const validateFile = (file: File): string | null => {
+    if (!file.type.startsWith("image/")) {
+      return m.settings_profile_avatar_validation_image_only();
+    }
+    if (file.size > MAX_AVATAR_FILE_SIZE) {
+      return m.settings_profile_avatar_validation_max_size();
+    }
+    return null;
+  };
+
+  const handleFileUpload = async (file: File | undefined | null) => {
+    if (!file) return;
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("intent", "upload-file");
+    formData.append("file", file);
+
+    try {
+      await fetch(`${backendUrl}/settings/profile/avatar`, {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      });
+      toast.success(m.settings_profile_toast_avatar_updated());
+      window.location.reload();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      if (fileInputRef) {
+        fileInputRef.value = "";
+      }
+    }
+  };
+
+  const handleRemove = async () => {
+    const formData = new FormData();
+    formData.append("intent", "remove");
+
+    try {
+      await fetch(`${backendUrl}/settings/profile/avatar`, {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      });
+      toast.success(m.settings_profile_toast_avatar_removed());
+      window.location.reload();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  return (
+    <div class="flex items-center gap-3">
+      <input
+        type="file"
+        ref={(el) => (fileInputRef = el)}
+        accept="image/*"
+        class="hidden"
+        id="avatar-upload"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          void handleFileUpload(file);
+        }}
+      />
+      <label
+        for="avatar-upload"
+        class={cn(
+          "relative cursor-pointer rounded-full",
+          "ring-offset-background transition-all",
+          "hover:ring-2 hover:ring-ring hover:ring-offset-2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        )}
+        tabindex="0"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fileInputRef?.click();
+          }
+        }}
+      >
+        <UserAvatar user={session().user} size="lg" class="shadow-sm" />
+      </label>
+      <Show when={session().user.image}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => void handleRemove()}
+          aria-label={m.settings_profile_remove_avatar_aria_label()}
+        >
+          <Trash2 class="size-4" />
+        </Button>
+      </Show>
+    </div>
+  );
+}
+
+function PasswordChangeDialog() {
+  const [isOpen, setIsOpen] = createSignal(false);
+  const form = useAppForm(() => ({
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    validators: {
+      onSubmit: z
+        .object({
+          currentPassword: z.string().min(8, m.settings_profile_password_validation_current()),
+          newPassword: z.string().min(8, m.settings_profile_password_validation_new()),
+          confirmPassword: z.string().min(8, m.settings_profile_password_validation_confirm()),
+        })
+        .refine((values) => values.newPassword === values.confirmPassword, {
+          message: m.settings_profile_password_validation_mismatch(),
+          path: ["confirmPassword"],
+        }),
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        await api.api.settings.profile.password.$post({
+          json: {
+            currentPassword: value.currentPassword,
+            newPassword: value.newPassword,
+          },
+        });
+        toast.success(m.settings_profile_toast_password_updated());
+        form.reset();
+        setIsOpen(false);
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      }
+    },
+  }));
+
+  return (
+    <Dialog open={isOpen()} onOpenChange={setIsOpen}>
+      <DialogTrigger as={Button} variant="outline" size="sm">
+        {m.settings_profile_change_password_button()}
+      </DialogTrigger>
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{m.settings_profile_change_password_button()}</DialogTitle>
+          <DialogDescription>{m.settings_profile_change_password_description()}</DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          class="flex flex-col gap-4"
+        >
+          <form.AppField name="currentPassword">
+            {() => (
+              <TanStackTextField
+                label={m.settings_profile_current_password_label()}
+                type="password"
+                autocomplete="current-password"
+                placeholder={m.settings_profile_current_password_placeholder()}
+              />
+            )}
+          </form.AppField>
+
+          <form.AppField name="newPassword">
+            {() => (
+              <TanStackTextField
+                label={m.settings_profile_new_password_label()}
+                type="password"
+                autocomplete="new-password"
+                placeholder={m.settings_profile_new_password_placeholder()}
+              />
+            )}
+          </form.AppField>
+
+          <form.AppField name="confirmPassword">
+            {() => (
+              <TanStackTextField
+                label={m.settings_profile_confirm_password_label()}
+                type="password"
+                autocomplete="new-password"
+                placeholder={m.settings_profile_confirm_password_placeholder()}
+              />
+            )}
+          </form.AppField>
+
+          <DialogFooter>
+            <form.Subscribe>
+              {(state) => (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+                    {m.common_cancel()}
+                  </Button>
+                  <Button type="submit" disabled={!state().canSubmit}>
+                    {m.settings_profile_update_password_button()}
+                  </Button>
+                </>
+              )}
+            </form.Subscribe>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return m.common_error_generic();
+}

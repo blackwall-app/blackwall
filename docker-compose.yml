@@ -1,0 +1,14 @@
+services:
+  blackwall:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: blackwall_data/database.sqlite
+      APP_BASE_URL: http://localhost:8000
+      APP_SECRET: somesuperlongsecretthatisntactuallysecureandyoushouldchangeit
+    volumes:
+      - blackwall_data:/app/blackwall_data
+
+volumes:
+  blackwall_data:

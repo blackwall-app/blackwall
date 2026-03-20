@@ -35,3 +35,4 @@ RUN mkdir -p blackwall_data && chmod +x ./entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["./entrypoint.sh"]
+CMD ["./blackwall", "serve", "--port", "8000", "--public-dir", "./public"]

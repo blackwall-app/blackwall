@@ -8,7 +8,7 @@ import {
   type BrowserContext,
 } from "@playwright/test";
 import type { E2EManifest, E2EManifestUser, E2EScenarioName } from "../scenarios/types.ts";
-import { AUTH_STATE_PATH, BACKEND_URL, DB_PATH, REPO_ROOT } from "../paths.ts";
+import { APP_BASE_URL, AUTH_STATE_PATH, BACKEND_URL, DB_PATH, REPO_ROOT } from "../paths.ts";
 
 type PrepareScenarioOptions = {
   authUserRole?: string;
@@ -124,6 +124,9 @@ export async function createAuthedApiContext(user: E2EManifestUser): Promise<API
   return request.newContext({
     baseURL: BACKEND_URL,
     storageState,
+    extraHTTPHeaders: {
+      Origin: APP_BASE_URL,
+    },
   });
 }
 

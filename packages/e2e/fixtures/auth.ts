@@ -60,12 +60,14 @@ export const test = base.extend<{
   preparedScenario: E2EManifest | null;
 }>({
   preparedScenario: [
-    async (_, use, testInfo) => {
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use, testInfo) => {
       await use(await ensureScenarioPrepared(testInfo.file));
     },
     { auto: true },
   ],
-  storageState: async (_, use, testInfo) => {
+  // oxlint-disable-next-line no-unused-vars
+  storageState: async ({ preparedScenario }, use, testInfo) => {
     const config = registeredScenarios.get(fileKey(testInfo.file));
     await use(config?.authUserRole ? AUTH_STATE_PATH : undefined);
   },

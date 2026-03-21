@@ -16,11 +16,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   timeout: 10_000,
-  reporter: [
-    ["html"],
-    ["list"],
-    ["json", { outputFile: "test-results/results.json" }],
-  ],
+  reporter: [["html"], ["list"], ["json", { outputFile: "test-results/results.json" }]],
   globalSetup: "./global-setup.ts",
   globalTeardown: "./global-teardown.ts",
   use: {
@@ -30,8 +26,8 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    // { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    // { name: "safari", use: { ...devices["Desktop Safari"] } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    { name: "safari", use: { ...devices["Desktop Safari"] } },
   ],
   webServer: [
     {

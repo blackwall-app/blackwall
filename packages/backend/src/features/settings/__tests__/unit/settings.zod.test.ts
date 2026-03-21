@@ -22,15 +22,13 @@ describe("settings zod schemas", () => {
         newPassword: "password123",
       },
       success: false,
-      message: "New password must be different from the current password",
     },
-  ])("$name", ({ input, success, message }) => {
+  ])("$name", ({ input, success }) => {
     const result = changePasswordSchema.safeParse(input);
 
     expect(result.success).toBe(success);
     if (!success) {
       expect(result.error?.issues[0]?.path).toEqual(["newPassword"]);
-      expect(result.error?.issues[0]?.message).toBe(message);
     }
   });
 

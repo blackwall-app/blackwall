@@ -1,6 +1,7 @@
 import { env } from "../../lib/zod-env";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { openAPI } from "better-auth/plugins";
 import { db } from "@blackwall/database";
 import { jobService } from "@blackwall/queue";
 
@@ -66,6 +67,8 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
+  plugins: [openAPI()],
+  disabledPaths: ["/sign-up/email"],
   user: {
     additionalFields: {
       lastWorkspaceId: {

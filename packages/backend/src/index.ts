@@ -86,7 +86,15 @@ app.get(
     },
   }),
 );
-app.get("/api/docs", Scalar({ url: "/api/docs/openapi" }));
+app.get(
+  "/api/docs",
+  Scalar({
+    sources: [
+      { url: "/api/docs/openapi", title: "API" },
+      { url: "/api/better-auth/open-api/generate-schema", title: "Auth" },
+    ],
+  }),
+);
 
 export type AppType = typeof app;
 export { app };

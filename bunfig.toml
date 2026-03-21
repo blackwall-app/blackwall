@@ -1,0 +1,6 @@
+[test]
+
+coveragePathIgnorePatterns = [
+  "packages/frontend/src/paraglide/**/*.{js,ts}",
+  "*config.ts",
+]

@@ -26,13 +26,11 @@ WORKDIR /app
 COPY --from=builder /app/packages/blackwall/dist/blackwall ./blackwall
 COPY --from=builder /app/packages/blackwall/dist/public ./public
 COPY --from=builder /app/packages/blackwall/dist/migrations ./migrations
-COPY entrypoint.sh ./entrypoint.sh
 
 ENV NODE_ENV=production
 
-RUN mkdir -p blackwall_data && chmod +x ./entrypoint.sh
+RUN mkdir -p blackwall_data
 
 EXPOSE 8000
 
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["./blackwall", "serve", "--port", "8000", "--public-dir", "./public"]
+CMD ["./blackwall"]

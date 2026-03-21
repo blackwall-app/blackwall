@@ -1,20 +1,11 @@
 services:
-  server:
+  blackwall:
     build: .
     ports:
       - "8000:8000"
     volumes:
       - data:/app/blackwall_data
     env_file: .env
-
-  worker:
-    build: .
-    volumes:
-      - data:/app/blackwall_data
-    env_file: .env
-    command: ["./blackwall", "worker"]
-    depends_on:
-      - server
 
 volumes:
   data:

@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { start } from "./commands/start";
 import { serve } from "./commands/serve";
 import { migrate } from "./commands/migrate";
 import { worker } from "./commands/worker";
@@ -23,8 +24,16 @@ program
   .version("0.1.0");
 
 program
-  .command("serve", { isDefault: true })
-  .description("Start the HTTP server")
+  .command("start", { isDefault: true })
+  .description("Run migrations, start the HTTP server, and run the job worker")
+  .option("-p, --port <port>", "Port to listen on", "8000")
+  .option("--public-dir <path>", "Directory containing static files", "./public")
+  .option("--migrations-dir <path>", "Directory containing migration files", "./migrations")
+  .action(start);
+
+program
+  .command("serve")
+  .description("Start the HTTP server only")
   .option("-p, --port <port>", "Port to listen on", "8000")
   .option("--public-dir <path>", "Directory containing static files", "./public")
   .action(serve);
@@ -37,7 +46,7 @@ program
 
 program
   .command("worker")
-  .description("Run the job queue worker")
+  .description("Run the job queue worker only")
   .option("--poll-interval-ms <ms>", "How often to poll for new jobs")
   .option("--stale-check-interval-ms <ms>", "How often to recover stale jobs")
   .option("--cleanup-interval-ms <ms>", "How often to cleanup completed/failed jobs")

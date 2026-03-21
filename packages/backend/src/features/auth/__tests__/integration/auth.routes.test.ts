@@ -4,6 +4,7 @@ import { testClient } from "hono/testing";
 import { app } from "../../../../index";
 import { createTestDb, cleanupTestDb, type TestDb } from "../../../../test/setup";
 import { seedTestSetup } from "../../../../test/fixtures";
+import { env } from "../../../../lib/zod-env";
 
 describe("Auth Routes", () => {
   let testDb: TestDb;
@@ -234,6 +235,7 @@ describe("Auth Routes", () => {
         {
           headers: {
             Cookie: cookie,
+            Origin: env.APP_BASE_URL,
           },
         },
       );
@@ -250,6 +252,7 @@ describe("Auth Routes", () => {
         {
           headers: {
             Cookie: cookie,
+            Origin: env.APP_BASE_URL,
           },
         },
       );

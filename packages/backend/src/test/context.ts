@@ -4,6 +4,7 @@ import { createTestDb, cleanupTestDb, type TestDb } from "./setup";
 import { seedTestSetup } from "./fixtures";
 import type { Team, User, Workspace } from "@blackwall/database/schema";
 import { testClient } from "hono/testing";
+import { env } from "../lib/zod-env";
 
 type TestClient = ReturnType<typeof testClient<typeof app>>;
 
@@ -50,6 +51,7 @@ export function useTestContext(): () => TestContext {
 function createSessionHeaders(cookie: string, workspaceSlug?: string) {
   return {
     "Content-Type": "application/json",
+    Origin: env.APP_BASE_URL,
     ...(cookie ? { Cookie: cookie } : {}),
     ...(workspaceSlug ? { "x-blackwall-workspace-slug": workspaceSlug } : {}),
   };

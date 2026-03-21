@@ -48,6 +48,7 @@ describe("Attachment Routes", () => {
     const { sessionCookie, workspace } = getCtx();
     return {
       Cookie: sessionCookie,
+      Origin: env.APP_BASE_URL,
       "x-blackwall-workspace-slug": workspace.slug,
     };
   };

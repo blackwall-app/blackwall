@@ -30,4 +30,4 @@ jobs:
         run: bun run --filter '*' typecheck
 
       - name: Run tests
-        run: bun run test
+        run: bun run test --coverage

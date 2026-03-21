@@ -1,3 +1,4 @@
+import { ErrorCode } from "@blackwall/shared";
 import { issueSprintData } from "./issue-sprint.data";
 import { BadRequestError, NotFoundError } from "../../lib/errors";
 import type { CompleteIssueSprint } from "./issue-sprint.zod";
@@ -20,7 +21,7 @@ async function listSprints(input: { teamId: string }) {
 async function getSprintById(input: { sprintId: string; teamId: string }) {
   const sprint = await issueSprintData.getSprintById(input);
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
   return sprint;
 }
@@ -32,7 +33,7 @@ async function getSprintCompleteContext(input: { sprintId: string; teamId: strin
   });
 
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   const [plannedSprints, undoneIssuesCount] = await Promise.all([
@@ -100,23 +101,26 @@ async function startSprint(input: {
   });
 
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot start archived sprint");
+    throw new BadRequestError("Cannot start archived sprint", ErrorCode.CANNOT_START_ARCHIVED_SPRINT);
   }
 
   if (sprint.status === "completed") {
-    throw new BadRequestError("Cannot start completed sprint");
+    throw new BadRequestError("Cannot start completed sprint", ErrorCode.CANNOT_START_COMPLETED_SPRINT);
   }
 
   if (sprint.status === "active") {
-    throw new BadRequestError("Sprint is already active");
+    throw new BadRequestError("Sprint is already active", ErrorCode.SPRINT_ALREADY_ACTIVE);
   }
 
   if (input.activeSprintId) {
-    throw new BadRequestError("Cannot start sprint while another sprint is active");
+    throw new BadRequestError(
+      "Cannot start sprint while another sprint is active",
+      ErrorCode.CANNOT_START_WHILE_SPRINT_ACTIVE,
+    );
   }
 
   await issueSprintData.setSprintStatus({
@@ -135,7 +139,7 @@ async function startSprint(input: {
   });
 
   if (!startedSprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   return startedSprint;
@@ -162,15 +166,15 @@ async function updateSprint(input: {
   });
 
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot update archived sprint");
+    throw new BadRequestError("Cannot update archived sprint", ErrorCode.CANNOT_UPDATE_ARCHIVED_SPRINT);
   }
 
   if (sprint.status === "completed") {
-    throw new BadRequestError("Cannot update completed sprint");
+    throw new BadRequestError("Cannot update completed sprint", ErrorCode.CANNOT_UPDATE_COMPLETED_SPRINT);
   }
 
   return issueSprintData.updateSprint({
@@ -201,23 +205,26 @@ async function completeSprint(input: {
   });
 
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot complete archived sprint");
+    throw new BadRequestError("Cannot complete archived sprint", ErrorCode.CANNOT_COMPLETE_ARCHIVED_SPRINT);
   }
 
   if (sprint.status === "completed") {
-    throw new BadRequestError("Sprint already completed");
+    throw new BadRequestError("Sprint already completed", ErrorCode.SPRINT_ALREADY_COMPLETED);
   }
 
   if (sprint.status !== "active") {
-    throw new BadRequestError("Only active sprints can be completed");
+    throw new BadRequestError(
+      "Only active sprints can be completed",
+      ErrorCode.ONLY_ACTIVE_SPRINTS_CAN_BE_COMPLETED,
+    );
   }
 
   if (input.activeSprintId !== input.sprintId) {
-    throw new BadRequestError("Sprint is not currently active");
+    throw new BadRequestError("Sprint is not currently active", ErrorCode.SPRINT_NOT_CURRENTLY_ACTIVE);
   }
 
   if (input.completion.onUndoneIssues === "moveToBacklog") {
@@ -232,11 +239,11 @@ async function completeSprint(input: {
     });
 
     if (!targetSprint) {
-      throw new NotFoundError("Target sprint not found");
+      throw new NotFoundError("Target sprint not found", ErrorCode.TARGET_SPRINT_NOT_FOUND);
     }
 
     if (targetSprint.status !== "planned") {
-      throw new BadRequestError("Target sprint must be planned");
+      throw new BadRequestError("Target sprint must be planned", ErrorCode.TARGET_SPRINT_MUST_BE_PLANNED);
     }
 
     await issueSprintData.moveActiveIssuesToSprint({
@@ -287,15 +294,15 @@ async function archiveSprint(input: {
   });
 
   if (!sprint) {
-    throw new NotFoundError("Issue sprint not found");
+    throw new NotFoundError("Issue sprint not found", ErrorCode.ISSUE_SPRINT_NOT_FOUND);
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Sprint is already archived");
+    throw new BadRequestError("Sprint is already archived", ErrorCode.SPRINT_ALREADY_ARCHIVED);
   }
 
   if (input.activeSprintId === input.sprintId || sprint.status === "active") {
-    throw new BadRequestError("Cannot archive active sprint");
+    throw new BadRequestError("Cannot archive active sprint", ErrorCode.CANNOT_ARCHIVE_ACTIVE_SPRINT);
   }
 
   await issueSprintData.moveActiveIssuesToBacklog({

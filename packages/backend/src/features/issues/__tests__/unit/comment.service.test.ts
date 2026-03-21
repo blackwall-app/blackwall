@@ -1,6 +1,6 @@
 import "../../../../test/env.test";
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
-import { HTTPException } from "hono/http-exception";
+import { NotFoundError } from "../../../../lib/errors";
 import { jobService } from "@blackwall/queue";
 import { issueData } from "../../issue.data";
 import { commentData } from "../../comment.data";
@@ -26,8 +26,8 @@ describe("commentService", () => {
       error = caught;
     }
 
-    expect(error).toBeInstanceOf(HTTPException);
-    expect((error as HTTPException).status).toBe(404);
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect((error as NotFoundError).statusCode).toBe(404);
   });
 
   it("enqueues a comment-email job for the assignee when the commenter is not the assignee", async () => {
@@ -91,7 +91,7 @@ describe("commentService", () => {
       error = caught;
     }
 
-    expect(error).toBeInstanceOf(HTTPException);
-    expect((error as HTTPException).status).toBe(404);
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect((error as NotFoundError).statusCode).toBe(404);
   });
 });

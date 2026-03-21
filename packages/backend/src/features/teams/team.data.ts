@@ -1,5 +1,6 @@
 import { db, dbSchema } from "@blackwall/database";
 import { and, eq } from "drizzle-orm";
+import { ErrorCode } from "@blackwall/shared";
 import { ConflictError } from "../../lib/errors";
 
 function isSqliteUniqueConstraintError(error: unknown) {
@@ -25,7 +26,10 @@ export async function createTeam(input: { name: string; key: string; workspaceId
     return team;
   } catch (error) {
     if (isSqliteUniqueConstraintError(error)) {
-      throw new ConflictError("Team key already exists in this workspace");
+      throw new ConflictError(
+        "Team key already exists in this workspace",
+        ErrorCode.TEAM_KEY_ALREADY_EXISTS,
+      );
     }
 
     throw error;
@@ -203,7 +207,10 @@ export async function updateTeam(input: {
     return updated;
   } catch (error) {
     if (isSqliteUniqueConstraintError(error)) {
-      throw new ConflictError("Team key already exists in this workspace");
+      throw new ConflictError(
+        "Team key already exists in this workspace",
+        ErrorCode.TEAM_KEY_ALREADY_EXISTS,
+      );
     }
 
     throw error;

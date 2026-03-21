@@ -27,6 +27,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 const app = new Hono<AppEnv>()
   .use("*", secureHeaders())
+  .use("*", csrf({ origin: env.APP_BASE_URL }))
   .use(
     "*",
     cors({
@@ -38,7 +39,6 @@ const app = new Hono<AppEnv>()
       credentials: true,
     }),
   )
-  .use("*", csrf({ origin: env.APP_BASE_URL }))
   .onError(errorHandler)
 
   // Public routes

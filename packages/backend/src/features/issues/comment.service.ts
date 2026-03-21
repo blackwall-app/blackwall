@@ -1,4 +1,5 @@
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { NotFoundError } from "../../lib/errors";
 import type { JSONContent } from "@tiptap/core";
 import { jobService } from "@blackwall/queue";
 import { issueData } from "./issue.data";
@@ -9,12 +10,12 @@ import { commentData } from "./comment.data";
  * @param workspaceId workspace id
  * @param issueKey issue key
  * @returns issue data
- * @throws HTTPException 404 if issue not found
+ * @throws NotFoundError 404 if issue not found
  */
 async function getIssueOrThrow(workspaceId: string, issueKey: string) {
   const issue = await issueData.getIssueByKey({ workspaceId, issueKey });
   if (!issue) {
-    throw new HTTPException(404, { message: "Issue not found" });
+    throw new NotFoundError("Issue not found", ErrorCode.ISSUE_NOT_FOUND);
   }
   return issue;
 }
@@ -55,7 +56,7 @@ export async function createComment(input: {
 /**
  * Soft delete a comment from an issue.
  * @param input workspace id, issue key, comment id, and user id
- * @throws HTTPException 404 if comment not found
+ * @throws NotFoundError 404 if comment not found
  */
 export async function deleteComment(input: {
   workspaceId: string;
@@ -71,7 +72,7 @@ export async function deleteComment(input: {
   });
 
   if (!comment) {
-    throw new HTTPException(404, { message: "Comment not found" });
+    throw new NotFoundError("Comment not found", ErrorCode.COMMENT_NOT_FOUND);
   }
 
   await commentData.softDeleteComment({

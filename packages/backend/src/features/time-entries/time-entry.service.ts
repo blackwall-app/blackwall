@@ -1,3 +1,4 @@
+import { ErrorCode } from "@blackwall/shared";
 import { timeEntryData } from "./time-entry.data";
 import { BadRequestError, NotFoundError } from "../../lib/errors";
 
@@ -15,7 +16,7 @@ async function createTimeEntry(input: {
   description?: string;
 }) {
   if (input.duration <= 0) {
-    throw new BadRequestError("Duration must be positive");
+    throw new BadRequestError("Duration must be positive", ErrorCode.DURATION_MUST_BE_POSITIVE);
   }
 
   return timeEntryData.createTimeEntry(input);
@@ -42,7 +43,7 @@ async function deleteTimeEntry(input: { timeEntryId: string; issueId: string; us
   });
 
   if (!entry) {
-    throw new NotFoundError("Time entry not found");
+    throw new NotFoundError("Time entry not found", ErrorCode.TIME_ENTRY_NOT_FOUND);
   }
 
   await timeEntryData.softDeleteTimeEntry({ timeEntryId: input.timeEntryId });

@@ -15,7 +15,8 @@ import {
   authResponseSchema,
   acceptInvitationResponseSchema,
 } from "./invitation.zod";
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { NotFoundError } from "../../lib/errors";
 
 /**
  * POST / - Create and send an invitation to join the workspace.
@@ -80,7 +81,10 @@ const publicInvitationRoutes = new Hono<AppEnv>()
       const invitation = await invitationService.getInvitationByToken(token);
 
       if (!invitation) {
-        throw new HTTPException(404, { message: "Invitation not found or expired" });
+        throw new NotFoundError(
+          "Invitation not found or expired",
+          ErrorCode.INVITATION_NOT_FOUND_OR_EXPIRED,
+        );
       }
 
       const session = await auth.api.getSession({ headers: c.req.header() });
@@ -128,7 +132,10 @@ const publicInvitationRoutes = new Hono<AppEnv>()
       const invitation = await invitationService.getInvitationByToken(token);
 
       if (!invitation) {
-        throw new HTTPException(404, { message: "Invitation not found or expired" });
+        throw new NotFoundError(
+          "Invitation not found or expired",
+          ErrorCode.INVITATION_NOT_FOUND_OR_EXPIRED,
+        );
       }
 
       const { response, headers } = await auth.api.signUpEmail({

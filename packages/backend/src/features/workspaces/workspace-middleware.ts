@@ -1,24 +1,26 @@
+import { ErrorCode } from "@blackwall/shared";
 import { createMiddleware } from "hono/factory";
-import { HTTPException } from "hono/http-exception";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "../../lib/errors";
 import { workspaceService } from "./workspace.service";
 
 export const workspaceMiddleware = createMiddleware(async (c, next) => {
   const workspaceSlug = c.req.header("x-blackwall-workspace-slug");
   if (!workspaceSlug) {
-    throw new HTTPException(400, {
-      message: "Missing required header: x-blackwall-workspace-slug",
-    });
+    throw new BadRequestError(
+      "Missing required header: x-blackwall-workspace-slug",
+      ErrorCode.MISSING_WORKSPACE_HEADER,
+    );
   }
 
   const user = c.get("user");
   if (!user) {
-    throw new HTTPException(401, { message: "Unauthorized" });
+    throw new UnauthorizedError("Unauthorized");
   }
 
   const workspace = await workspaceService.getWorkspaceBySlug(workspaceSlug, user.id);
 
   if (!workspace) {
-    throw new HTTPException(404, { message: "Workspace not found" });
+    throw new NotFoundError("Workspace not found", ErrorCode.WORKSPACE_NOT_FOUND);
   }
 
   c.set("workspace", workspace);

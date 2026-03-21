@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { ErrorCode } from "@blackwall/shared";
 import { AppError } from "./errors";
 
 export const errorHandler = (err: Error | HTTPException, c: Context) => {
@@ -10,17 +11,26 @@ export const errorHandler = (err: Error | HTTPException, c: Context) => {
   }
 
   if (err instanceof AppError) {
-    return c.text(err.message, err.statusCode);
+    return c.json({ code: err.code, message: err.message }, err.statusCode);
   }
 
   if (err instanceof HTTPException) {
-    return c.text(err.message, err.status);
+    return c.json(
+      { code: ErrorCode.HTTP_EXCEPTION, message: err.message },
+      err.status,
+    );
   }
 
   if (err instanceof z.ZodError) {
-    return c.text(z.prettifyError(err), 400);
+    return c.json(
+      { code: ErrorCode.VALIDATION_ERROR, message: z.prettifyError(err) },
+      400,
+    );
   }
 
   console.error(err);
-  return c.text("Something went wrong", 500);
+  return c.json(
+    { code: ErrorCode.INTERNAL_ERROR, message: "Something went wrong" },
+    500,
+  );
 };

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Hono } from "hono";
 import { cleanupTestDb, createTestDb, type TestDb } from "../../../../test/setup";
 import { seedTestSetup } from "../../../../test/fixtures";
+import { errorHandler } from "../../../../lib/error-handler";
 import { workspaceMiddleware } from "../../workspace-middleware";
 
 describe("workspaceMiddleware", () => {
@@ -32,6 +33,8 @@ describe("workspaceMiddleware", () => {
       };
     }>();
 
+    app.onError(errorHandler);
+
     app.use(async (c, next) => {
       const requestUserId = c.req.header("x-user-id");
       if (requestUserId) {
@@ -58,7 +61,9 @@ describe("workspaceMiddleware", () => {
     });
 
     expect(response.status).toBe(400);
-    expect(await response.text()).toContain("Missing required header");
+    const bad400 = (await response.json()) as { code: string; message: string };
+    expect(bad400.code).toBe("MISSING_WORKSPACE_HEADER");
+    expect(bad400.message).toContain("Missing required header");
   });
 
   it("returns 401 when the user is missing", async () => {
@@ -69,7 +74,9 @@ describe("workspaceMiddleware", () => {
     });
 
     expect(response.status).toBe(401);
-    expect(await response.text()).toContain("Unauthorized");
+    const unauthorized = (await response.json()) as { code: string; message: string };
+    expect(unauthorized.code).toBe("UNAUTHORIZED");
+    expect(unauthorized.message).toBe("Unauthorized");
   });
 
   it("loads the workspace into the context for members", async () => {

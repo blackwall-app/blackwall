@@ -1,4 +1,5 @@
 import type { Workspace } from "@blackwall/database/schema";
+import { ErrorCode } from "@blackwall/shared";
 import { teamData } from "./team.data";
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 
@@ -45,7 +46,7 @@ async function addUserToTeam(input: { actorId: string; teamId: string; userId: s
     teamId: input.teamId,
   });
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the team");
+    throw new ForbiddenError("Current user is not a member of the team", ErrorCode.NOT_TEAM_MEMBER);
   }
 
   return teamData.addUserToTeam(input);
@@ -78,7 +79,10 @@ async function getTeamsForUser(input: { workspaceId: string; userId: string }) {
 async function getTeamByKey(input: { workspaceId: string; teamKey: string; userId: string }) {
   const team = await teamData.getTeamForUser(input);
   if (!team) {
-    throw new NotFoundError("Team not found or you are not a member");
+    throw new NotFoundError(
+      "Team not found or you are not a member",
+      ErrorCode.TEAM_NOT_FOUND_OR_NOT_MEMBER,
+    );
   }
   return team;
 }
@@ -96,7 +100,7 @@ async function listTeamUsers(input: { workspaceId: string; teamKey: string; user
     userId: input.userId,
   });
   if (!isMember) {
-    throw new ForbiddenError("You are not a member of this team");
+    throw new ForbiddenError("You are not a member of this team", ErrorCode.NOT_MEMBER_OF_THIS_TEAM);
   }
   return teamData.listTeamUsers(input);
 }

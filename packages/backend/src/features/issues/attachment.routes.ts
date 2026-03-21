@@ -13,9 +13,9 @@ import {
   getAttachmentParamsSchema,
   attachmentResponseSchema,
 } from "./attachment.zod";
-import { BadRequestError } from "../../lib/errors";
+import { ErrorCode } from "@blackwall/shared";
+import { BadRequestError, NotFoundError } from "../../lib/errors";
 import { getFile } from "../../lib/file-upload";
-import { HTTPException } from "hono/http-exception";
 
 const attachmentRoutes = new Hono<AppEnv>()
   .use("*", authMiddleware)
@@ -77,7 +77,7 @@ const attachmentRoutes = new Hono<AppEnv>()
       const file = body["file"];
 
       if (!(file instanceof File)) {
-        throw new BadRequestError("File is missing or invalid");
+        throw new BadRequestError("File is missing or invalid", ErrorCode.FILE_MISSING_OR_INVALID);
       }
 
       const attachment = await attachmentService.uploadAttachment({
@@ -212,7 +212,7 @@ const attachmentDownloadRoutes = new Hono<AppEnv>().use("*", authMiddleware).get
 
     const { file, exists } = await getFile(attachment.filePath);
     if (!exists) {
-      throw new HTTPException(404, { message: "Attachment file not found" });
+      throw new NotFoundError("Attachment file not found", ErrorCode.ATTACHMENT_FILE_NOT_FOUND);
     }
 
     return c.newResponse(file.stream(), 200, {

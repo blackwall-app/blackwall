@@ -14,7 +14,8 @@ import {
   workspaceMemberListSchema,
   workspaceMemberResponseSchema,
 } from "./workspace.zod";
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { NotFoundError } from "../../lib/errors";
 import { teamService } from "../teams/team.service";
 
 const workspaceRoutes = new Hono<AppEnv>()
@@ -218,7 +219,7 @@ const workspaceRoutes = new Hono<AppEnv>()
       });
 
       if (!member) {
-        throw new HTTPException(404, { message: "Member not found" });
+        throw new NotFoundError("Member not found", ErrorCode.MEMBER_NOT_FOUND);
       }
 
       return c.json({ member });

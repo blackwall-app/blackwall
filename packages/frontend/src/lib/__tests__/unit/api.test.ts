@@ -22,6 +22,11 @@ const windowStub = {
 
 beforeAll(() => {
   (globalThis as any).window = windowStub;
+  (globalThis as any).localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
 });
 
 describe("apiFetch", () => {
@@ -65,9 +70,22 @@ describe("apiFetch", () => {
   it("shows an error toast and throws for non-401 errors with a response body", async () => {
     const { apiFetch } = await import("../../api");
 
-    (globalThis as any).fetch = async () => new Response("Server exploded", { status: 500 });
+    (globalThis as any).fetch = async () =>
+      new Response(JSON.stringify({ code: "INTERNAL_ERROR", message: "Something went wrong" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
 
-    await expect(apiFetch("http://api.local/issues")).rejects.toThrow("Server exploded");
-    expect(toastCalls.error).toEqual(["Server exploded"]);
+    await expect(apiFetch("http://api.local/issues")).rejects.toThrow("Something went wrong");
+    expect(toastCalls.error).toEqual(["Something went wrong"]);
+  });
+
+  it("localizes JSON error codes and falls back to plain-text bodies", async () => {
+    const { apiFetch } = await import("../../api");
+
+    (globalThis as any).fetch = async () => new Response("Legacy plain error", { status: 502 });
+
+    await expect(apiFetch("http://api.local/issues")).rejects.toThrow("Legacy plain error");
+    expect(toastCalls.error).toEqual(["Legacy plain error"]);
   });
 });

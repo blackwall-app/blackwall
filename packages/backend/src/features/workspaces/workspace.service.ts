@@ -1,3 +1,4 @@
+import { ErrorCode } from "@blackwall/shared";
 import { workspaceData } from "./workspace.data";
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import type { User } from "@blackwall/database/schema";
@@ -23,7 +24,7 @@ async function getWorkspaceBySlug(slug: string, userId: string) {
   const workspace = await workspaceData.getWorkspaceBySlug(slug);
 
   if (!workspace) {
-    throw new NotFoundError("Workspace not found");
+    throw new NotFoundError("Workspace not found", ErrorCode.WORKSPACE_NOT_FOUND);
   }
 
   const isMember = await workspaceData.isWorkspaceMember({
@@ -32,7 +33,10 @@ async function getWorkspaceBySlug(slug: string, userId: string) {
   });
 
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the workspace");
+    throw new ForbiddenError(
+      "Current user is not a member of the workspace",
+      ErrorCode.NOT_WORKSPACE_MEMBER,
+    );
   }
 
   return workspace;
@@ -57,7 +61,10 @@ async function addUserToWorkspace(input: { actorId: string; userId: string; work
     workspaceId: input.workspaceId,
   });
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the workspace");
+    throw new ForbiddenError(
+      "Current user is not a member of the workspace",
+      ErrorCode.NOT_WORKSPACE_MEMBER,
+    );
   }
 
   await workspaceData.addUserToWorkspace(input);
@@ -99,7 +106,10 @@ async function updateWorkspace(input: {
     workspaceId: input.workspaceId,
   });
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the workspace");
+    throw new ForbiddenError(
+      "Current user is not a member of the workspace",
+      ErrorCode.NOT_WORKSPACE_MEMBER,
+    );
   }
 
   return workspaceData.updateWorkspace({
@@ -120,7 +130,10 @@ async function listWorkspaceMembers(input: { actorId: string; workspaceId: strin
     workspaceId: input.workspaceId,
   });
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the workspace");
+    throw new ForbiddenError(
+      "Current user is not a member of the workspace",
+      ErrorCode.NOT_WORKSPACE_MEMBER,
+    );
   }
 
   return workspaceData.listWorkspaceUsers({ workspaceId: input.workspaceId });
@@ -138,7 +151,10 @@ async function getWorkspaceMember(input: { actorId: string; workspaceId: string;
     workspaceId: input.workspaceId,
   });
   if (!isMember) {
-    throw new ForbiddenError("Current user is not a member of the workspace");
+    throw new ForbiddenError(
+      "Current user is not a member of the workspace",
+      ErrorCode.NOT_WORKSPACE_MEMBER,
+    );
   }
 
   return workspaceData.getWorkspaceMember({

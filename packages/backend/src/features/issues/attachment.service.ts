@@ -1,4 +1,5 @@
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { NotFoundError } from "../../lib/errors";
 import { issueData } from "./issue.data";
 import { attachmentData } from "./attachment.data";
 import { saveFile } from "../../lib/file-upload";
@@ -8,12 +9,12 @@ import { saveFile } from "../../lib/file-upload";
  * @param workspaceId workspace id
  * @param issueKey issue key
  * @returns issue data
- * @throws HTTPException 404 if issue not found
+ * @throws NotFoundError 404 if issue not found
  */
 async function getIssueOrThrow(workspaceId: string, issueKey: string) {
   const issue = await issueData.getIssueByKey({ workspaceId, issueKey });
   if (!issue) {
-    throw new HTTPException(404, { message: "Issue not found" });
+    throw new NotFoundError("Issue not found", ErrorCode.ISSUE_NOT_FOUND);
   }
   return issue;
 }
@@ -81,7 +82,7 @@ export async function associateAttachments(input: {
  * Get an attachment by its id for a specific issue.
  * @param input workspace id, issue key, and attachment id
  * @returns attachment data
- * @throws HTTPException 404 if attachment not found
+ * @throws NotFoundError 404 if attachment not found
  */
 export async function getAttachment(input: {
   workspaceId: string;
@@ -96,7 +97,7 @@ export async function getAttachment(input: {
   });
 
   if (!attachment) {
-    throw new HTTPException(404, { message: "Attachment not found" });
+    throw new NotFoundError("Attachment not found", ErrorCode.ATTACHMENT_NOT_FOUND);
   }
 
   return attachment;
@@ -106,7 +107,7 @@ export async function getAttachment(input: {
  * Get an attachment for download. Validates user access.
  * @param input user id and attachment id
  * @returns attachment data for serving
- * @throws HTTPException 404 if attachment not found or access denied
+ * @throws NotFoundError 404 if attachment not found or access denied
  */
 export async function getAttachmentForDownload(input: { userId: string; attachmentId: string }) {
   const attachment = await attachmentData.getAttachmentForServing({
@@ -115,7 +116,7 @@ export async function getAttachmentForDownload(input: { userId: string; attachme
   });
 
   if (!attachment) {
-    throw new HTTPException(404, { message: "Attachment not found" });
+    throw new NotFoundError("Attachment not found", ErrorCode.ATTACHMENT_NOT_FOUND);
   }
 
   return attachment;
@@ -124,7 +125,7 @@ export async function getAttachmentForDownload(input: { userId: string; attachme
 /**
  * Delete an attachment from an issue.
  * @param input workspace id, issue key, attachment id, and user id
- * @throws HTTPException 404 if attachment not found
+ * @throws NotFoundError 404 if attachment not found
  */
 export async function deleteAttachment(input: {
   workspaceId: string;
@@ -140,7 +141,7 @@ export async function deleteAttachment(input: {
   });
 
   if (!attachment) {
-    throw new HTTPException(404, { message: "Attachment not found" });
+    throw new NotFoundError("Attachment not found", ErrorCode.ATTACHMENT_NOT_FOUND);
   }
 
   await attachmentData.deleteAttachment({

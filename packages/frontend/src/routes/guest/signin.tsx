@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { authClient } from "@/lib/auth-client";
+import { localizeErrorCode } from "@/lib/error-localization";
 import { m } from "@/paraglide/messages.js";
 import { A, action, redirect, useAction, useSearchParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
@@ -16,7 +17,7 @@ const signinAction = action(async (email: string, password: string, back?: strin
   });
 
   if (result.error) {
-    toast.error(result.error.message ?? m.auth_toast_error_generic());
+    toast.error(localizeErrorCode(result.error.code, result.error.message));
     return;
   }
 

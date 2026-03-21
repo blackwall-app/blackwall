@@ -6,7 +6,8 @@ import type { AppEnv } from "../../lib/hono-env";
 import { authMiddleware } from "../auth/auth-middleware";
 import { workspaceMiddleware } from "../workspaces/workspace-middleware";
 import { createLabelSchema, labelListSchema, labelSchema } from "./label.zod";
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { BadRequestError, NotFoundError } from "../../lib/errors";
 
 const labelRoutes = new Hono<AppEnv>()
   .use("*", authMiddleware)
@@ -56,7 +57,7 @@ const labelRoutes = new Hono<AppEnv>()
       });
 
       if (!label) {
-        throw new HTTPException(404, { message: "Label not found" });
+        throw new NotFoundError("Label not found", ErrorCode.LABEL_NOT_FOUND);
       }
 
       return c.json({ label });
@@ -89,7 +90,7 @@ const labelRoutes = new Hono<AppEnv>()
         return c.json({ label }, 201);
       } catch (error) {
         if (error instanceof Error && error.message === "Label with this name already exists") {
-          throw new HTTPException(400, { message: error.message });
+          throw new BadRequestError(error.message, ErrorCode.LABEL_NAME_ALREADY_EXISTS);
         }
         throw error;
       }
@@ -122,7 +123,7 @@ const labelRoutes = new Hono<AppEnv>()
         return c.json({ success: true });
       } catch (error) {
         if (error instanceof Error && error.message === "Label not found") {
-          throw new HTTPException(404, { message: error.message });
+          throw new NotFoundError(error.message, ErrorCode.LABEL_NOT_FOUND);
         }
         throw error;
       }

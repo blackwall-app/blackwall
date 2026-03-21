@@ -24,7 +24,8 @@ import {
   userListSchema,
 } from "./settings.zod";
 import { workspaceService } from "../workspaces/workspace.service";
-import { HTTPException } from "hono/http-exception";
+import { ErrorCode } from "@blackwall/shared";
+import { BadRequestError, NotFoundError } from "../../lib/errors";
 import { teamData } from "../teams/team.data";
 import { teamService } from "../teams/team.service";
 
@@ -96,7 +97,7 @@ const settingsRoutes = new Hono<AppEnv>()
 
     const currentUser = await settingsService.getProfile(user.id);
     if (!currentUser) {
-      throw new HTTPException(404, { message: "User not found" });
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND);
     }
 
     if (intent === "remove") {
@@ -110,16 +111,16 @@ const settingsRoutes = new Hono<AppEnv>()
     }
 
     if (!file || file.size === 0) {
-      throw new HTTPException(400, { message: "No avatar file provided" });
+      throw new BadRequestError("No avatar file provided", ErrorCode.NO_AVATAR_FILE_PROVIDED);
     }
 
     if (!file.type.startsWith("image/")) {
-      throw new HTTPException(400, { message: "Only image files are supported" });
+      throw new BadRequestError("Only image files are supported", ErrorCode.ONLY_IMAGE_FILES_SUPPORTED);
     }
 
     const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_AVATAR_FILE_SIZE) {
-      throw new HTTPException(400, { message: "Image must be smaller than 5MB" });
+      throw new BadRequestError("Image must be smaller than 5MB", ErrorCode.IMAGE_TOO_LARGE);
     }
 
     const bytes = await file.arrayBuffer();
@@ -191,7 +192,7 @@ const settingsRoutes = new Hono<AppEnv>()
 
         return c.json({ success: true });
       } catch {
-        throw new HTTPException(400, { message: "Failed to change password" });
+        throw new BadRequestError("Failed to change password", ErrorCode.FAILED_TO_CHANGE_PASSWORD);
       }
     },
   )
@@ -332,7 +333,7 @@ const settingsRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new HTTPException(404, { message: "Team not found" });
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const teamMembers = await teamData.listTeamUsers({
@@ -372,7 +373,7 @@ const settingsRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new HTTPException(404, { message: "Team not found" });
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       return c.json({ team });
@@ -435,7 +436,7 @@ const settingsRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new HTTPException(404, { message: "Team not found" });
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       await teamService.addUserToTeam({
@@ -473,7 +474,7 @@ const settingsRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new HTTPException(404, { message: "Team not found" });
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       await teamData.removeUserFromTeam({

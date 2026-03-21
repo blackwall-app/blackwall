@@ -10,7 +10,7 @@ import {
 } from "../../../../test/fixtures";
 import { attachmentService } from "../../attachment.service";
 import { env } from "../../../../lib/zod-env";
-import { HTTPException } from "hono/http-exception";
+import { NotFoundError } from "../../../../lib/errors";
 
 describe("attachmentService", () => {
   let testDb: TestDb;
@@ -116,8 +116,8 @@ describe("attachmentService", () => {
       error = caught;
     }
 
-    expect(error).toBeInstanceOf(HTTPException);
-    expect((error as HTTPException).status).toBe(404);
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect((error as NotFoundError).statusCode).toBe(404);
   });
 
   it("allows any workspace member to download an issue attachment", async () => {

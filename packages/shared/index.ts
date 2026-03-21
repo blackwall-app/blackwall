@@ -1,3 +1,4 @@
+export { ErrorCode, type ApiErrorCode } from "./error-codes";
 export { tiptapDocumentSchema } from "./tiptap/tiptap-document-schema";
 export { validateTiptapContent } from "./tiptap/validate";
 

@@ -6,6 +6,7 @@ import {
   type ListIssuesPagination,
   type UpdateIssueInput,
 } from "./issue.data";
+import { ErrorCode } from "@blackwall/shared";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../../lib/errors";
 
 /**
@@ -22,7 +23,7 @@ async function getTeamForUserOrThrow(input: {
   const team = await teamData.getTeamForUser(input);
 
   if (!team) {
-    throw new NotFoundError("Team not found or access denied");
+    throw new NotFoundError("Team not found or access denied", ErrorCode.TEAM_NOT_FOUND_OR_ACCESS_DENIED);
   }
 
   return team;
@@ -41,7 +42,7 @@ async function getIssueByKey(input: { workspaceId: string; issueKey: string; use
   });
 
   if (!issue || !issue.team) {
-    throw new NotFoundError("Issue not found");
+    throw new NotFoundError("Issue not found", ErrorCode.ISSUE_NOT_FOUND);
   }
 
   await getTeamForUserOrThrow({
@@ -203,7 +204,10 @@ async function updateIssuesBulk(input: {
   const issuesInUserTeams = issues.filter((issue) => userTeamIds.includes(issue.teamId));
 
   if (issuesInUserTeams.length !== input.issueIds.length) {
-    throw new ForbiddenError("Some issues are not accessible to the current user");
+    throw new ForbiddenError(
+      "Some issues are not accessible to the current user",
+      ErrorCode.ISSUES_NOT_ACCESSIBLE,
+    );
   }
 
   return issueData.updateIssuesBulk({
@@ -254,7 +258,10 @@ async function softDeleteIssuesBulk(input: {
   const issuesInUserTeams = issues.filter((issue) => userTeamIds.includes(issue.teamId));
 
   if (issuesInUserTeams.length !== input.issueIds.length) {
-    throw new ForbiddenError("Some issues are not accessible to the current user");
+    throw new ForbiddenError(
+      "Some issues are not accessible to the current user",
+      ErrorCode.ISSUES_NOT_ACCESSIBLE,
+    );
   }
 
   return issueData.softDeleteIssuesBulk({
@@ -281,7 +288,10 @@ async function moveIssue(input: {
     input.nextIssueKey &&
     input.previousIssueKey === input.nextIssueKey
   ) {
-    throw new BadRequestError("Previous and next issues must be different");
+    throw new BadRequestError(
+      "Previous and next issues must be different",
+      ErrorCode.PREVIOUS_AND_NEXT_ISSUES_MUST_BE_DIFFERENT,
+    );
   }
 
   const [movedIssue, previousIssue, nextIssue] = await Promise.all([
@@ -310,7 +320,7 @@ async function moveIssue(input: {
     })
     .map((issue) => {
       if (!issue || !issue.team) {
-        throw new NotFoundError("Issue not found");
+        throw new NotFoundError("Issue not found", ErrorCode.ISSUE_NOT_FOUND);
       }
 
       return issue;
@@ -323,7 +333,10 @@ async function moveIssue(input: {
   const userTeamIds = new Set(userTeams.map((team) => team.id));
 
   if (resolvedIssues.some((issue) => !userTeamIds.has(issue.teamId))) {
-    throw new ForbiddenError("Some issues are not accessible to the current user");
+    throw new ForbiddenError(
+      "Some issues are not accessible to the current user",
+      ErrorCode.ISSUES_NOT_ACCESSIBLE,
+    );
   }
 
   const resolvedMovedIssue = resolvedIssues[0]!;

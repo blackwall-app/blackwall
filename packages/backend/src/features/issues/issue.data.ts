@@ -3,6 +3,7 @@ import { db, dbSchema } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
 import { getNextSequenceNumber } from "./key-sequences";
 import { buildChangeEvent, buildIssueUpdatedEvent } from "./change-events";
+import { ErrorCode } from "@blackwall/shared";
 import { BadRequestError } from "../../lib/errors";
 import { ORDER_GAP, calculateMovedIssueOrder } from "./issue-order";
 
@@ -429,17 +430,26 @@ export async function moveIssue(input: {
       : null;
 
     if (input.previousIssueId && !previousIssue) {
-      throw new BadRequestError("Previous issue is not in the target column");
+      throw new BadRequestError(
+        "Previous issue is not in the target column",
+        ErrorCode.PREVIOUS_ISSUE_NOT_IN_TARGET_COLUMN,
+      );
     }
 
     if (input.nextIssueId && !nextIssue) {
-      throw new BadRequestError("Next issue is not in the target column");
+      throw new BadRequestError(
+        "Next issue is not in the target column",
+        ErrorCode.NEXT_ISSUE_NOT_IN_TARGET_COLUMN,
+      );
     }
 
     if ((input.previousIssueId === null || input.nextIssueId === null) && laneIssues.length === 0) {
       // empty target lane is valid
     } else if (input.previousIssueId === null && input.nextIssueId === null) {
-      throw new BadRequestError("A non-empty target column requires a previous or next issue");
+      throw new BadRequestError(
+        "A non-empty target column requires a previous or next issue",
+        ErrorCode.TARGET_COLUMN_REQUIRES_ADJACENT_ISSUE,
+      );
     }
 
     let sortOrder = calculateMovedIssueOrder({
@@ -470,7 +480,10 @@ export async function moveIssue(input: {
     }
 
     if (sortOrder === null) {
-      throw new BadRequestError("Unable to determine issue sort order for this move");
+      throw new BadRequestError(
+        "Unable to determine issue sort order for this move",
+        ErrorCode.UNABLE_TO_DETERMINE_ISSUE_SORT_ORDER,
+      );
     }
 
     await tx

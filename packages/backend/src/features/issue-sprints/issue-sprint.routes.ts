@@ -16,6 +16,7 @@ import {
   issueSprintCompleteContextSchema,
   issueSprintWithIssuesSchema,
 } from "./issue-sprint.zod";
+import { ErrorCode } from "@blackwall/shared";
 import { NotFoundError } from "../../lib/errors";
 
 const issueSprintRoutes = new Hono<AppEnv>()
@@ -49,7 +50,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const sprints = await issueSprintService.listSprints({ teamId: team.id });
@@ -84,7 +85,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const sprint = await issueSprintService.getActiveSprint({
@@ -131,7 +132,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const sprint = await issueSprintService.getSprintById({
@@ -178,7 +179,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const completeContext = await issueSprintService.getSprintCompleteContext({
@@ -219,7 +220,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const startDate = new Date(body.startDate);
@@ -267,7 +268,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const sprint = await issueSprintService.startSprint({
@@ -309,7 +310,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       const startDate = new Date(body.startDate);
@@ -359,7 +360,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       await issueSprintService.completeSprint({
@@ -401,7 +402,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       });
 
       if (!team) {
-        throw new NotFoundError("Team not found");
+        throw new NotFoundError("Team not found", ErrorCode.TEAM_NOT_FOUND);
       }
 
       await issueSprintService.archiveSprint({

@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { authClient } from "@/lib/auth-client";
+import { localizeErrorCode } from "@/lib/error-localization";
 import { m } from "@/paraglide/messages.js";
 import { A, useSearchParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
@@ -32,7 +33,7 @@ export default function ResetPasswordPage() {
       });
 
       if (result.error) {
-        toast.error(result.error.message ?? m.auth_reset_password_invalid_token());
+        toast.error(localizeErrorCode(result.error.code, result.error.message));
         return;
       }
 

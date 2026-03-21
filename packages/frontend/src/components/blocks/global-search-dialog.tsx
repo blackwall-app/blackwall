@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { debounce } from "@solid-primitives/scheduled";
-import { query, createAsync, A } from "@solidjs/router";
+import { query, createAsync } from "@solidjs/router";
 import SearchIcon from "lucide-solid/icons/search";
 import { createSignal, Match, Switch } from "solid-js";
 import { Dynamic } from "solid-js/web";

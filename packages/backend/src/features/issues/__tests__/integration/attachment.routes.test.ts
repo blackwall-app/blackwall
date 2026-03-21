@@ -24,7 +24,7 @@ describe("Attachment Routes", () => {
           teamKey: team.key,
           issue: {
             summary: "Test Issue",
-            description: {},
+            description: { type: "doc", content: [] },
             status: "to_do",
             assignedToId: null,
             sprintId: null,

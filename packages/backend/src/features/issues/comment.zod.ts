@@ -1,3 +1,4 @@
+import { tiptapDocumentSchema } from "@blackwall/shared";
 import { z } from "zod";
 
 export const commentParamsSchema = z.object({
@@ -7,7 +8,7 @@ export const commentParamsSchema = z.object({
 export type CommentParams = z.infer<typeof commentParamsSchema>;
 
 export const createCommentSchema = z.object({
-  content: z.any(),
+  content: tiptapDocumentSchema,
 });
 
 export type CreateComment = z.infer<typeof createCommentSchema>;
@@ -21,7 +22,7 @@ export type DeleteCommentParams = z.infer<typeof deleteCommentParamsSchema>;
 
 export const commentSchema = z.object({
   id: z.string(),
-  content: z.any(), // JSONContent
+  content: tiptapDocumentSchema,
   issueId: z.string(),
   userId: z.string(),
   createdAt: z.string().optional(),

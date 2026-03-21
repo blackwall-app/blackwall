@@ -1,4 +1,4 @@
-import type { Issue, SerializedIssue } from "@blackwall/database/schema";
+import type { SerializedIssue } from "@blackwall/database/schema";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages.js";
 import { useNavigate } from "@solidjs/router";

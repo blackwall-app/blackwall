@@ -1,3 +1,4 @@
+import { tiptapDocumentSchema } from "@blackwall/shared";
 import { z } from "zod";
 import { issueStatusValues, issuePriorityValues } from "@blackwall/database/schema";
 
@@ -41,7 +42,7 @@ export type IssueParams = z.infer<typeof issueParamsSchema>;
 
 export const updateIssueSchema = z.object({
   summary: z.string().min(1).optional(),
-  description: z.any().optional(),
+  description: tiptapDocumentSchema.optional(),
   status: z.enum(issueStatusValues).optional(),
   priority: z.enum(issuePriorityValues).optional(),
   assignedToId: z.string().nullable().optional(),
@@ -106,7 +107,7 @@ export const issueSchema = z.object({
   id: z.string(),
   key: z.string(),
   summary: z.string(),
-  description: z.any().nullable().optional(),
+  description: tiptapDocumentSchema.nullable().optional(),
   status: z.enum(issueStatusValues),
   priority: z.enum(issuePriorityValues),
   teamId: z.string(),

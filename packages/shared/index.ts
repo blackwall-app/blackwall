@@ -1,3 +1,6 @@
+export { tiptapDocumentSchema } from "./tiptap/tiptap-document-schema";
+export { validateTiptapContent } from "./tiptap/validate";
+
 export const possibleColors = [
   "red",
   "orange",

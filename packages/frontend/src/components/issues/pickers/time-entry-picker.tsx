@@ -1,5 +1,4 @@
 import { UserAvatar } from "@/components/custom-ui/avatar";
-import { createColorFromString } from "@blackwall/shared";
 import {
   AlertDialog,
   AlertDialogAction,

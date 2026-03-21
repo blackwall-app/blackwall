@@ -3,7 +3,7 @@ import { getSession } from "./_layout.data";
 import { createAsync } from "@solidjs/router";
 import { SessionContext } from "@/context/session-context";
 import { applyTheme } from "@/components/settings/use-theme";
-import { getLocale, isLocale, localStorageKey, setLocale } from "@/paraglide/runtime.js";
+import { getLocale, isLocale, setLocale } from "@/paraglide/runtime.js";
 
 const AuthorizedLayout: ParentComponent = (props) => {
   const session = createAsync(() => getSession());

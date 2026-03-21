@@ -1,5 +1,4 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
-import { z } from "zod";
 import { Hono } from "hono";
 import type { AppEnv } from "../../lib/hono-env";
 import { authMiddleware } from "../auth/auth-middleware";

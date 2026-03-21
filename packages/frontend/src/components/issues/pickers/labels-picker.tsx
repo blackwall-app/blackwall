@@ -3,7 +3,6 @@ import { type PickerOption } from "@/components/custom-ui/picker";
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { useWorkspaceData } from "@/context/workspace-context";
 import { Popover } from "@kobalte/core/popover";
 import PlusIcon from "lucide-solid/icons/plus";
 import { createResource, createSignal, Index } from "solid-js";
@@ -43,7 +42,6 @@ const removeLabel = action(async (labelId: string, issueKey: string) => {
 
 export function IssueLabelsPicker(props: { labels: SerializedLabel[]; issueKey: string }) {
   const [addOpen, setAddOpen] = createSignal(false);
-  const workspaceData = useWorkspaceData();
 
   const labelIds = () => props.labels.map((label) => label.id);
 

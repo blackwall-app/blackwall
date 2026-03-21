@@ -63,7 +63,7 @@ const deleteIssuesBulkAction = action(async (input: BulkDeleteIssues) => {
     json: input,
   });
 
-  const json = await res.json();
+  await res.json();
 
   toast.success(m.issue_selection_toast_deleted());
 });

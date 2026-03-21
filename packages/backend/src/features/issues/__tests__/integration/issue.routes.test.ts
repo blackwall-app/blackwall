@@ -21,7 +21,7 @@ describe("Issue Routes", () => {
         json: {
           teamKey: team.key,
           issue: {
-            description: {},
+            description: { type: "doc", content: [] },
             ...issue,
           },
         },
@@ -215,7 +215,7 @@ describe("Issue Routes", () => {
             teamKey: team.key,
             // @ts-expect-error - intentionally missing summary for validation test
             issue: {
-              description: {},
+              description: { type: "doc", content: [] },
               status: "to_do",
             },
           },
@@ -236,7 +236,7 @@ describe("Issue Routes", () => {
           json: {
             issue: {
               summary: "Test Issue",
-              description: {},
+              description: { type: "doc", content: [] },
               status: "to_do",
             },
           },
@@ -257,7 +257,7 @@ describe("Issue Routes", () => {
             teamKey: team.key,
             issue: {
               summary: "Test Issue",
-              description: {},
+              description: { type: "doc", content: [] },
               // @ts-expect-error - intentionally invalid status for validation test
               status: "invalid_status",
             },

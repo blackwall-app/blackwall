@@ -60,7 +60,7 @@ export function buildIssue(overrides: Partial<IssueInsert> = {}): IssueInsert {
     key: "TST-1",
     keyNumber: 1,
     summary: "Test Issue",
-    description: {},
+    description: { type: "doc", content: [] },
     status: "to_do",
     priority: "medium",
     sortOrder: 0,

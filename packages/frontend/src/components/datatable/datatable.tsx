@@ -77,7 +77,7 @@ export function BaseIssueDataTable<TData>(props: DataTableProps<TData>) {
         <Show when={!props.issueDrag}>
           <DataTableBody {...props} />
         </Show>
-        <div ref={sentinelRef} class="h-px" />
+        <div ref={(el) => (sentinelRef = el)} class="h-px" />
       </ScrollContainer>
     </DataTableRoot>
   );

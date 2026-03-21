@@ -24,7 +24,7 @@ export function IssueDescription(props: { issue: SerializedIssue }) {
   const [isEditing, setIsEditing] = createSignal(false);
 
   createEffect(() => {
-    editor()?.on("update", ({ transaction }) => {
+    editor()?.on("update", () => {
       if (!isEditing()) {
         setIsEditing(true);
       }

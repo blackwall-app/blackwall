@@ -15,12 +15,12 @@ declare module "@tanstack/solid-table" {
 }
 
 export const LinkFeature: TableFeature<any> = {
-  getDefaultOptions: <TData extends RowData>(table: Table<TData>): LinkOptions => {
+  getDefaultOptions: <TData extends RowData>(_table: Table<TData>): LinkOptions => {
     return {
       getLinkProps: undefined,
     };
   },
-  createRow: <TData extends RowData>(row: Row<any>, table: Table<any>): void => {
+  createRow: (row: Row<any>, table: Table<any>): void => {
     const linkProps = table.options.getLinkProps?.(row);
 
     if (!linkProps) {

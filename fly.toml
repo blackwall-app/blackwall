@@ -7,7 +7,6 @@ app = 'blackwall-hono'
 primary_region = 'fra'
 
 [build]
-  dockerfile = "fly/Dockerfile"
 
 [http_service]
 internal_port = 8000

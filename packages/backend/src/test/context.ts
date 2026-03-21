@@ -7,37 +7,17 @@ import { testClient } from "hono/testing";
 
 type TestClient = ReturnType<typeof testClient<typeof app>>;
 
-/**
- * Test context containing all common test dependencies.
- */
 export interface TestContext {
-  /** The Hono test client */
   client: TestClient;
-  /** The test database instance */
   testDb: TestDb;
-  /** Session cookie from signin */
   sessionCookie: string;
-  /** Workspace from signin */
   workspace: Workspace;
-  /** Team from signin */
   team: Team;
-  /** User from signin */
   user: User;
-  /** Creates headers with session cookie and workspace slug */
   headers: () => Record<string, string>;
-  /** Creates headers with session cookie only (no workspace) */
   headersWithoutWorkspace: () => Record<string, string>;
 }
 
-/**
- * Creates a test context with automatic setup and teardown.
- *
- * This hook registers beforeEach/afterEach handlers that:
- * - Create a fresh test database
- * - Sign up a test user with workspace and team
- * - Clean up the database after each test
- *
- */
 export function useTestContext(): () => TestContext {
   let ctx: TestContext;
 

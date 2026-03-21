@@ -1,5 +1,4 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
-import { z } from "zod";
 import { Hono } from "hono";
 import { auth } from "./better-auth";
 import { workspaceService } from "../workspaces/workspace.service";
@@ -19,7 +18,9 @@ const authRoutes = new Hono().post(
     responses: {
       200: {
         description: "User, workspace and team created",
-        content: { "application/json": { schema: resolver(signupResponseSchema) } },
+        content: {
+          "application/json": { schema: resolver(signupResponseSchema) },
+        },
       },
     },
   }),

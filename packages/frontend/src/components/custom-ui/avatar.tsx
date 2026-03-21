@@ -4,7 +4,7 @@ import { Show, splitProps } from "solid-js";
 import * as ImagePrimitive from "@kobalte/core/image";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 
-import type { ColorKey, SerializedTeam, SerializedUser, Team } from "@blackwall/database/schema";
+import type { ColorKey, SerializedTeam, SerializedUser } from "@blackwall/database/schema";
 import { cn } from "@/lib/utils";
 import { createColorFromString } from "@blackwall/shared";
 import { cva, type VariantProps } from "class-variance-authority";

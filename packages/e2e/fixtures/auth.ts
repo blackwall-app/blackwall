@@ -60,12 +60,12 @@ export const test = base.extend<{
   preparedScenario: E2EManifest | null;
 }>({
   preparedScenario: [
-    async ({}, use, testInfo) => {
+    async (_, use, testInfo) => {
       await use(await ensureScenarioPrepared(testInfo.file));
     },
     { auto: true },
   ],
-  storageState: async ({ preparedScenario }, use, testInfo) => {
+  storageState: async (_, use, testInfo) => {
     const config = registeredScenarios.get(fileKey(testInfo.file));
     await use(config?.authUserRole ? AUTH_STATE_PATH : undefined);
   },

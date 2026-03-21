@@ -46,8 +46,8 @@ describe("apiFetch", () => {
     });
 
     expect(response.status).toBe(200);
-    expect((receivedInit?.headers as Headers).get("x-custom")).toBe("value");
-    expect((receivedInit?.headers as Headers).get("x-blackwall-workspace-slug")).toBe("acme");
+    expect((receivedInit!.headers as Headers).get("x-custom")).toBe("value");
+    expect((receivedInit!.headers as Headers).get("x-blackwall-workspace-slug")).toBe("acme");
     expect(receivedInit?.credentials).toBe("include");
   });
 

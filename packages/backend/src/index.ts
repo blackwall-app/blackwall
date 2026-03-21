@@ -22,6 +22,7 @@ import {
 import type { AppEnv } from "./lib/hono-env";
 import { authRoutes } from "./features/auth/auth.routes";
 import { errorHandler } from "./lib/error-handler";
+import { csrf } from "hono/csrf";
 
 const app = new Hono<AppEnv>()
   .use(
@@ -35,6 +36,7 @@ const app = new Hono<AppEnv>()
       credentials: true,
     }),
   )
+  .use("*", csrf({ origin: env.APP_BASE_URL }))
   .onError(errorHandler)
 
   // Public routes

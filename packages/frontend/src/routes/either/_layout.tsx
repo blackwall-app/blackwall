@@ -25,7 +25,7 @@ const EitherLayout: ParentComponent = (props) => {
   return (
     <MaybeSessionContext.Provider value={session}>
       <Show when={loaderData()?.preferredWorkspace}>
-        <BackButton preferredWorkspace={loaderData()?.preferredWorkspace!} />
+        <BackButton preferredWorkspace={loaderData()!.preferredWorkspace!} />
       </Show>
       <Show when={session()}>
         <EitherUserMenu />

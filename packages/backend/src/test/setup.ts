@@ -18,9 +18,6 @@ async function resetTestDatabase() {
   client.run("PRAGMA foreign_keys = ON;");
 }
 
-/**
- * Creates an in-memory SQLite database for testing
- */
 export async function createTestDb() {
   await resetTestDatabase();
   migrate(db, {
@@ -30,14 +27,8 @@ export async function createTestDb() {
   return { db, client };
 }
 
-/**
- * Type for test database
- */
 export type TestDb = Awaited<ReturnType<typeof createTestDb>>;
 
-/**
- * Cleans up test database
- */
 export function cleanupTestDb(testDb: TestDb) {
   testDb.client.run("PRAGMA foreign_keys = OFF;");
   testDb.client.run("PRAGMA foreign_keys = ON;");

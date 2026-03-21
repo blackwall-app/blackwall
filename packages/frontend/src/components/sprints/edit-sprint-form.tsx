@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { useAppForm } from "@/context/form-context";
-import { action, redirect, useAction, useNavigate } from "@solidjs/router";
+import { action, redirect, useAction } from "@solidjs/router";
 import { api } from "@/lib/api";
 import type { InferDbType } from "@blackwall/database/types";
 import { TeamAvatar } from "@/components/custom-ui/avatar";

@@ -190,7 +190,7 @@ const settingsRoutes = new Hono<AppEnv>()
         });
 
         return c.json({ success: true });
-      } catch (error) {
+      } catch {
         throw new HTTPException(400, { message: "Failed to change password" });
       }
     },

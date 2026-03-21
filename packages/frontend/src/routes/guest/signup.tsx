@@ -184,6 +184,7 @@ function AccountForm(props: { form: SignUpFormApi; onContinue: () => void }) {
 }
 
 function WorkspaceForm(props: { form: SignUpFormApi; onBack: () => void; onContinue: () => void }) {
+  // oxlint-disable-next-line no-unassigned-vars
   let urlSpan!: HTMLSpanElement;
 
   return (

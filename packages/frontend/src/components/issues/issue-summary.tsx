@@ -16,6 +16,7 @@ const changeSummaryAction = action(async (issueKey: string, summary: string) => 
 });
 
 export function IssueSummary(props: { issue: SerializedIssue }) {
+  // oxlint-disable-next-line no-unassigned-vars
   let h1Ref!: HTMLHeadingElement;
   const _changeSummaryAction = useAction(changeSummaryAction);
   const [isEditing, setIsEditing] = createSignal(false);
@@ -31,7 +32,7 @@ export function IssueSummary(props: { issue: SerializedIssue }) {
     h1Ref.blur();
   }
 
-  function handleCancel(e: Event) {
+  function handleCancel() {
     setIsEditing(false);
     h1Ref.innerText = props.issue.summary;
     h1Ref.blur();

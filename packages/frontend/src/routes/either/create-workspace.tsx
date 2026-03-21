@@ -12,6 +12,7 @@ import { slugify } from "@/lib/utils";
 export default function CreateWorkspacePage() {
   const navigate = useNavigate();
 
+  // oxlint-disable-next-line no-unassigned-vars
   let urlSpan!: HTMLSpanElement;
 
   const form = useAppForm(() => ({

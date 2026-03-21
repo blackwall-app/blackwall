@@ -24,15 +24,10 @@ function getExtension(file: File): string {
 }
 
 type SaveFileOptions = {
-  /** Directory path relative to blackwall_data/uploads/ */
   directory: string;
-  /** File name */
   name: string;
 };
 
-/**
- * Get a file by its full path
- */
 export async function getFile(filePath: string): Promise<{ file: Bun.BunFile; exists: boolean }> {
   const file = Bun.file(filePath);
   const exists = await file.exists();
@@ -40,9 +35,6 @@ export async function getFile(filePath: string): Promise<{ file: Bun.BunFile; ex
   return { file, exists };
 }
 
-/**
- * Save a file and return its full path
- */
 export async function saveFile(file: File, options: SaveFileOptions): Promise<string> {
   const ext = getExtension(file);
   const filename = `${options.name}-${crypto.randomUUID()}${ext}`;
@@ -59,9 +51,6 @@ export async function saveFile(file: File, options: SaveFileOptions): Promise<st
   return filePath;
 }
 
-/**
- * Delete a file by its full path
- */
 export function deleteFile(filePath: string): void {
   try {
     if (existsSync(filePath)) {

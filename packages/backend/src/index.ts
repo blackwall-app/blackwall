@@ -23,8 +23,10 @@ import type { AppEnv } from "./lib/hono-env";
 import { authRoutes } from "./features/auth/auth.routes";
 import { errorHandler } from "./lib/error-handler";
 import { csrf } from "hono/csrf";
+import { secureHeaders } from "hono/secure-headers";
 
 const app = new Hono<AppEnv>()
+  .use("*", secureHeaders())
   .use(
     "*",
     cors({

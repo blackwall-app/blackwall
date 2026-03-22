@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
     },
     validators: {
       onSubmit: z.object({
-        newPassword: z.string().min(8),
+        newPassword: z.string().min(8, m.auth_validation_password_min()),
       }),
     },
     onSubmit: async ({ value }) => {

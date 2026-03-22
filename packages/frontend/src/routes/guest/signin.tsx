@@ -36,8 +36,8 @@ export default function SignInPage() {
     },
     validators: {
       onSubmit: z.object({
-        email: z.email(),
-        password: z.string().min(8),
+        email: z.email(m.auth_validation_email_invalid()),
+        password: z.string().min(8, m.auth_validation_password_min()),
       }),
     },
     onSubmit: async ({ value }) => {

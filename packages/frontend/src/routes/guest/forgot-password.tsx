@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     },
     validators: {
       onSubmit: z.object({
-        email: z.email(),
+        email: z.email(m.auth_validation_email_invalid()),
       }),
     },
     onSubmit: async ({ value }) => {

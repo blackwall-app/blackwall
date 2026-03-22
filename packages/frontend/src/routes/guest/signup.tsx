@@ -111,7 +111,7 @@ function AccountForm(props: { form: SignUpFormApi; onContinue: () => void }) {
         <props.form.AppField
           name="email"
           validators={{
-            onBlur: z.email(),
+            onBlur: z.email(m.auth_validation_email_invalid()),
           }}
         >
           {() => (
@@ -129,7 +129,7 @@ function AccountForm(props: { form: SignUpFormApi; onContinue: () => void }) {
         <props.form.AppField
           name="password"
           validators={{
-            onBlur: z.string().min(8),
+            onBlur: z.string().min(8, m.auth_validation_password_min()),
           }}
         >
           {() => (
@@ -146,7 +146,10 @@ function AccountForm(props: { form: SignUpFormApi; onContinue: () => void }) {
         <props.form.AppField
           name="name"
           validators={{
-            onBlur: z.string().min(2).max(100),
+            onBlur: z
+              .string()
+              .min(2, m.auth_validation_name_min())
+              .max(100, m.auth_validation_name_max()),
           }}
         >
           {() => (
@@ -199,7 +202,10 @@ function WorkspaceForm(props: { form: SignUpFormApi; onBack: () => void; onConti
         <props.form.AppField
           name="workspaceDisplayName"
           validators={{
-            onBlur: z.string().min(3).max(64),
+            onBlur: z
+              .string()
+              .min(3, m.auth_validation_workspace_name_min())
+              .max(64, m.auth_validation_workspace_name_max()),
           }}
         >
           {() => (
@@ -216,7 +222,10 @@ function WorkspaceForm(props: { form: SignUpFormApi; onBack: () => void; onConti
         <props.form.AppField
           name="workspaceUrlSlug"
           validators={{
-            onBlur: z.string().min(3).max(64),
+            onBlur: z
+              .string()
+              .min(3, m.auth_validation_workspace_url_min())
+              .max(64, m.auth_validation_workspace_url_max()),
           }}
         >
           {() => (

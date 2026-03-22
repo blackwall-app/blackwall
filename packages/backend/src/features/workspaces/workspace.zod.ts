@@ -35,7 +35,9 @@ export type WorkspaceMemberParams = z.infer<typeof workspaceMemberParamsSchema>;
 export const workspaceSchema = z.object({
   id: z.string(),
   displayName: z.string(),
-  slug: z.string(),
+  slug: z.string().refine((slug) => slug !== "api", {
+    message: "Slug cannot be 'api'",
+  }),
   imageUrl: z.string().nullable().optional(),
   createdAt: z.any(),
   updatedAt: z.any(),

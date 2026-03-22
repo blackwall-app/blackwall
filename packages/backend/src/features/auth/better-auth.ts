@@ -68,7 +68,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [openAPI()],
-  disabledPaths: ["/sign-up/email"],
+  disabledPaths: ["/sign-up/email", "/change-password"],
   user: {
     additionalFields: {
       lastWorkspaceId: {

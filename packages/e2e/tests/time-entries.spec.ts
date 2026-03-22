@@ -22,7 +22,7 @@ async function logTime(page: Page, issueKey: string, duration: string, descripti
   await Promise.all([
     page.waitForResponse(
       (res) =>
-        res.url().includes(`/api/time-entries/issues/${issueKey}/time-entries`) &&
+        res.url().includes(`/api/issues/${issueKey}/time-entries`) &&
         res.request().method() === "POST",
     ),
     submit.click(),

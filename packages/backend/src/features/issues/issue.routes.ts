@@ -176,11 +176,11 @@ const issueRoutes = new Hono<AppEnv>()
     async (c) => {
       const workspace = c.get("workspace");
       const user = c.get("user")!;
-      const { issueIds, updates } = c.req.valid("json");
+      const { issueKeys, updates } = c.req.valid("json");
 
       const updated = await issueService.updateIssuesBulk({
         workspaceId: workspace.id,
-        issueIds,
+        issueKeys,
         userId: user.id,
         updates,
       });
@@ -273,11 +273,11 @@ const issueRoutes = new Hono<AppEnv>()
     async (c) => {
       const workspace = c.get("workspace");
       const user = c.get("user")!;
-      const { issueIds } = c.req.valid("json");
+      const { issueKeys } = c.req.valid("json");
 
       const issues = await issueService.softDeleteIssuesBulk({
         workspaceId: workspace.id,
-        issueIds,
+        issueKeys,
         userId: user.id,
       });
 

@@ -179,13 +179,13 @@ async function updateIssue(input: {
 
 /**
  * Update multiple issues at once.
- * @param input workspace id, issue ids, user id, and updates
+ * @param input workspace id, issue keys, user id, and updates
  * @returns updated issues
  * @throws ForbiddenError if some issues are not accessible to the user
  */
 async function updateIssuesBulk(input: {
   workspaceId: string;
-  issueIds: string[];
+  issueKeys: string[];
   userId: string;
   updates: UpdateIssueInput;
 }) {
@@ -196,14 +196,14 @@ async function updateIssuesBulk(input: {
 
   const userTeamIds = userTeams.map((team) => team.id);
 
-  const issues = await issueData.getIssuesByIds({
+  const issues = await issueData.getIssuesByKeys({
     workspaceId: input.workspaceId,
-    issueIds: input.issueIds,
+    issueKeys: input.issueKeys,
   });
 
   const issuesInUserTeams = issues.filter((issue) => userTeamIds.includes(issue.teamId));
 
-  if (issuesInUserTeams.length !== input.issueIds.length) {
+  if (issuesInUserTeams.length !== input.issueKeys.length) {
     throw new ForbiddenError(
       "Some issues are not accessible to the current user",
       ErrorCode.ISSUES_NOT_ACCESSIBLE,
@@ -211,7 +211,7 @@ async function updateIssuesBulk(input: {
   }
 
   return issueData.updateIssuesBulk({
-    issueIds: input.issueIds,
+    issueKeys: input.issueKeys,
     workspaceId: input.workspaceId,
     actorId: input.userId,
     updates: input.updates,
@@ -234,13 +234,13 @@ async function deleteIssue(input: { workspaceId: string; issueKey: string; userI
 
 /**
  * Soft delete multiple issues at once.
- * @param input workspace id, issue ids, and user id
+ * @param input workspace id, issue keys, and user id
  * @returns deleted issues
  * @throws ForbiddenError if some issues are not accessible to the user
  */
 async function softDeleteIssuesBulk(input: {
   workspaceId: string;
-  issueIds: string[];
+  issueKeys: string[];
   userId: string;
 }) {
   const userTeams = await teamData.listUserTeams({
@@ -250,14 +250,14 @@ async function softDeleteIssuesBulk(input: {
 
   const userTeamIds = userTeams.map((team) => team.id);
 
-  const issues = await issueData.getIssuesByIds({
+  const issues = await issueData.getIssuesByKeys({
     workspaceId: input.workspaceId,
-    issueIds: input.issueIds,
+    issueKeys: input.issueKeys,
   });
 
   const issuesInUserTeams = issues.filter((issue) => userTeamIds.includes(issue.teamId));
 
-  if (issuesInUserTeams.length !== input.issueIds.length) {
+  if (issuesInUserTeams.length !== input.issueKeys.length) {
     throw new ForbiddenError(
       "Some issues are not accessible to the current user",
       ErrorCode.ISSUES_NOT_ACCESSIBLE,
@@ -265,7 +265,7 @@ async function softDeleteIssuesBulk(input: {
   }
 
   return issueData.softDeleteIssuesBulk({
-    issueIds: input.issueIds,
+    issueKeys: input.issueKeys,
     workspaceId: input.workspaceId,
     actorId: input.userId,
   });

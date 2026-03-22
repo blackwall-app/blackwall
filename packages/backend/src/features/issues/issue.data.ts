@@ -231,10 +231,10 @@ export async function getIssueByKey(input: { workspaceId: string; issueKey: stri
   });
 }
 
-export async function getIssuesByIds(input: { issueIds: string[]; workspaceId: string }) {
+export async function getIssuesByKeys(input: { issueKeys: string[]; workspaceId: string }) {
   return db.query.issue.findMany({
     where: {
-      id: { in: input.issueIds },
+      key: { in: input.issueKeys },
       workspaceId: input.workspaceId,
       deletedAt: { isNull: true },
     },
@@ -290,18 +290,18 @@ export async function updateIssue(input: {
 }
 
 export async function updateIssuesBulk(input: {
-  issueIds: string[];
+  issueKeys: string[];
   workspaceId: string;
   actorId: string;
   updates: UpdateIssueInput;
 }) {
-  const issues = await getIssuesByIds(input);
+  const issues = await getIssuesByKeys(input);
 
   const result = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(dbSchema.issue)
       .set(input.updates)
-      .where(inArray(dbSchema.issue.id, input.issueIds))
+      .where(inArray(dbSchema.issue.key, input.issueKeys))
       .returning();
 
     const events = issues
@@ -329,7 +329,7 @@ export async function updateIssuesBulk(input: {
 }
 
 export async function softDeleteIssuesBulk(input: {
-  issueIds: string[];
+  issueKeys: string[];
   workspaceId: string;
   actorId: string;
 }) {
@@ -337,7 +337,7 @@ export async function softDeleteIssuesBulk(input: {
     const updated = await tx
       .update(dbSchema.issue)
       .set({ deletedAt: new Date() })
-      .where(inArray(dbSchema.issue.id, input.issueIds))
+      .where(inArray(dbSchema.issue.key, input.issueKeys))
       .returning();
 
     return updated;
@@ -509,7 +509,7 @@ export const issueData = {
   getIssueByKey,
   updateIssue,
   softDeleteIssue,
-  getIssuesByIds,
+  getIssuesByKeys,
   updateIssuesBulk,
   softDeleteIssuesBulk,
   moveIssue,

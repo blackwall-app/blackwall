@@ -150,7 +150,7 @@ describe("issueService", () => {
     try {
       await issueService.updateIssuesBulk({
         workspaceId,
-        issueIds: [accessibleIssue.id, inaccessibleIssue.id],
+        issueKeys: [accessibleIssue.key, inaccessibleIssue.key],
         userId,
         updates: {
           status: "done",

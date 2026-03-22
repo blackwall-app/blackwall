@@ -54,7 +54,7 @@ export const updateIssueSchema = z.object({
 export type UpdateIssue = z.infer<typeof updateIssueSchema>;
 
 export const bulkUpdateIssuesSchema = z.object({
-  issueIds: z.array(z.string()),
+  issueKeys: z.array(z.string()),
   updates: z.object({
     status: z.enum(issueStatusValues).optional(),
     priority: z.enum(issuePriorityValues).optional(),
@@ -67,7 +67,7 @@ export const bulkUpdateIssuesSchema = z.object({
 export type BulkUpdateIssues = z.infer<typeof bulkUpdateIssuesSchema>;
 
 export const bulkDeleteIssuesSchema = z.object({
-  issueIds: z.array(z.string()),
+  issueKeys: z.array(z.string()),
 });
 
 export type BulkDeleteIssues = z.infer<typeof bulkDeleteIssuesSchema>;

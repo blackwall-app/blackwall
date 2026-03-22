@@ -75,7 +75,7 @@ export function IssueSelectionMenu(props: IssueSelectionMenuProps) {
 
   const handleUpdate = async (updates: BulkUpdateIssues["updates"]) => {
     await _updateAction({
-      issueIds: props.selectedIssues.map((issue) => issue.id),
+      issueKeys: props.selectedIssues.map((issue) => issue.key),
       updates,
     });
     props.onClearSelection();
@@ -83,7 +83,7 @@ export function IssueSelectionMenu(props: IssueSelectionMenuProps) {
 
   const handleDelete = async () => {
     await _deleteAction({
-      issueIds: props.selectedIssues.map((issue) => issue.id),
+      issueKeys: props.selectedIssues.map((issue) => issue.key),
     });
     setDeleteDialogOpen(false);
     props.onClearSelection();

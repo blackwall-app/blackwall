@@ -24,7 +24,7 @@ describe("Time Entry Routes", () => {
     data?: { duration?: number; description?: string },
   ) => {
     const { client, headers } = getCtx();
-    return client.api["time-entries"].issues[":issueKey"]["time-entries"].$post(
+    return client.api.issues[":issueKey"]["time-entries"].$post(
       {
         param: { issueKey },
         json: {
@@ -36,12 +36,12 @@ describe("Time Entry Routes", () => {
     );
   };
 
-  describe("GET /time-entries/issues/:issueId/time-entries", () => {
+  describe("GET /issues/:issueKey/time-entries", () => {
     it("should return empty array when no time entries exist", async () => {
       const issue = await createTestIssue();
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].$get(
         { param: { issueKey: issue.key } },
         { headers: headers() },
       );
@@ -57,7 +57,7 @@ describe("Time Entry Routes", () => {
       await createTimeEntry(issue.id, issue.key, { duration: 60 });
 
       const { client, headers } = getCtx();
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].$get(
         { param: { issueKey: issue.key } },
         { headers: headers() },
       );
@@ -69,7 +69,7 @@ describe("Time Entry Routes", () => {
 
     it("should return 404 for non-existent issue", async () => {
       const { client, headers } = getCtx();
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].$get(
         { param: { issueKey: "NON-EXISTENT" } },
         { headers: headers() },
       );
@@ -78,12 +78,12 @@ describe("Time Entry Routes", () => {
     });
   });
 
-  describe("GET /time-entries/issues/:issueId/time-entries/total", () => {
+  describe("GET /issues/:issueKey/time-entries/total", () => {
     it("should return 0 when no time entries exist", async () => {
       const issue = await createTestIssue();
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].total.$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].total.$get(
         { param: { issueKey: issue.key } },
         { headers: headers() },
       );
@@ -99,7 +99,7 @@ describe("Time Entry Routes", () => {
       await createTimeEntry(issue.id, issue.key, { duration: 60 });
 
       const { client, headers } = getCtx();
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].total.$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].total.$get(
         { param: { issueKey: issue.key } },
         { headers: headers() },
       );
@@ -111,7 +111,7 @@ describe("Time Entry Routes", () => {
 
     it("should return 404 for non-existent issue", async () => {
       const { client, headers } = getCtx();
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].total.$get(
+      const res = await client.api.issues[":issueKey"]["time-entries"].total.$get(
         { param: { issueKey: "NON-EXISTENT" } },
         { headers: headers() },
       );
@@ -120,7 +120,7 @@ describe("Time Entry Routes", () => {
     });
   });
 
-  describe("POST /time-entries/issues/:issueId/time-entries", () => {
+  describe("POST /issues/:issueKey/time-entries", () => {
     it("should create a time entry", async () => {
       const issue = await createTestIssue();
 
@@ -139,7 +139,7 @@ describe("Time Entry Routes", () => {
       const issue = await createTestIssue();
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$post(
+      const res = await client.api.issues[":issueKey"]["time-entries"].$post(
         {
           param: { issueKey: issue.key },
           json: {
@@ -149,14 +149,14 @@ describe("Time Entry Routes", () => {
         { headers: headers() },
       );
 
-      // @ts-expect-error test code
+      // @ts-expect-error - testing error status outside typed response
       expect(res.status).toBe(400);
     });
 
     it("should return 404 for non-existent issue", async () => {
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$post(
+      const res = await client.api.issues[":issueKey"]["time-entries"].$post(
         {
           param: { issueKey: "NON-EXISTENT" },
           json: {
@@ -166,19 +166,19 @@ describe("Time Entry Routes", () => {
         { headers: headers() },
       );
 
-      // @ts-expect-error test code
+      // @ts-expect-error - testing error status outside typed response
       expect(res.status).toBe(404);
     });
   });
 
-  describe("DELETE /time-entries/issues/:issueId/time-entries/:timeEntryId", () => {
+  describe("DELETE /issues/:issueKey/time-entries/:timeEntryId", () => {
     it("should delete a time entry", async () => {
       const issue = await createTestIssue();
       const createRes = await createTimeEntry(issue.id, issue.key, { duration: 30 });
       const createJson = (await createRes.json()) as { entry: { id: string } };
 
       const { client, headers } = getCtx();
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"][
+      const res = await client.api.issues[":issueKey"]["time-entries"][
         ":timeEntryId"
       ].$delete(
         { param: { issueKey: issue.key, timeEntryId: createJson.entry.id } },
@@ -187,7 +187,7 @@ describe("Time Entry Routes", () => {
 
       expect(res.status).toBe(200);
 
-      const listRes = await client.api["time-entries"].issues[":issueKey"]["time-entries"].$get(
+      const listRes = await client.api.issues[":issueKey"]["time-entries"].$get(
         { param: { issueKey: issue.key } },
         { headers: headers() },
       );
@@ -199,7 +199,7 @@ describe("Time Entry Routes", () => {
       const issue = await createTestIssue();
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"][
+      const res = await client.api.issues[":issueKey"]["time-entries"][
         ":timeEntryId"
       ].$delete(
         { param: { issueKey: issue.key, timeEntryId: "00000000-0000-0000-0000-000000000000" } },
@@ -212,7 +212,7 @@ describe("Time Entry Routes", () => {
     it("should return 404 for non-existent issue", async () => {
       const { client, headers } = getCtx();
 
-      const res = await client.api["time-entries"].issues[":issueKey"]["time-entries"][
+      const res = await client.api.issues[":issueKey"]["time-entries"][
         ":timeEntryId"
       ].$delete(
         {

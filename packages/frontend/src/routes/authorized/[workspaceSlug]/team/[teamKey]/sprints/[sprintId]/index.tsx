@@ -44,7 +44,7 @@ import { m } from "@/paraglide/messages.js";
 
 const archiveSprintAction = action(
   async (workspaceSlug: string, teamKey: string, sprintId: string) => {
-    await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].$delete({
+    await api.api.teams[":teamKey"].sprints[":sprintId"].$delete({
       param: { teamKey, sprintId },
     });
 
@@ -54,7 +54,7 @@ const archiveSprintAction = action(
 );
 
 const startSprintAction = action(async (teamKey: string, sprintId: string) => {
-  await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].start.$post({
+  await api.api.teams[":teamKey"].sprints[":sprintId"].start.$post({
     param: { teamKey, sprintId },
   });
 
@@ -126,7 +126,7 @@ export default function SprintDetailPage() {
   const handleLoadMore = async () => {
     const cur = cursor();
     if (!cur) return;
-    const res = await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].$get({
+    const res = await api.api.teams[":teamKey"].sprints[":sprintId"].$get({
       param: { teamKey: params.teamKey!, sprintId: params.sprintId! },
       query: { cursor: cur },
     });

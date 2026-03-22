@@ -3,9 +3,7 @@ import { m } from "@/paraglide/messages.js";
 import { query } from "@solidjs/router";
 
 export const sprintCompleteContextLoader = query(async (teamKey: string, sprintId: string) => {
-  const res = await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"][
-    "complete-context"
-  ].$get({
+  const res = await api.api.teams[":teamKey"].sprints[":sprintId"]["complete-context"].$get({
     param: { teamKey, sprintId },
   });
 

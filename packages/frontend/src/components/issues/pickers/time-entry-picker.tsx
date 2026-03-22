@@ -88,7 +88,7 @@ function parseDurationInput(input: string): number | null {
 }
 
 const totalTimeLoader = query(async (issueKey: string) => {
-  const res = await api.api["time-entries"].issues[`:issueKey`]["time-entries"].total.$get({
+  const res = await api.api.issues[`:issueKey`]["time-entries"].total.$get({
     param: { issueKey },
   });
 
@@ -97,7 +97,7 @@ const totalTimeLoader = query(async (issueKey: string) => {
 }, "timeEntryTotal");
 
 const timeEntriesLoader = query(async (issueKey: string) => {
-  const res = await api.api["time-entries"].issues[`:issueKey`]["time-entries"].$get({
+  const res = await api.api.issues[`:issueKey`]["time-entries"].$get({
     param: { issueKey },
   });
 
@@ -106,7 +106,7 @@ const timeEntriesLoader = query(async (issueKey: string) => {
 }, "timeEntriesList");
 
 const logTimeEntry = action(async (issueKey: string, duration: number, description?: string) => {
-  await api.api["time-entries"].issues[`:issueKey`]["time-entries"].$post({
+  await api.api.issues[`:issueKey`]["time-entries"].$post({
     param: { issueKey },
     json: { duration, description },
   });
@@ -115,7 +115,7 @@ const logTimeEntry = action(async (issueKey: string, duration: number, descripti
 });
 
 const deleteTimeEntry = action(async (issueKey: string, timeEntryId: string) => {
-  await api.api["time-entries"].issues[`:issueKey`]["time-entries"][`:timeEntryId`].$delete({
+  await api.api.issues[`:issueKey`]["time-entries"][`:timeEntryId`].$delete({
     param: { issueKey, timeEntryId },
   });
 

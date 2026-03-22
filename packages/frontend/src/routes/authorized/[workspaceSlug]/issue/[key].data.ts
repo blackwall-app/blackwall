@@ -16,7 +16,7 @@ export const issueLoader = query(async (issueKey: string, workspaceSlug: string)
       param: { slug: workspaceSlug },
     }),
     teamKey
-      ? api.api["issue-sprints"].teams[":teamKey"].sprints.$get({
+      ? api.api.teams[":teamKey"].sprints.$get({
           param: { teamKey },
         })
       : null,

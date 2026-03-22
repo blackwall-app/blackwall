@@ -31,7 +31,7 @@ const createSprintAction = action(
       endDate: string;
     },
   ) => {
-    await api.api["issue-sprints"].teams[":teamKey"].sprints.$post({
+    await api.api.teams[":teamKey"].sprints.$post({
       param: { teamKey },
       json: {
         name: value.name,

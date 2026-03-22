@@ -3,7 +3,7 @@ import { m } from "@/paraglide/messages.js";
 import { query } from "@solidjs/router";
 
 export const sprintsLoader = query(async (teamKey: string) => {
-  const res = await api.api["issue-sprints"].teams[":teamKey"].sprints.$get({
+  const res = await api.api.teams[":teamKey"].sprints.$get({
     param: { teamKey },
   });
 

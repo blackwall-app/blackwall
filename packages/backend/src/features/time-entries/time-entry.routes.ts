@@ -18,10 +18,10 @@ const timeEntryRoutes = new Hono<AppEnv>()
   .use("*", authMiddleware)
   .use("*", workspaceMiddleware)
   /**
-   * GET /issues/:issueKey/time-entries - List all time entries for an issue.
+   * GET /:issueKey/time-entries - List all time entries for an issue.
    */
   .get(
-    "/issues/:issueKey/time-entries",
+    "/:issueKey/time-entries",
     describeRoute({
       tags: ["Time Entries"],
       summary: "List time entries for an issue",
@@ -52,10 +52,10 @@ const timeEntryRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * GET /issues/:issueKey/time-entries/total - Get total time logged for an issue.
+   * GET /:issueKey/time-entries/total - Get total time logged for an issue.
    */
   .get(
-    "/issues/:issueKey/time-entries/total",
+    "/:issueKey/time-entries/total",
     describeRoute({
       tags: ["Time Entries"],
       summary: "Get total time logged for an issue",
@@ -86,10 +86,10 @@ const timeEntryRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * POST /issues/:issueKey/time-entries - Create a new time entry for an issue.
+   * POST /:issueKey/time-entries - Create a new time entry for an issue.
    */
   .post(
-    "/issues/:issueKey/time-entries",
+    "/:issueKey/time-entries",
     describeRoute({
       tags: ["Time Entries"],
       summary: "Create a new time entry",
@@ -128,10 +128,10 @@ const timeEntryRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * DELETE /issues/:issueKey/time-entries/:timeEntryId - Delete a time entry.
+   * DELETE /:issueKey/time-entries/:timeEntryId - Delete a time entry.
    */
   .delete(
-    "/issues/:issueKey/time-entries/:timeEntryId",
+    "/:issueKey/time-entries/:timeEntryId",
     describeRoute({
       tags: ["Time Entries"],
       summary: "Delete a time entry",

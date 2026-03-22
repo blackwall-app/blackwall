@@ -40,7 +40,7 @@ type CompleteSprintFormProps = {
 
 const completeSprintAction = action(
   async (workspaceSlug: string, teamKey: string, sprintId: string, value: CompleteIssueSprint) => {
-    await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].complete.$post({
+    await api.api.teams[":teamKey"].sprints[":sprintId"].complete.$post({
       param: { teamKey, sprintId },
       json: value,
     });

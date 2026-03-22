@@ -71,7 +71,7 @@ const moveIssue = action(
 );
 
 const startSprintAction = action(async (teamKey: string, sprintId: string) => {
-  await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].start.$post({
+  await api.api.teams[":teamKey"].sprints[":sprintId"].start.$post({
     param: { teamKey, sprintId },
   });
   toast.success(m.common_sprint_started());

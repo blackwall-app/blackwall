@@ -23,10 +23,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
   .use("*", authMiddleware)
   .use("*", workspaceMiddleware)
   /**
-   * GET /teams/:teamKey/sprints - List all sprints for a team.
+   * GET /:teamKey/sprints - List all sprints for a team.
    */
   .get(
-    "/teams/:teamKey/sprints",
+    "/:teamKey/sprints",
     describeRoute({
       tags: ["Sprints"],
       summary: "List all sprints for a team",
@@ -58,10 +58,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * GET /teams/:teamKey/sprints/active - Get the active sprint for a team.
+   * GET /:teamKey/sprints/active - Get the active sprint for a team.
    */
   .get(
-    "/teams/:teamKey/sprints/active",
+    "/:teamKey/sprints/active",
     describeRoute({
       tags: ["Sprints"],
       summary: "Get active sprint for a team",
@@ -97,10 +97,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * GET /teams/:teamKey/sprints/:sprintId - Get a sprint by its id with associated issues.
+   * GET /:teamKey/sprints/:sprintId - Get a sprint by its id with associated issues.
    */
   .get(
-    "/teams/:teamKey/sprints/:sprintId",
+    "/:teamKey/sprints/:sprintId",
     describeRoute({
       tags: ["Sprints"],
       summary: "Get a sprint by id",
@@ -152,10 +152,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * GET /teams/:teamKey/sprints/:sprintId/complete-context - Get data needed for completing a sprint.
+   * GET /:teamKey/sprints/:sprintId/complete-context - Get data needed for completing a sprint.
    */
   .get(
-    "/teams/:teamKey/sprints/:sprintId/complete-context",
+    "/:teamKey/sprints/:sprintId/complete-context",
     describeRoute({
       tags: ["Sprints"],
       summary: "Get complete sprint context",
@@ -191,10 +191,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * POST /teams/:teamKey/sprints - Create a new sprint.
+   * POST /:teamKey/sprints - Create a new sprint.
    */
   .post(
-    "/teams/:teamKey/sprints",
+    "/:teamKey/sprints",
     describeRoute({
       tags: ["Sprints"],
       summary: "Create a new sprint",
@@ -241,10 +241,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * POST /teams/:teamKey/sprints/:sprintId/start - Start a planned sprint.
+   * POST /:teamKey/sprints/:sprintId/start - Start a planned sprint.
    */
   .post(
-    "/teams/:teamKey/sprints/:sprintId/start",
+    "/:teamKey/sprints/:sprintId/start",
     describeRoute({
       tags: ["Sprints"],
       summary: "Start a sprint",
@@ -281,10 +281,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * PATCH /teams/:teamKey/sprints/:sprintId - Update an existing sprint.
+   * PATCH /:teamKey/sprints/:sprintId - Update an existing sprint.
    */
   .patch(
-    "/teams/:teamKey/sprints/:sprintId",
+    "/:teamKey/sprints/:sprintId",
     describeRoute({
       tags: ["Sprints"],
       summary: "Update a sprint",
@@ -331,10 +331,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * POST /teams/:teamKey/sprints/:sprintId/complete - Mark a sprint as completed.
+   * POST /:teamKey/sprints/:sprintId/complete - Mark a sprint as completed.
    */
   .post(
-    "/teams/:teamKey/sprints/:sprintId/complete",
+    "/:teamKey/sprints/:sprintId/complete",
     describeRoute({
       tags: ["Sprints"],
       summary: "Complete a sprint",
@@ -375,10 +375,10 @@ const issueSprintRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * DELETE /teams/:teamKey/sprints/:sprintId - Archive a non-active sprint.
+   * DELETE /:teamKey/sprints/:sprintId - Archive a non-active sprint.
    */
   .delete(
-    "/teams/:teamKey/sprints/:sprintId",
+    "/:teamKey/sprints/:sprintId",
     describeRoute({
       tags: ["Sprints"],
       summary: "Archive a sprint",

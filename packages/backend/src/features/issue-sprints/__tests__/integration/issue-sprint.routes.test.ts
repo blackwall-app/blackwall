@@ -18,7 +18,7 @@ describe("Issue Sprint Routes", () => {
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const res = await client.api["issue-sprints"].teams[":teamKey"].sprints.$post(
+    const res = await client.api.teams[":teamKey"].sprints.$post(
       {
         param: { teamKey: team.key },
         json: {
@@ -40,7 +40,7 @@ describe("Issue Sprint Routes", () => {
 
   const startSprint = async (sprintId: string) => {
     const { client, headers, team } = getCtx();
-    return client.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].start.$post(
+    return client.api.teams[":teamKey"].sprints[":sprintId"].start.$post(
       {
         param: { teamKey: team.key, sprintId },
       },
@@ -48,7 +48,7 @@ describe("Issue Sprint Routes", () => {
     );
   };
 
-  describe("POST /issue-sprints/teams/:teamKey/sprints", () => {
+  describe("POST /teams/:teamKey/sprints", () => {
     it("should create a planned sprint without activating it", async () => {
       const { res, json } = await createSprint({ name: "Sprint 1", goal: "Ship it" });
 
@@ -58,7 +58,7 @@ describe("Issue Sprint Routes", () => {
       expect(json.sprint.status).toBe("planned");
 
       const { client, headers, team } = getCtx();
-      const activeRes = await client.api["issue-sprints"].teams[":teamKey"].sprints.active.$get(
+      const activeRes = await client.api.teams[":teamKey"].sprints.active.$get(
         { param: { teamKey: team.key } },
         { headers: headers() },
       );
@@ -67,7 +67,7 @@ describe("Issue Sprint Routes", () => {
     });
   });
 
-  describe("POST /issue-sprints/teams/:teamKey/sprints/:sprintId/start", () => {
+  describe("POST /teams/:teamKey/sprints/:sprintId/start", () => {
     it("should start a planned sprint", async () => {
       const { json: created } = await createSprint({ name: "Sprint 1" });
       const res = await startSprint(created.sprint.id);
@@ -90,7 +90,7 @@ describe("Issue Sprint Routes", () => {
     });
   });
 
-  describe("GET /issue-sprints/teams/:teamKey/sprints/:sprintId/complete-context", () => {
+  describe("GET /teams/:teamKey/sprints/:sprintId/complete-context", () => {
     it("should return hasUndoneIssues=true and planned sprints only", async () => {
       const { testDb, team, user, workspace, client, headers } = getCtx();
       const now = new Date();
@@ -120,7 +120,7 @@ describe("Issue Sprint Routes", () => {
         status: "done",
       });
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"][
+      const res = await client.api.teams[":teamKey"].sprints[":sprintId"][
         "complete-context"
       ].$get(
         {
@@ -162,7 +162,7 @@ describe("Issue Sprint Routes", () => {
         status: "done",
       });
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"][
+      const res = await client.api.teams[":teamKey"].sprints[":sprintId"][
         "complete-context"
       ].$get(
         {
@@ -177,7 +177,7 @@ describe("Issue Sprint Routes", () => {
     });
   });
 
-  describe("POST /issue-sprints/teams/:teamKey/sprints/:sprintId/complete", () => {
+  describe("POST /teams/:teamKey/sprints/:sprintId/complete", () => {
     it("should return 400 when completing a non-active sprint", async () => {
       const now = new Date();
       const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -189,7 +189,7 @@ describe("Issue Sprint Routes", () => {
       });
 
       const { client, headers, team } = getCtx();
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const res = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -230,7 +230,7 @@ describe("Issue Sprint Routes", () => {
         status: "done",
       });
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const res = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -275,7 +275,7 @@ describe("Issue Sprint Routes", () => {
 
       await startSprint(created.sprint.id);
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const res = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -320,7 +320,7 @@ describe("Issue Sprint Routes", () => {
         status: "to_do",
       });
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const res = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -363,7 +363,7 @@ describe("Issue Sprint Routes", () => {
         status: "in_progress",
       });
 
-      const res = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const res = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -415,7 +415,7 @@ describe("Issue Sprint Routes", () => {
       await startSprint(created.sprint.id);
 
       const { client, headers, team } = getCtx();
-      const completeRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const completeRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -426,7 +426,7 @@ describe("Issue Sprint Routes", () => {
       );
       expect(completeRes.status).toBe(200);
 
-      const updateRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const updateRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].$patch(
         {
@@ -442,7 +442,7 @@ describe("Issue Sprint Routes", () => {
       );
       expect(updateRes.status).toBe(400);
 
-      const startRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const startRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].start.$post(
         {
@@ -452,7 +452,7 @@ describe("Issue Sprint Routes", () => {
       );
       expect(startRes.status).toBe(400);
 
-      const reCompleteRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const reCompleteRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -479,7 +479,7 @@ describe("Issue Sprint Routes", () => {
       await startSprint(created.sprint.id);
 
       const { client, headers, team, testDb } = getCtx();
-      const completeRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const completeRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].complete.$post(
         {
@@ -490,7 +490,7 @@ describe("Issue Sprint Routes", () => {
       );
       expect(completeRes.status).toBe(200);
 
-      const archiveRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const archiveRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].$delete(
         {
@@ -506,7 +506,7 @@ describe("Issue Sprint Routes", () => {
         .where(eq(dbSchema.issueSprint.id, created.sprint.id));
       expect(archived.archivedAt).not.toBeNull();
 
-      const listRes = await client.api["issue-sprints"].teams[":teamKey"].sprints.$get(
+      const listRes = await client.api.teams[":teamKey"].sprints.$get(
         { param: { teamKey: team.key } },
         { headers: headers() },
       );
@@ -535,7 +535,7 @@ describe("Issue Sprint Routes", () => {
         status: "done",
       });
 
-      const archiveRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const archiveRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].$delete(
         {
@@ -563,7 +563,7 @@ describe("Issue Sprint Routes", () => {
       await startSprint(created.sprint.id);
 
       const { client, headers, team } = getCtx();
-      const archiveRes = await client.api["issue-sprints"].teams[":teamKey"].sprints[
+      const archiveRes = await client.api.teams[":teamKey"].sprints[
         ":sprintId"
       ].$delete(
         {

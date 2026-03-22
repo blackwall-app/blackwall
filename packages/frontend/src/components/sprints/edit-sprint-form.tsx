@@ -22,7 +22,7 @@ type EditSprintFormProps = {
 
 const updateSprintAction = action(
   async (workspaceSlug: string, teamKey: string, sprintId: string, value: UpdateIssueSprint) => {
-    await api.api["issue-sprints"].teams[":teamKey"].sprints[":sprintId"].$patch({
+    await api.api.teams[":teamKey"].sprints[":sprintId"].$patch({
       param: { teamKey, sprintId },
       json: value,
     });

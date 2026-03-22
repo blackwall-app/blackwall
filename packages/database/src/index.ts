@@ -6,6 +6,7 @@ import * as schema from "./schema";
 
 const client = new Database(dbEnv.DATABASE_URL);
 client.run("PRAGMA journal_mode = WAL;");
+client.run("PRAGMA foreign_keys = ON;");
 
 const db = drizzle({
   client,

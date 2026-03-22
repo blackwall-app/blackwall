@@ -23,7 +23,7 @@ describe("Team Routes", () => {
 
     it("should not include teams the user is not a member of", async () => {
       const { client, headers, workspace } = getCtx();
-      await client.api.teams.create.$post(
+      await client.api.teams.$post(
         {
           json: {
             name: "Unassigned Team 1",
@@ -36,7 +36,7 @@ describe("Team Routes", () => {
         },
       );
 
-      await client.api.teams.create.$post(
+      await client.api.teams.$post(
         {
           json: {
             name: "Unassigned Team 2",
@@ -63,7 +63,7 @@ describe("Team Routes", () => {
 
     it("should return teams after user is added as member", async () => {
       const { client, headers, workspace, testDb, user } = getCtx();
-      const createRes = await client.api.teams.create.$post(
+      const createRes = await client.api.teams.$post(
         {
           json: {
             name: "My Extra Team",
@@ -97,10 +97,10 @@ describe("Team Routes", () => {
     });
   });
 
-  describe("POST /teams/create", () => {
+  describe("POST /teams", () => {
     it("should create a new team", async () => {
       const { client, headers, workspace } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           json: {
             name: "New Team",
@@ -123,7 +123,7 @@ describe("Team Routes", () => {
 
     it("should return 400 when name is too short", async () => {
       const { client, headers, workspace } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           json: {
             name: "A",
@@ -141,7 +141,7 @@ describe("Team Routes", () => {
 
     it("should return 400 when name is too long", async () => {
       const { client, headers, workspace } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           json: {
             name: "A".repeat(31),
@@ -159,7 +159,7 @@ describe("Team Routes", () => {
 
     it("should return 400 when key is too short", async () => {
       const { client, headers, workspace } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           json: {
             name: "New Team",
@@ -177,7 +177,7 @@ describe("Team Routes", () => {
 
     it("should return 400 when key is too long", async () => {
       const { client, headers, workspace } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           json: {
             name: "New Team",
@@ -195,7 +195,7 @@ describe("Team Routes", () => {
 
     it("should return 400 when workspaceId is missing", async () => {
       const { client, headers } = getCtx();
-      const res = await client.api.teams.create.$post(
+      const res = await client.api.teams.$post(
         {
           // @ts-expect-error - intentionally missing workspaceId for validation test
           json: {

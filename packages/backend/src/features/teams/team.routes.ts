@@ -17,10 +17,10 @@ const teamRoutes = new Hono<AppEnv>()
   .use("*", authMiddleware)
   .use("*", workspaceMiddleware)
   /**
-   * POST /create - Create a new team in the workspace.
+   * POST / - Create a new team in the workspace.
    */
   .post(
-    "/create",
+    "/",
     describeRoute({
       tags: ["Teams"],
       summary: "Create team",

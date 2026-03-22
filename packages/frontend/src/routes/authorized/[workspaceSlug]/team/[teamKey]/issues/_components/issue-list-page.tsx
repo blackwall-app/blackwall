@@ -18,7 +18,7 @@ import { m } from "@/paraglide/messages.js";
 
 const moveToSprintAction = action(async (input: BulkUpdateIssues) => {
   await api.api.issues.bulk.$patch({ json: input });
-  const count = input.issueIds.length;
+  const count = input.issueKeys.length;
   toast.success(m.issues_bulk_move_to_sprint({ count: String(count) }));
 });
 
@@ -77,7 +77,7 @@ export function IssueListPage(props: Props) {
       sprints={openSprints()}
       selectedIssues={selectedIssues}
       onDrop={(issues, sprint) =>
-        moveToSprint({ issueIds: issues.map((i) => i.id), updates: { sprintId: sprint.id } })
+        moveToSprint({ issueKeys: issues.map((i) => i.key), updates: { sprintId: sprint.id } })
       }
     >
       <PageHeader>

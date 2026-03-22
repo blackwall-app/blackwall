@@ -128,6 +128,10 @@ export const issueListSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 
+export const issueBulkResponseSchema = z.object({
+  issues: z.array(issueSchema),
+});
+
 export const issueResponseSchema = z.object({
   issue: issueSchema,
 });

@@ -15,6 +15,7 @@ import {
   bulkDeleteIssuesSchema,
   moveIssueSchema,
   issueListSchema,
+  issueBulkResponseSchema,
   issueResponseSchema,
 } from "./issue.zod";
 
@@ -168,7 +169,7 @@ const issueRoutes = new Hono<AppEnv>()
       responses: {
         200: {
           description: "Updated issues",
-          content: { "application/json": { schema: resolver(issueListSchema) } },
+          content: { "application/json": { schema: resolver(issueBulkResponseSchema) } },
         },
       },
     }),

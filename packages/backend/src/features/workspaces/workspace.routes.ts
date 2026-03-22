@@ -44,10 +44,10 @@ const workspaceRoutes = new Hono<AppEnv>()
     },
   )
   /**
-   * POST /create - Create a new workspace and adjacent team. Adds current user to the new workspace and team.
+   * POST / - Create a new workspace and adjacent team. Adds current user to the new workspace and team.
    */
   .post(
-    "/create",
+    "/",
     describeRoute({
       tags: ["Workspaces"],
       summary: "Create workspace",

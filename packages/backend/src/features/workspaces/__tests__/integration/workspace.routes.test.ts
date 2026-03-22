@@ -82,7 +82,7 @@ describe("Workspace Routes", () => {
   describe("POST /workspaces", () => {
     it("should create a new workspace", async () => {
       const { client, headersWithoutWorkspace } = getCtx();
-      const res = await client.api.workspaces.create.$post(
+      const res = await client.api.workspaces.$post(
         {
           json: {
             displayName: "New Workspace",
@@ -103,7 +103,7 @@ describe("Workspace Routes", () => {
 
     it("should return 400 when displayName is missing", async () => {
       const { client, headersWithoutWorkspace } = getCtx();
-      const res = await client.api.workspaces.create.$post(
+      const res = await client.api.workspaces.$post(
         {
           // @ts-expect-error - intentionally missing displayName for validation test
           json: {
@@ -120,7 +120,7 @@ describe("Workspace Routes", () => {
 
     it("should return 400 when slug is missing", async () => {
       const { client, headersWithoutWorkspace } = getCtx();
-      const res = await client.api.workspaces.create.$post(
+      const res = await client.api.workspaces.$post(
         {
           // @ts-expect-error - intentionally missing slug for validation test
           json: {

@@ -11,7 +11,7 @@ import { m } from "@/paraglide/messages.js";
 import { createColumnHelper, type ColumnDef } from "@tanstack/solid-table";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
 import { A } from "@solidjs/router";
-import { Index, Show } from "solid-js";
+import { Index, mergeProps, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 export type IssueForDataTable = Omit<
@@ -21,6 +21,7 @@ export type IssueForDataTable = Omit<
 
 export type IssueDataTableProps = {
   issues: IssueForDataTable[];
+  displaySprints?: boolean;
   workspaceSlug: string;
   rowSelection?: RowSelectionResult;
   issueDrag?: boolean;
@@ -29,10 +30,11 @@ export type IssueDataTableProps = {
 };
 
 export function IssueDataTable(props: IssueDataTableProps) {
+  const merged = mergeProps({ displaySprints: true }, props);
   const columnHelper = createColumnHelper<IssueForDataTable>();
 
   const columns = [
-    ...(props.rowSelection ? [createSelectionColumn<IssueForDataTable>()] : []),
+    ...(merged.rowSelection ? [createSelectionColumn<IssueForDataTable>()] : []),
     columnHelper.accessor("key", {
       header: m.issue_datatable_header_key(),
       meta: { shrink: true },
@@ -80,25 +82,26 @@ export function IssueDataTable(props: IssueDataTableProps) {
         </div>
       ),
     }),
-    columnHelper.accessor("issueSprint", {
-      header: m.issue_datatable_header_sprint(),
-      meta: { shrink: true },
-      cell: (info) => (
-        <Show when={info.getValue()}>
-          {(sprint) => (
-            <A
-              href={`/${props.workspaceSlug}/team/${info.row.original.team?.key}/sprints/${sprint().id}`}
-              class="flex items-center gap-1 px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded-sm border whitespace-nowrap hover:bg-accent transition-colors"
-              title={sprint().name}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <LandPlotIcon class="size-3 shrink-0" />
-              <span class="truncate max-w-20">{sprint().name}</span>
-            </A>
-          )}
-        </Show>
-      ),
-    }),
+    ...(merged.displaySprints ? [
+      columnHelper.accessor("issueSprint", {
+        header: m.issue_datatable_header_sprint(),
+        meta: { shrink: true },
+        cell: (info) => (
+          <Show when={info.getValue()}>
+            {(sprint) => (
+              <A
+                href={`/${merged.workspaceSlug}/team/${info.row.original.team?.key}/sprints/${sprint().id}`}
+                class="flex items-center gap-1 px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded-sm border whitespace-nowrap hover:bg-accent transition-colors"
+                title={sprint().name}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <LandPlotIcon class="size-3 shrink-0" />
+                <span class="truncate max-w-20">{sprint().name}</span>
+              </A>
+            )}
+          </Show>
+        ),
+      })] : []),
     columnHelper.accessor("createdAt", {
       header: m.issue_datatable_header_created(),
       meta: { shrink: true },
@@ -112,21 +115,21 @@ export function IssueDataTable(props: IssueDataTableProps) {
 
   const datatableProps = createDataTable({
     columns,
-    data: () => props.issues,
+    data: () => merged.issues,
     getLinkProps: (row) => ({
-      href: `/${props.workspaceSlug}/issue/${row.original.key}`,
+      href: `/${merged.workspaceSlug}/issue/${row.original.key}`,
     }),
-    rowSelection: props.rowSelection,
-    enableRowSelection: !!props.rowSelection,
+    rowSelection: merged.rowSelection,
+    enableRowSelection: !!merged.rowSelection,
     getRowId: (row) => row.id,
   });
 
   return (
     <BaseIssueDataTable
       {...datatableProps}
-      issueDrag={props.issueDrag}
-      onLoadMore={props.onLoadMore}
-      hasMore={props.hasMore}
+      issueDrag={merged.issueDrag}
+      onLoadMore={merged.onLoadMore}
+      hasMore={merged.hasMore}
     />
   );
 }

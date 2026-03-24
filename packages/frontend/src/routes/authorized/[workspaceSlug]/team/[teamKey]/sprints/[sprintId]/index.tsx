@@ -327,6 +327,7 @@ export default function SprintDetailPage() {
                 issues={allIssues()}
                 workspaceSlug={params.workspaceSlug!}
                 rowSelection={rowSelection}
+                displaySprints={false}
                 onLoadMore={handleLoadMore}
                 hasMore={!!cursor()}
               />

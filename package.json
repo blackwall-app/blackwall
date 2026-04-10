@@ -34,7 +34,6 @@
     "test:e2e:ui": "bun run --env-file=packages/e2e/.env.e2e --filter '@blackwall/e2e' test:ui"
   },
   "dependencies": {
-    "@solidjs/meta": "^0.29.4",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0"
   },

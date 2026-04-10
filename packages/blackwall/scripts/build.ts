@@ -43,6 +43,13 @@ async function build() {
     recursive: true,
   });
 
+  if (process.platform === "darwin") {
+    console.log("\nSigning binary (macOS)...");
+    const binary = join(DIST_DIR, "blackwall");
+    await $`codesign --remove-signature ${binary}`.quiet();
+    await $`codesign --sign - ${binary}`;
+  }
+
   console.log("\nBuild complete!");
   console.log(`Output: ${DIST_DIR}/`);
   console.log("  - blackwall (CLI binary)");

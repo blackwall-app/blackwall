@@ -62,6 +62,7 @@ export function BubbleMenu(props: BubbleMenuProps) {
       {(r) => (
         <Portal>
           <div
+            data-kb-top-layer=""
             style={{
               position: "fixed",
               top: `${r().top - 44}px`,
@@ -69,13 +70,14 @@ export function BubbleMenu(props: BubbleMenuProps) {
               transform: "translateX(-50%)",
               "z-index": "200",
             }}
-            class="flex items-center gap-0.5 rounded-md border bg-popover p-1 shadow-md"
+            class="pointer-events-auto flex items-center gap-0.5 rounded-md border bg-popover p-1 shadow-md"
             onMouseDown={(e) => e.preventDefault()}
           >
             <Tooltip>
               <TooltipTrigger
                 as="button"
                 type="button"
+                aria-label={m.tiptap_bubble_bold()}
                 class={buttonClass(isBold())}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault();
@@ -91,6 +93,7 @@ export function BubbleMenu(props: BubbleMenuProps) {
               <TooltipTrigger
                 as="button"
                 type="button"
+                aria-label={m.tiptap_bubble_italic()}
                 class={buttonClass(isItalic())}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault();
@@ -106,6 +109,7 @@ export function BubbleMenu(props: BubbleMenuProps) {
               <TooltipTrigger
                 as="button"
                 type="button"
+                aria-label={m.tiptap_bubble_strike()}
                 class={buttonClass(isStrike())}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault();
@@ -121,6 +125,7 @@ export function BubbleMenu(props: BubbleMenuProps) {
               <TooltipTrigger
                 as="button"
                 type="button"
+                aria-label={m.tiptap_bubble_code()}
                 class={buttonClass(isCode())}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault();

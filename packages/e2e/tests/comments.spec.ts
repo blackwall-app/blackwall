@@ -11,7 +11,9 @@ function getManifest() {
   return getScenarioManifest<E2EManifest>(__filename);
 }
 
-const BOLD_SHORTCUT = process.platform === "darwin" ? "Meta+b" : "Control+b";
+function getBoldShortcut(browserName: string) {
+  return browserName === "webkit" || process.platform === "darwin" ? "Meta+b" : "Control+b";
+}
 
 async function addComment(page: Page, text: string) {
   const form = page.getByTestId("issue-comment-form");
@@ -33,7 +35,7 @@ test("add plain text comment", async ({ page }) => {
   await expect(page.getByText("E2E User")).toBeVisible();
 });
 
-test("add bold text in comment", async ({ page }) => {
+test("add bold text in comment", async ({ page, browserName }) => {
   const manifest = getManifest();
   await page.goto(`/e2e-workspace/issue/${manifest.issues.primary.key}`);
 
@@ -41,7 +43,7 @@ test("add bold text in comment", async ({ page }) => {
   const editor = page.getByTestId("issue-comment-editor");
   await expect(editor).toBeVisible();
   await editor.click();
-  await page.keyboard.press(BOLD_SHORTCUT);
+  await page.keyboard.press(getBoldShortcut(browserName));
   await page.keyboard.type("Bold text");
   await form.getByTestId("issue-comment-submit").click();
 

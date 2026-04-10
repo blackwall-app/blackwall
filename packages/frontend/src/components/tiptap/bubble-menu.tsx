@@ -70,6 +70,7 @@ export function BubbleMenu(props: BubbleMenuProps) {
               "z-index": "200",
             }}
             class="flex items-center gap-0.5 rounded-md border bg-popover p-1 shadow-md"
+            onMouseDown={(e) => e.preventDefault()}
           >
             <Tooltip>
               <TooltipTrigger

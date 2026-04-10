@@ -19,7 +19,7 @@ import {
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { useSessionData } from "@/context/session-context";
-import { api } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { backendUrl } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import { Title, Meta } from "@solidjs/meta";
@@ -178,10 +178,9 @@ function AvatarUpload() {
     formData.append("file", file);
 
     try {
-      await fetch(`${backendUrl}/api/settings/profile/avatar`, {
+      await apiFetch(`${backendUrl}/api/settings/profile/avatar`, {
         method: "PATCH",
         body: formData,
-        credentials: "include",
       });
       toast.success(m.settings_profile_toast_avatar_updated());
       window.location.reload();
@@ -199,10 +198,9 @@ function AvatarUpload() {
     formData.append("intent", "remove");
 
     try {
-      await fetch(`${backendUrl}/api/settings/profile/avatar`, {
+      await apiFetch(`${backendUrl}/api/settings/profile/avatar`, {
         method: "PATCH",
         body: formData,
-        credentials: "include",
       });
       toast.success(m.settings_profile_toast_avatar_removed());
       window.location.reload();

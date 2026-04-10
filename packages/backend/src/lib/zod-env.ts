@@ -13,6 +13,10 @@ export const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional().default("Blackwall <noreply@blackwall.dev>"),
 
+  AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+
   ARGON2_MEMORY_COST: z.coerce.number().optional().default(65536),
   ARGON2_TIME_COST: z.coerce.number().optional().default(2),
 

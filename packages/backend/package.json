@@ -13,6 +13,7 @@
     "test:watch": "bun test --watch"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1029.0",
     "@blackwall/database": "workspace:*",
     "@blackwall/email": "workspace:*",
     "@blackwall/queue": "workspace:*",

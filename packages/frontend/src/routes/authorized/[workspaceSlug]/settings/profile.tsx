@@ -178,7 +178,7 @@ function AvatarUpload() {
     formData.append("file", file);
 
     try {
-      await fetch(`${backendUrl}/settings/profile/avatar`, {
+      await fetch(`${backendUrl}/api/settings/profile/avatar`, {
         method: "PATCH",
         body: formData,
         credentials: "include",
@@ -199,7 +199,7 @@ function AvatarUpload() {
     formData.append("intent", "remove");
 
     try {
-      await fetch(`${backendUrl}/settings/profile/avatar`, {
+      await fetch(`${backendUrl}/api/settings/profile/avatar`, {
         method: "PATCH",
         body: formData,
         credentials: "include",

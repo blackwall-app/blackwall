@@ -31,6 +31,14 @@ export async function worker(options: WorkerOptions) {
     controller.abort();
   });
 
+  process.on("uncaughtException", (err) => {
+    console.error("[worker] Uncaught exception:", err);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    console.error("[worker] Unhandled promise rejection:", reason);
+  });
+
   console.log("Starting job worker on queue: default");
 
   await jobService.runWorker({

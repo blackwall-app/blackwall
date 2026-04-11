@@ -4,7 +4,7 @@ import SelectorIcon from "lucide-solid/icons/chevrons-up-down";
 import { createSignal } from "solid-js";
 import { PickerPopover } from "../custom-ui/picker-popover";
 import { Button } from "../ui/button";
-import { query, revalidate, useNavigate } from "@solidjs/router";
+import { query, useNavigate } from "@solidjs/router";
 import { api } from "@/lib/api";
 import { createResource } from "solid-js";
 import { m } from "@/paraglide/messages.js";
@@ -45,8 +45,7 @@ export function WorkspacePicker() {
     const workspace = workspacesData()?.workspaces?.find((option) => option.id === id);
     if (!workspace) return;
 
-    navigate(`/${workspace.slug}/my-issues`);
-    revalidate("myIssues", true);
+    window.location.href = `/${workspace.slug}/my-issues`;
   }
 
   return (

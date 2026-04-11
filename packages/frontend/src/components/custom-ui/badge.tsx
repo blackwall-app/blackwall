@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { splitProps, type ComponentProps } from "solid-js";
 
 export const badgeVariants = cva(
-  "px-2 py-1 text-base font-medium rounded-full inline-flex flex-row gap-1 items-center !leading-none shadow-xs tabular-nums",
+  "text-base font-medium rounded-full inline-flex flex-row gap-1 items-center !leading-none shadow-xs tabular-nums",
   {
     variants: {
       size: {
@@ -13,16 +13,16 @@ export const badgeVariants = cva(
         md: "text-base px-2 py-1.5",
       },
       color: {
-        normal: "bg-background text-foreground ring-1 ring-foreground/10 ring-inset",
-        red: "bg-theme-red text-background ring-1 ring-foreground/10 ring-inset",
-        blue: "bg-theme-blue text-background ring-1 ring-foreground/10 ring-inset",
-        green: "bg-theme-green text-background ring-1 ring-foreground/10 ring-inset",
-        orange: "bg-theme-orange text-background ring-1 ring-foreground/10 ring-inset",
-        pink: "bg-theme-pink text-background ring-1 ring-foreground/10 ring-inset",
-        purple: "bg-theme-purple text-background ring-1 ring-foreground/10 ring-inset",
-        teal: "bg-theme-teal text-background ring-1 ring-foreground/10 ring-inset",
-        violet: "bg-theme-violet text-background ring-1 ring-foreground/10 ring-inset",
-        yellow: "bg-theme-yellow text-background ring-1 ring-foreground/10 ring-inset",
+        normal: "bg-background text-foreground",
+        red: "bg-theme-red/20 text-theme-red",
+        blue: "bg-theme-blue/20 text-theme-blue",
+        green: "bg-theme-green/20 text-theme-green",
+        orange: "bg-theme-orange/20 text-theme-orange",
+        pink: "bg-theme-pink/20 text-theme-pink",
+        purple: "bg-theme-purple/20 text-theme-purple",
+        teal: "bg-theme-teal/20 text-theme-teal",
+        violet: "bg-theme-violet/20 text-theme-violet",
+        yellow: "bg-theme-yellow/20 text-theme-yellow",
       } satisfies Record<ColorKey | "normal", string>,
     },
     defaultVariants: {

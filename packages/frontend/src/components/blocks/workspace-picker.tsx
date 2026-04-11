@@ -46,7 +46,7 @@ export function WorkspacePicker() {
     if (!workspace) return;
 
     navigate(`/${workspace.slug}/my-issues`);
-    revalidate();
+    revalidate("myIssues");
   }
 
   return (

@@ -158,6 +158,7 @@
   "global_search_empty_no_results": "No results",
   "global_search_empty_prompt": "Search for an issue or user",
   "global_search_open_aria_label": "Open global search",
+  "invite_toast_success": "The user has been invited",
   "invite_dialog_description": "Enter the email address of the user you want to invite.",
   "invite_dialog_email_required": "Email is required",
   "invite_dialog_title": "Invite user",

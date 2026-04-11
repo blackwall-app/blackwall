@@ -12,6 +12,7 @@ import * as z from "zod";
 import { useAppForm } from "../../context/form-context";
 import { Button } from "../ui/button";
 import { TanStackTextField } from "../ui/text-field";
+import { toast } from "../custom-ui/toast";
 
 export function InviteDialogContent() {
   const ctx = useDialogContext();
@@ -28,6 +29,8 @@ export function InviteDialogContent() {
       await api.api.invitations.$post({
         json: { email: value.email },
       });
+
+      toast.success(m.invite_toast_success());
 
       ctx.close();
     },

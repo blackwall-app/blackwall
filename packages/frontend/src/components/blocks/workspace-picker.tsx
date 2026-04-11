@@ -45,8 +45,8 @@ export function WorkspacePicker() {
     const workspace = workspacesData()?.workspaces?.find((option) => option.id === id);
     if (!workspace) return;
 
-    revalidate();
     navigate(`/${workspace.slug}/my-issues`);
+    revalidate();
   }
 
   return (

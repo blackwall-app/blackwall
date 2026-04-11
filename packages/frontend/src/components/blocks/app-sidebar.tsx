@@ -39,6 +39,7 @@ import { FastLink } from "../custom-ui/fast-link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Kbd, KbdGroup } from "../ui/kbd";
 import { m } from "@/paraglide/messages.js";
+import { ScrollContainer } from "../custom-ui/scroll-area";
 
 type LinkNavItem = {
   title: string;
@@ -201,84 +202,86 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        <For each={groups()}>
-          {(group) => (
-            <SidebarGroup>
-              <Show when={group.title}>
-                <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-              </Show>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <For each={group.children}>
-                    {(item) => (
-                      <SidebarMenuItem>
-                        <Show when={item.type === "link" ? item : false}>
-                          {(item) => (
-                            <SidebarMenuButton as={FastLink} href={item().href}>
-                              <Show when={item().icon}>
-                                <Dynamic component={item().icon} />
-                              </Show>
-                              {item().title}
-                            </SidebarMenuButton>
-                          )}
-                        </Show>
+      <ScrollContainer>
+        <SidebarContent>
+          <For each={groups()}>
+            {(group) => (
+              <SidebarGroup>
+                <Show when={group.title}>
+                  <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                </Show>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <For each={group.children}>
+                      {(item) => (
+                        <SidebarMenuItem>
+                          <Show when={item.type === "link" ? item : false}>
+                            {(item) => (
+                              <SidebarMenuButton as={FastLink} href={item().href}>
+                                <Show when={item().icon}>
+                                  <Dynamic component={item().icon} />
+                                </Show>
+                                {item().title}
+                              </SidebarMenuButton>
+                            )}
+                          </Show>
 
-                        <Show when={item.type === "collapsible" ? item : false}>
-                          {(item) => (
-                            <>
-                              <Collapsible
-                                class="group/collapsible"
-                                open={collapsibleStateStore[item().id]}
-                                onOpenChange={(open) => setCollapsibleStateStore(item().id, open)}
-                              >
-                                <CollapsibleTrigger as={SidebarMenuButton} close={false}>
-                                  <Show when={item().icon}>
-                                    <Dynamic component={item().icon} />
-                                  </Show>
-                                  {item().title}
-                                  <ChevronRightIcon class="ml-auto transition-transform duration-200 group-data-expanded/collapsible:rotate-90 size-6" />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                  <SidebarMenuSub>
-                                    <For each={item().children}>
-                                      {(child) => (
-                                        <SidebarMenuSubItem>
-                                          <SidebarMenuSubButton
-                                            as={FastLink}
-                                            href={child.href}
-                                            end={!!child.activeWhen}
-                                            aria-current={
-                                              child.activeWhen?.some((p) =>
-                                                location.pathname.startsWith(p),
-                                              )
-                                                ? "page"
-                                                : undefined
-                                            }
-                                          >
-                                            <Show when={child.icon}>
-                                              <Dynamic component={child.icon} />
-                                            </Show>
-                                            {child.title}
-                                          </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                      )}
-                                    </For>
-                                  </SidebarMenuSub>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            </>
-                          )}
-                        </Show>
-                      </SidebarMenuItem>
-                    )}
-                  </For>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-        </For>
-      </SidebarContent>
+                          <Show when={item.type === "collapsible" ? item : false}>
+                            {(item) => (
+                              <>
+                                <Collapsible
+                                  class="group/collapsible"
+                                  open={collapsibleStateStore[item().id]}
+                                  onOpenChange={(open) => setCollapsibleStateStore(item().id, open)}
+                                >
+                                  <CollapsibleTrigger as={SidebarMenuButton} close={false}>
+                                    <Show when={item().icon}>
+                                      <Dynamic component={item().icon} />
+                                    </Show>
+                                    {item().title}
+                                    <ChevronRightIcon class="ml-auto transition-transform duration-200 group-data-expanded/collapsible:rotate-90 size-6" />
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                      <For each={item().children}>
+                                        {(child) => (
+                                          <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                              as={FastLink}
+                                              href={child.href}
+                                              end={!!child.activeWhen}
+                                              aria-current={
+                                                child.activeWhen?.some((p) =>
+                                                  location.pathname.startsWith(p),
+                                                )
+                                                  ? "page"
+                                                  : undefined
+                                              }
+                                            >
+                                              <Show when={child.icon}>
+                                                <Dynamic component={child.icon} />
+                                              </Show>
+                                              {child.title}
+                                            </SidebarMenuSubButton>
+                                          </SidebarMenuSubItem>
+                                        )}
+                                      </For>
+                                    </SidebarMenuSub>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              </>
+                            )}
+                          </Show>
+                        </SidebarMenuItem>
+                      )}
+                    </For>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </For>
+        </SidebarContent>
+      </ScrollContainer>
 
       <SidebarFooter>
         <UserMenu />

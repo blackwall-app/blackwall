@@ -86,7 +86,11 @@ export async function listWorkspaceUsers(input: { workspaceId: string }) {
       },
     },
     with: {
-      teams: true,
+      teams: {
+        where: {
+          workspaceId: input.workspaceId,
+        },
+      },
     },
   });
 

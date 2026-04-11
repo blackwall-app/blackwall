@@ -39,5 +39,8 @@
   },
   "patchedDependencies": {
     "tinykeys@3.0.0": "patches/tinykeys@3.0.0.patch"
+  },
+  "devDependencies": {
+    "typescript": "^5"
   }
 }

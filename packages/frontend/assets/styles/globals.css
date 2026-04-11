@@ -32,11 +32,11 @@
 
   --theme-red: oklch(64% 0.21 25);
   --theme-orange: oklch(70% 0.19 48);
-  --theme-yellow: oklch(80% 0.16 86);
-  --theme-green: oklch(72% 0.19 150);
+  --theme-yellow: oklch(0.68 0.14 76);
+  --theme-green: oklch(62% 0.25 150);
   --theme-teal: oklch(70% 0.12 183);
   --theme-blue: oklch(62% 0.19 260);
-  --theme-violet: oklch(61% 0.22 293);
+  --theme-violet: oklch(61% 0.20 293);
   --theme-purple: oklch(63% 0.23 304);
   --theme-pink: oklch(66% 0.21 354);
 
@@ -75,7 +75,7 @@
 
   --theme-red: oklch(71% 0.17 22);
   --theme-orange: oklch(76% 0.16 56);
-  --theme-yellow: oklch(86% 0.17 92);
+  --theme-yellow: oklch(0.68 0.14 76);
   --theme-green: oklch(80% 0.18 152);
   --theme-teal: oklch(78% 0.13 182);
   --theme-blue: oklch(71% 0.14 255);

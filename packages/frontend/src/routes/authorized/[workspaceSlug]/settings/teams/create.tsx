@@ -13,6 +13,7 @@ import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { action, redirect, useAction, useParams } from "@solidjs/router";
 import * as z from "zod";
+import { slugify } from "@/lib/utils";
 
 const createTeamAction = action(
   async (workspaceSlug: string, input: { name: string; key: string }) => {
@@ -48,6 +49,18 @@ export default function CreateTeamPage() {
       if (params.workspaceSlug) {
         _action(params.workspaceSlug, value);
       }
+    },
+    listeners: {
+      onChange: ({ fieldApi, formApi }) => {
+        if (fieldApi.name !== "name") {
+          return;
+        }
+
+        const slug = slugify(fieldApi.state.value);
+        const autoKey = slug.slice(0, 3).toUpperCase();
+
+        formApi.setFieldValue("key", autoKey);
+      },
     },
   }));
 

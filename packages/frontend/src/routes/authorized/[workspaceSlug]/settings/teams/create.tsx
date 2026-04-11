@@ -11,12 +11,27 @@ import { useAppForm } from "@/context/form-context";
 import { api } from "@/lib/api";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
-import { useNavigate, useParams } from "@solidjs/router";
+import { action, redirect, useAction, useParams } from "@solidjs/router";
 import * as z from "zod";
+
+const createTeamAction = action(
+  async (workspaceSlug: string, input: { name: string; key: string }) => {
+    await api.api.settings.teams.$post({
+      json: {
+        name: input.name,
+        key: input.key.toUpperCase(),
+      },
+    });
+
+    throw redirect(`/${workspaceSlug}/settings/teams`, {
+      revalidate: ["teamsSettings"],
+    });
+  },
+);
 
 export default function CreateTeamPage() {
   const params = useParams();
-  const navigate = useNavigate();
+  const _action = useAction(createTeamAction);
 
   const form = useAppForm(() => ({
     defaultValues: {
@@ -30,14 +45,9 @@ export default function CreateTeamPage() {
       }),
     },
     onSubmit: async ({ value }) => {
-      await api.api.settings.teams.$post({
-        json: {
-          name: value.name,
-          key: value.key.toUpperCase(),
-        },
-      });
-
-      navigate(`/${params.workspaceSlug}/settings/teams`);
+      if (params.workspaceSlug) {
+        _action(params.workspaceSlug, value);
+      }
     },
   }));
 

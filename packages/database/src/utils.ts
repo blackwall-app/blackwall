@@ -1,5 +1,13 @@
 import * as sqlite from "drizzle-orm/sqlite-core";
+import { sqliteTableCreator } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
+
+/**
+ * Table creator with the snake_case casing that used to be configured globally
+ * on `drizzle()`. Drizzle v1 scopes casing per table, so every schema table
+ * must go through this instead of `sqliteTable` from drizzle-orm.
+ */
+export const sqliteTable = sqliteTableCreator((name) => name, "snake_case");
 
 export const timestamps = {
   createdAt: sqlite

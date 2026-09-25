@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { EmptyFilter, and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { db, dbSchema } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
 import { getNextSequenceNumber } from "./key-sequences";
@@ -50,9 +50,9 @@ export async function listIssuesInTeam(
       workspaceId: input.workspaceId,
       teamId: input.teamId,
       deletedAt: { isNull: true },
-      status: input.statusFilters ? { in: input.statusFilters } : undefined,
-      sprintId: input.withoutSprint ? { isNull: true } : undefined,
-      id: input.cursor ? { gt: input.cursor } : undefined,
+      status: input.statusFilters ? { in: input.statusFilters } : EmptyFilter,
+      sprintId: input.withoutSprint ? { isNull: true } : EmptyFilter,
+      id: input.cursor ? { gt: input.cursor } : EmptyFilter,
     },
     orderBy: { id: "asc" },
     limit: paginate ? pageSize + 1 : undefined,
@@ -80,8 +80,8 @@ export async function listIssuesInSprint(
       teamId: input.teamId,
       sprintId: input.sprintId,
       deletedAt: { isNull: true },
-      status: input.statusFilters ? { in: input.statusFilters } : undefined,
-      id: input.cursor ? { gt: input.cursor } : undefined,
+      status: input.statusFilters ? { in: input.statusFilters } : EmptyFilter,
+      id: input.cursor ? { gt: input.cursor } : EmptyFilter,
     },
     orderBy: { id: "asc" },
     limit: paginate ? pageSize + 1 : undefined,
@@ -103,7 +103,7 @@ export async function listIssuesAssignedToUser(
       workspaceId: input.workspaceId,
       assignedToId: input.userId,
       deletedAt: { isNull: true },
-      id: input.cursor ? { gt: input.cursor } : undefined,
+      id: input.cursor ? { gt: input.cursor } : EmptyFilter,
     },
     orderBy: { id: "asc" },
     limit: paginate ? pageSize + 1 : undefined,
@@ -125,13 +125,13 @@ export async function createIssue(input: {
   createdById: string;
   issue: CreateIssueInput;
 }) {
-  const result = await db.transaction(async (tx) => {
-    const keyNumber = await getNextSequenceNumber({
+  const result = await db.transaction((tx) => {
+    const keyNumber = getNextSequenceNumber({
       teamId: input.teamId,
       tx,
     });
 
-    const [issue] = await tx
+    const [issue] = tx
       .insert(dbSchema.issue)
       .values({
         ...input.issue,
@@ -143,9 +143,10 @@ export async function createIssue(input: {
         teamId: input.teamId,
         workspaceId: input.workspaceId,
       })
-      .returning();
+      .returning()
+      .all();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: issue.id,
@@ -154,7 +155,7 @@ export async function createIssue(input: {
         },
         "issue_created",
       ),
-    );
+    ).run();
 
     return issue;
   });
@@ -282,12 +283,13 @@ export async function updateIssue(input: {
   updates: UpdateIssueInput;
   originalIssue: Issue;
 }) {
-  const result = await db.transaction(async (tx) => {
-    const [updated] = await tx
+  const result = await db.transaction((tx) => {
+    const [updated] = tx
       .update(dbSchema.issue)
       .set(withDescriptionText(input.updates))
       .where(eq(dbSchema.issue.id, input.issueId))
-      .returning();
+      .returning()
+      .all();
 
     const event = buildIssueUpdatedEvent(
       {
@@ -300,7 +302,7 @@ export async function updateIssue(input: {
     );
 
     if (event) {
-      await tx.insert(dbSchema.issueChangeEvent).values(event);
+      tx.insert(dbSchema.issueChangeEvent).values(event).run();
     }
 
     return updated;
@@ -315,8 +317,8 @@ export async function updateIssuesBulk(input: {
   actorId: string;
   updates: UpdateIssueInput;
 }) {
-  const result = await db.transaction(async (tx) => {
-    const [updated] = await tx
+  const result = await db.transaction((tx) => {
+    const [updated] = tx
       .update(dbSchema.issue)
       .set(withDescriptionText(input.updates))
       .where(
@@ -328,7 +330,8 @@ export async function updateIssuesBulk(input: {
           ),
         ),
       )
-      .returning();
+      .returning()
+      .all();
 
     const events = input.issues
       .map((issue) => {
@@ -345,7 +348,7 @@ export async function updateIssuesBulk(input: {
       .filter((event) => event !== null);
 
     if (events.length > 0) {
-      await tx.insert(dbSchema.issueChangeEvent).values(events);
+      tx.insert(dbSchema.issueChangeEvent).values(events).run();
     }
 
     return updated;
@@ -359,8 +362,8 @@ export async function softDeleteIssuesBulk(input: {
   workspaceId: string;
   actorId: string;
 }) {
-  const result = await db.transaction(async (tx) => {
-    const updated = await tx
+  const result = await db.transaction((tx) => {
+    const updated = tx
       .update(dbSchema.issue)
       .set({ deletedAt: new Date() })
       .where(
@@ -372,7 +375,8 @@ export async function softDeleteIssuesBulk(input: {
           ),
         ),
       )
-      .returning();
+      .returning()
+      .all();
 
     return updated;
   });
@@ -380,7 +384,7 @@ export async function softDeleteIssuesBulk(input: {
   return result;
 }
 
-async function listIssuesInLane(
+function listIssuesInLane(
   client: any,
   input: {
     workspaceId: string;
@@ -409,10 +413,11 @@ async function listIssuesInLane(
         input.excludeIssueId ? ne(dbSchema.issue.id, input.excludeIssueId) : undefined,
       ),
     )
-    .orderBy(asc(dbSchema.issue.sortOrder), asc(dbSchema.issue.keyNumber)) as Promise<LaneIssue[]>;
+    .orderBy(asc(dbSchema.issue.sortOrder), asc(dbSchema.issue.keyNumber))
+    .all() as LaneIssue[];
 }
 
-async function rebalanceIssueOrders(
+function rebalanceIssueOrders(
   tx: any,
   input: {
     workspaceId: string;
@@ -422,15 +427,16 @@ async function rebalanceIssueOrders(
     excludeIssueId?: string;
   },
 ) {
-  const laneIssues = await listIssuesInLane(tx, input);
+  const laneIssues = listIssuesInLane(tx, input);
 
   for (let index = 0; index < laneIssues.length; index++) {
     const nextOrder = (index + 1) * ORDER_GAP;
     if (laneIssues[index]!.sortOrder !== nextOrder) {
-      await tx
+      tx
         .update(dbSchema.issue)
         .set({ sortOrder: nextOrder })
-        .where(eq(dbSchema.issue.id, laneIssues[index]!.id));
+        .where(eq(dbSchema.issue.id, laneIssues[index]!.id))
+        .run();
       laneIssues[index]!.sortOrder = nextOrder;
     }
   }
@@ -447,8 +453,8 @@ export async function moveIssue(input: {
   previousIssueId: string | null;
   nextIssueId: string | null;
 }) {
-  await db.transaction(async (tx) => {
-    let laneIssues = await listIssuesInLane(tx, {
+  await db.transaction((tx) => {
+    let laneIssues = listIssuesInLane(tx, {
       workspaceId: input.workspaceId,
       teamId: input.teamId,
       sprintId: input.sprintId,
@@ -492,7 +498,7 @@ export async function moveIssue(input: {
     });
 
     if (sortOrder === null) {
-      laneIssues = await rebalanceIssueOrders(tx, {
+      laneIssues = rebalanceIssueOrders(tx, {
         workspaceId: input.workspaceId,
         teamId: input.teamId,
         sprintId: input.sprintId,
@@ -520,10 +526,11 @@ export async function moveIssue(input: {
       );
     }
 
-    await tx
+    tx
       .update(dbSchema.issue)
       .set({ sortOrder, status: input.status })
-      .where(eq(dbSchema.issue.id, input.issueId));
+      .where(eq(dbSchema.issue.id, input.issueId))
+      .run();
   });
 }
 

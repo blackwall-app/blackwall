@@ -1,6 +1,7 @@
 import { randomUUIDv7 } from "bun";
 import { sql } from "drizzle-orm";
-import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable } from "../utils";
 
 export const jobStatusValues = ["pending", "processing", "completed", "failed"] as const;
 export type JobStatus = (typeof jobStatusValues)[number];

@@ -33,8 +33,8 @@ export async function createAttachment(input: {
   originalFileName: string;
   sizeBytes: number;
 }) {
-  return await db.transaction(async (tx) => {
-    const [attachment] = await tx
+  return await db.transaction((tx) => {
+    const [attachment] = tx
       .insert(dbSchema.issueAttachment)
       .values({
         issueId: input.issue.id,
@@ -44,9 +44,10 @@ export async function createAttachment(input: {
         originalFileName: input.originalFileName,
         sizeBytes: input.sizeBytes,
       })
-      .returning();
+      .returning()
+      .all();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -56,7 +57,7 @@ export async function createAttachment(input: {
         "attachment_added",
         { attachmentId: attachment.id },
       ),
-    );
+    ).run();
 
     return attachment;
   });
@@ -69,9 +70,9 @@ export async function associateAttachmentsWithIssue(input: {
 }) {
   if (input.attachmentIds.length === 0) return;
 
-  await db.transaction(async (tx) => {
+  await db.transaction((tx) => {
     for (const attachmentId of input.attachmentIds) {
-      const [updated] = await tx
+      const [updated] = tx
         .update(dbSchema.issueAttachment)
         .set({ issueId: input.issue.id })
         .where(
@@ -81,10 +82,11 @@ export async function associateAttachmentsWithIssue(input: {
             isNull(dbSchema.issueAttachment.issueId),
           ),
         )
-        .returning();
+        .returning()
+        .all();
 
       if (updated) {
-        await tx.insert(dbSchema.issueChangeEvent).values(
+        tx.insert(dbSchema.issueChangeEvent).values(
           buildChangeEvent(
             {
               issueId: input.issue.id,
@@ -94,7 +96,7 @@ export async function associateAttachmentsWithIssue(input: {
             "attachment_added",
             { attachmentId },
           ),
-        );
+        ).run();
       }
     }
   });
@@ -152,8 +154,8 @@ export async function deleteAttachment(input: {
   issue: Issue;
   actorId: string;
 }) {
-  await db.transaction(async (tx) => {
-    await tx.insert(dbSchema.issueChangeEvent).values(
+  await db.transaction((tx) => {
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -163,11 +165,12 @@ export async function deleteAttachment(input: {
         "attachment_removed",
         { attachmentId: input.attachmentId },
       ),
-    );
+    ).run();
 
-    await tx
+    tx
       .delete(dbSchema.issueAttachment)
-      .where(eq(dbSchema.issueAttachment.id, input.attachmentId));
+      .where(eq(dbSchema.issueAttachment.id, input.attachmentId))
+      .run();
   });
 }
 

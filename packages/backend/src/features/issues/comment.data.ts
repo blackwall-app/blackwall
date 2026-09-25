@@ -9,17 +9,18 @@ export async function createComment(input: {
   authorId: string;
   content: JSONContent;
 }) {
-  const comment = await db.transaction(async (tx) => {
-    const [comment] = await tx
+  const comment = await db.transaction((tx) => {
+    const [comment] = tx
       .insert(dbSchema.issueComment)
       .values({
         issueId: input.issue.id,
         authorId: input.authorId,
         content: input.content,
       })
-      .returning();
+      .returning()
+      .all();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -29,7 +30,7 @@ export async function createComment(input: {
         "comment_added",
         { commentId: comment.id },
       ),
-    );
+    ).run();
 
     return comment;
   });
@@ -69,13 +70,14 @@ export async function softDeleteComment(input: {
   issue: Issue;
   actorId: string;
 }) {
-  await db.transaction(async (tx) => {
-    await tx
+  await db.transaction((tx) => {
+    tx
       .update(dbSchema.issueComment)
       .set({ deletedAt: new Date() })
-      .where(eq(dbSchema.issueComment.id, input.commentId));
+      .where(eq(dbSchema.issueComment.id, input.commentId))
+      .run();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -85,7 +87,7 @@ export async function softDeleteComment(input: {
         "comment_deleted",
         { commentId: input.commentId },
       ),
-    );
+    ).run();
   });
 }
 

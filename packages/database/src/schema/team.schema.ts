@@ -5,13 +5,12 @@ import {
   index,
   integer,
   primaryKey,
-  sqliteTable,
   text,
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { JSONParsed } from "hono/utils/types";
-import { lifecycleTimestamps } from "../utils";
+import { lifecycleTimestamps, sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 import { workspace } from "./workspace.schema";
 

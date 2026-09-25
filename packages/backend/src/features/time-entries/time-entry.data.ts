@@ -9,8 +9,8 @@ export async function createTimeEntry(input: {
   durationMinutes: number;
   description?: string;
 }) {
-  const result = await db.transaction(async (tx) => {
-    const [entry] = await tx
+  const result = await db.transaction((tx) => {
+    const [entry] = tx
       .insert(dbSchema.timeEntry)
       .values({
         issueId: input.issueId,
@@ -18,9 +18,10 @@ export async function createTimeEntry(input: {
         durationMinutes: input.durationMinutes,
         description: input.description,
       })
-      .returning();
+      .returning()
+      .all();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issueId,
@@ -30,7 +31,7 @@ export async function createTimeEntry(input: {
         "time_logged",
         { timeEntryId: entry.id },
       ),
-    );
+    ).run();
 
     return entry;
   });

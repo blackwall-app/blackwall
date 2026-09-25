@@ -78,14 +78,14 @@ export async function addLabelToIssue(input: {
     throw new Error("The issue has a maximum amount of labels.");
   }
 
-  await db.transaction(async (tx) => {
-    await tx.insert(dbSchema.labelOnIssue).values({
+  await db.transaction((tx) => {
+    tx.insert(dbSchema.labelOnIssue).values({
       issueId: input.issueId,
       labelId: input.labelId,
       workspaceId: input.workspaceId,
-    });
+    }).run();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issueId,
@@ -95,7 +95,7 @@ export async function addLabelToIssue(input: {
         "label_added",
         { labelId: input.labelId },
       ),
-    );
+    ).run();
   });
 }
 
@@ -105,17 +105,18 @@ export async function removeLabelFromIssue(input: {
   workspaceId: string;
   actorId: string;
 }) {
-  await db.transaction(async (tx) => {
-    await tx
+  await db.transaction((tx) => {
+    tx
       .delete(dbSchema.labelOnIssue)
       .where(
         and(
           eq(dbSchema.labelOnIssue.issueId, input.issueId),
           eq(dbSchema.labelOnIssue.labelId, input.labelId),
         ),
-      );
+      )
+      .run();
 
-    await tx.insert(dbSchema.issueChangeEvent).values(
+    tx.insert(dbSchema.issueChangeEvent).values(
       buildChangeEvent(
         {
           issueId: input.issueId,
@@ -125,7 +126,7 @@ export async function removeLabelFromIssue(input: {
         "label_removed",
         { labelId: input.labelId },
       ),
-    );
+    ).run();
   });
 }
 

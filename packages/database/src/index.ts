@@ -10,9 +10,7 @@ client.run("PRAGMA foreign_keys = ON;");
 
 const db = drizzle({
   client,
-  schema,
   relations,
-  casing: "snake_case",
 });
 
 const dbSchema = schema;

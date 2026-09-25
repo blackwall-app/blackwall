@@ -2,7 +2,7 @@ import { env } from "../../lib/zod-env";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
-import { db } from "@blackwall/database";
+import { db, dbSchema } from "@blackwall/database";
 import { jobService } from "@blackwall/queue";
 
 const hashOptions = {
@@ -41,6 +41,7 @@ const logger =
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
+    schema: dbSchema,
   }),
   basePath: "/api/better-auth",
   emailAndPassword: {

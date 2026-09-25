@@ -4,14 +4,13 @@ import {
   foreignKey,
   index,
   integer,
-  sqliteTable,
   text,
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import type { JSONParsed } from "hono/utils/types";
-import { lifecycleTimestamps, timestamps } from "../utils";
+import { lifecycleTimestamps, sqliteTable, timestamps } from "../utils";
 import { user } from "./auth.schema";
 import { issueSprint } from "./issue-sprint.schema";
 import { label } from "./label.schema";

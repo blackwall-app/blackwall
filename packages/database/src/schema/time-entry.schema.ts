@@ -1,7 +1,7 @@
 import { randomUUIDv7 } from "bun";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
-import { lifecycleTimestamps } from "../utils";
+import { lifecycleTimestamps, sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 import { issue } from "./issue.schema";
 

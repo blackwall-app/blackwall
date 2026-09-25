@@ -3,11 +3,11 @@ import {
   index,
   integer,
   primaryKey,
-  sqliteTable,
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { JSONParsed } from "hono/utils/types";
+import { sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 
 export const workspace = sqliteTable(

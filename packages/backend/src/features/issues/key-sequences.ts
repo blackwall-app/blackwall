@@ -1,36 +1,38 @@
 import { db, dbSchema, type DbTransaction } from "@blackwall/database";
 import { eq, sql } from "drizzle-orm";
 
-export async function ensureSequenceExists(input: {
+export function ensureSequenceExists(input: {
   teamId: string;
   tx?: DbTransaction;
-}): Promise<void> {
+}): void {
   const transactionalDb = input.tx ?? db;
 
-  await transactionalDb
+  transactionalDb
     .insert(dbSchema.issueSequence)
     .values({
       teamId: input.teamId,
       currentSequence: 0,
     })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .run();
 }
 
-export async function getNextSequenceNumber(input: {
+export function getNextSequenceNumber(input: {
   teamId: string;
   tx?: DbTransaction;
-}): Promise<number> {
-  await ensureSequenceExists(input);
+}): number {
+  ensureSequenceExists(input);
 
   const transactionalDb = input.tx ?? db;
 
-  const [updated] = await transactionalDb
+  const [updated] = transactionalDb
     .update(dbSchema.issueSequence)
     .set({
       currentSequence: sql`${dbSchema.issueSequence.currentSequence} + 1`,
     })
     .where(eq(dbSchema.issueSequence.teamId, input.teamId))
-    .returning();
+    .returning()
+    .all();
 
   if (!updated) {
     throw new Error("Failed to get next sequence number.");

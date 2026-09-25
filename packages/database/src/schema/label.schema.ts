@@ -4,13 +4,12 @@ import {
   foreignKey,
   index,
   primaryKey,
-  sqliteTable,
   text,
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { JSONParsed } from "hono/utils/types";
-import { timestamps } from "../utils";
+import { sqliteTable, timestamps } from "../utils";
 import { colorKey } from "./color.enum.schema";
 import { issue } from "./issue.schema";
 import { workspace } from "./workspace.schema";

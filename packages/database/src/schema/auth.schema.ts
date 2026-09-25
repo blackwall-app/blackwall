@@ -1,6 +1,7 @@
 import type { User as BetterAuthUserType } from "better-auth";
 import { randomUUIDv7 } from "bun";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable } from "../utils";
 import { team } from "./team.schema";
 import { workspace } from "./workspace.schema";
 

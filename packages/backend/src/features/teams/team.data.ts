@@ -6,30 +6,32 @@ import { ConflictError, isSqliteUniqueConstraintError } from "../../lib/errors";
 /**
  * A team taking a key removes that key's alias, so `KEY-12` links point at the new owner.
  */
-async function claimTeamKey(tx: DbTransaction, input: { workspaceId: string; key: string }) {
-  await tx
+function claimTeamKey(tx: DbTransaction, input: { workspaceId: string; key: string }) {
+  tx
     .delete(dbSchema.teamKeyAlias)
     .where(
       and(
         eq(dbSchema.teamKeyAlias.workspaceId, input.workspaceId),
         eq(dbSchema.teamKeyAlias.key, input.key),
       ),
-    );
+    )
+    .run();
 }
 
 export async function createTeam(input: { name: string; key: string; workspaceId: string }) {
   try {
-    return await db.transaction(async (tx) => {
-      await claimTeamKey(tx, { workspaceId: input.workspaceId, key: input.key });
+    return await db.transaction((tx) => {
+      claimTeamKey(tx, { workspaceId: input.workspaceId, key: input.key });
 
-      const [team] = await tx
+      const [team] = tx
         .insert(dbSchema.team)
         .values({
           name: input.name,
           key: input.key,
           workspaceId: input.workspaceId,
         })
-        .returning();
+        .returning()
+        .all();
 
       return team;
     });
@@ -209,29 +211,31 @@ export async function updateTeam(input: {
   const keyChanged = newKey !== undefined && newKey !== team.key;
 
   try {
-    return await db.transaction(async (tx) => {
+    return await db.transaction((tx) => {
       if (keyChanged) {
-        await claimTeamKey(tx, { workspaceId: input.workspaceId, key: newKey });
+        claimTeamKey(tx, { workspaceId: input.workspaceId, key: newKey });
       }
 
-      const [updated] = await tx
+      const [updated] = tx
         .update(dbSchema.team)
         .set(input.updates)
         .where(eq(dbSchema.team.id, team.id))
-        .returning();
+        .returning()
+        .all();
 
       if (keyChanged) {
         // Keep the old key resolvable, then move every issue to the new prefix.
-        await tx.insert(dbSchema.teamKeyAlias).values({
+        tx.insert(dbSchema.teamKeyAlias).values({
           workspaceId: input.workspaceId,
           key: team.key,
           teamId: team.id,
-        });
+        }).run();
 
-        await tx
+        tx
           .update(dbSchema.issue)
           .set({ key: sql`${newKey} || '-' || ${dbSchema.issue.keyNumber}` })
-          .where(eq(dbSchema.issue.teamId, team.id));
+          .where(eq(dbSchema.issue.teamId, team.id))
+          .run();
       }
 
       return updated;

@@ -6,7 +6,7 @@ export async function createTimeEntry(input: {
   issueId: string;
   workspaceId: string;
   userId: string;
-  duration: number;
+  durationMinutes: number;
   description?: string;
 }) {
   const result = await db.transaction(async (tx) => {
@@ -15,7 +15,7 @@ export async function createTimeEntry(input: {
       .values({
         issueId: input.issueId,
         userId: input.userId,
-        duration: input.duration,
+        durationMinutes: input.durationMinutes,
         description: input.description,
       })
       .returning();
@@ -28,7 +28,7 @@ export async function createTimeEntry(input: {
           actorId: input.userId,
         },
         "time_logged",
-        entry.id,
+        { timeEntryId: entry.id },
       ),
     );
 
@@ -77,7 +77,7 @@ export async function softDeleteTimeEntry(input: { timeEntryId: string }) {
 export async function getTotalTimeLoggedForIssue(input: { issueId: string }) {
   const result = await db
     .select({
-      total: sql<number>`coalesce(sum(${dbSchema.timeEntry.duration}), 0)`,
+      total: sql<number>`coalesce(sum(${dbSchema.timeEntry.durationMinutes}), 0)`,
     })
     .from(dbSchema.timeEntry)
     .where(

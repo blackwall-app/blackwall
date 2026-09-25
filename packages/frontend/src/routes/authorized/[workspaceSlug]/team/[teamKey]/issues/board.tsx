@@ -341,7 +341,7 @@ function BoardList(props: BoardListProps) {
             open({
               status: props.statusId,
               teamKey: params.teamKey,
-              sprintId: teamData().activeSprintId,
+              sprintId: teamData().activeSprint?.id ?? null,
             })
           }
         >

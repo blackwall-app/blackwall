@@ -1,20 +1,22 @@
 import type { JSONContent } from "@tiptap/core";
 import { randomUUIDv7 } from "bun";
 import {
+  foreignKey,
   index,
   integer,
-  primaryKey,
   sqliteTable,
   text,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import type { JSONParsed } from "hono/utils/types";
-import { lifecycleTimestamps } from "../utils";
+import { lifecycleTimestamps, timestamps } from "../utils";
 import { user } from "./auth.schema";
 import { issueSprint } from "./issue-sprint.schema";
+import { label } from "./label.schema";
 import { team } from "./team.schema";
-import { workspace } from "./workspace.schema";
+import { timeEntry } from "./time-entry.schema";
 
 export const issueStatusValues = ["to_do", "in_progress", "done"] as const;
 export type IssueStatus = (typeof issueStatusValues)[number];
@@ -42,30 +44,23 @@ export const issueChangeEventTypeValues = [
 ] as const;
 export type IssueChangeEventType = (typeof issueChangeEventTypeValues)[number];
 
+/**
+ * Before/after values of changed fields. The description is left out on purpose: a
+ * `description_changed` event records that it changed, not two copies of the document.
+ */
 export type IssueFieldChanges = {
-  [K in keyof Issue]?: {
+  [K in Exclude<keyof Issue, "description" | "descriptionText">]?: {
     from: Issue[K] | null;
     to: Issue[K] | null;
   };
 };
 
-export const issueSequence = sqliteTable(
-  "issue_sequence",
-  {
-    workspaceId: text("workspace_id")
-      .notNull()
-      .references(() => workspace.id),
-    teamId: text("team_id")
-      .notNull()
-      .references(() => team.id),
-    currentSequence: integer("current_sequence").notNull().default(0),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.workspaceId, table.teamId],
-    }),
-  ],
-);
+export const issueSequence = sqliteTable("issue_sequence", {
+  teamId: text()
+    .primaryKey()
+    .references(() => team.id, { onDelete: "cascade" }),
+  currentSequence: integer().notNull().default(0),
+});
 
 export const issue = sqliteTable(
   "issue",
@@ -73,29 +68,41 @@ export const issue = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
+    // Denormalized `${team.key}-${keyNumber}`. Team renames rewrite it in the same transaction.
     key: text().notNull(),
-    workspaceId: text("workspace_id")
-      .notNull()
-      .references(() => workspace.id),
-    teamId: text("team_id")
-      .notNull()
-      .references(() => team.id),
-    createdById: text("created_by_id")
+    workspaceId: text().notNull(),
+    teamId: text().notNull(),
+    createdById: text()
       .notNull()
       .references(() => user.id),
-    assignedToId: text("assigned_to_id").references(() => user.id),
-    sprintId: text("sprint_id").references(() => issueSprint.id),
-    keyNumber: integer("key_number").notNull(),
+    assignedToId: text().references(() => user.id, { onDelete: "set null" }),
+    sprintId: text(),
+    keyNumber: integer().notNull(),
     summary: text().notNull(),
     status: text({ enum: issueStatusValues }).notNull().default("to_do"),
     description: text({ mode: "json" }).notNull().$type<JSONContent>(),
-    sortOrder: integer("sort_order").default(0).notNull(),
+    // Plain text of `description`, kept in sync on write. Search runs against this.
+    descriptionText: text().notNull().default(""),
+    sortOrder: integer().default(0).notNull(),
     priority: text({ enum: issuePriorityValues }).notNull().default("medium"),
-    estimationPoints: integer("estimation_points"),
+    estimationPoints: integer(),
     ...lifecycleTimestamps,
   },
   (table) => [
     uniqueIndex("issue_key_workspace_id_unique").on(table.key, table.workspaceId),
+    uniqueIndex("issue_team_id_key_number_unique").on(table.teamId, table.keyNumber),
+    // Target for composite foreign keys that pin child rows to the issue's workspace.
+    unique("issue_id_workspace_id_unique").on(table.id, table.workspaceId),
+    foreignKey({
+      name: "issue_team_workspace_fk",
+      columns: [table.teamId, table.workspaceId],
+      foreignColumns: [team.id, team.workspaceId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_sprint_team_fk",
+      columns: [table.sprintId, table.teamId],
+      foreignColumns: [issueSprint.id, issueSprint.teamId],
+    }),
     index("issue_workspace_id_idx").on(table.workspaceId),
     index("issue_team_id_idx").on(table.teamId),
     index("issue_created_by_id_idx").on(table.createdById),
@@ -117,29 +124,35 @@ export const issueChangeEvent = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    issueId: text("issue_id")
-      .notNull()
-      .references(() => issue.id, { onDelete: "cascade" }),
-    workspaceId: text("workspace_id")
-      .notNull()
-      .references(() => workspace.id),
-    actorId: text("actor_id")
+    issueId: text().notNull(),
+    workspaceId: text().notNull(),
+    actorId: text()
       .notNull()
       .references(() => user.id),
-    eventType: text("event_type", { enum: issueChangeEventTypeValues })
-      .notNull()
-      .default("issue_updated"),
+    eventType: text({ enum: issueChangeEventTypeValues }).notNull(),
     changes: text({ mode: "json" }).$type<IssueFieldChanges>(),
-    relatedEntityId: text("related_entity_id"),
+    commentId: text().references(() => issueComment.id, { onDelete: "set null" }),
+    attachmentId: text().references(() => issueAttachment.id, { onDelete: "set null" }),
+    labelId: text().references(() => label.id, { onDelete: "set null" }),
+    timeEntryId: text().references(() => timeEntry.id, { onDelete: "set null" }),
     createdAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$default(() => new Date()),
   },
   (table) => [
+    foreignKey({
+      name: "issue_change_event_issue_workspace_fk",
+      columns: [table.issueId, table.workspaceId],
+      foreignColumns: [issue.id, issue.workspaceId],
+    }).onDelete("cascade"),
     index("issue_change_event_issue_id_idx").on(table.issueId),
     index("issue_change_event_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("issue_change_event_type_idx").on(table.eventType),
     index("issue_change_event_actor_id_idx").on(table.actorId),
+    index("issue_change_event_comment_id_idx").on(table.commentId),
+    index("issue_change_event_attachment_id_idx").on(table.attachmentId),
+    index("issue_change_event_label_id_idx").on(table.labelId),
+    index("issue_change_event_time_entry_id_idx").on(table.timeEntryId),
   ],
 );
 
@@ -149,10 +162,10 @@ export const issueComment = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    issueId: text("issue_id")
+    issueId: text()
       .notNull()
-      .references(() => issue.id),
-    authorId: text("author_id")
+      .references(() => issue.id, { onDelete: "cascade" }),
+    authorId: text()
       .notNull()
       .references(() => user.id),
     content: text({ mode: "json" }).$type<JSONContent>(),
@@ -171,14 +184,18 @@ export const issueAttachment = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    issueId: text("issue_id").references(() => issue.id, { onDelete: "cascade" }),
-    createdById: text("created_by_id")
+    // Null until the attachment is linked to an issue. Unlinked rows are removed by the
+    // `cleanup-orphan-attachment` job.
+    issueId: text().references(() => issue.id, { onDelete: "cascade" }),
+    createdById: text()
       .notNull()
       .references(() => user.id),
     filePath: text().notNull(),
     mimeType: text().notNull(),
     originalFileName: text().notNull(),
-    ...lifecycleTimestamps,
+    // Null for files uploaded before sizes were recorded.
+    sizeBytes: integer(),
+    ...timestamps,
   },
   (table) => [
     index("issue_attachment_issue_id_idx").on(table.issueId),

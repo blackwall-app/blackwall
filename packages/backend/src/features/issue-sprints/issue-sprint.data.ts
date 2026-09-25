@@ -95,7 +95,7 @@ export async function completeSprint(input: { sprintId: string }) {
     .update(dbSchema.issueSprint)
     .set({
       status: "completed",
-      finishedAt: sql`(unixepoch() * 1000)`,
+      finishedAt: new Date(),
     })
     .where(eq(dbSchema.issueSprint.id, input.sprintId));
 }
@@ -107,13 +107,6 @@ export async function setSprintStatus(input: { sprintId: string; status: IssueSp
       status: input.status,
     })
     .where(eq(dbSchema.issueSprint.id, input.sprintId));
-}
-
-export async function setActiveSprintOnTeam(input: { teamId: string; sprintId: string | null }) {
-  await db
-    .update(dbSchema.team)
-    .set({ activeSprintId: input.sprintId })
-    .where(eq(dbSchema.team.id, input.teamId));
 }
 
 export async function moveActiveIssuesToBacklog(input: { teamId: string; sprintId?: string }) {
@@ -206,7 +199,6 @@ export const issueSprintData = {
   updateSprint,
   completeSprint,
   setSprintStatus,
-  setActiveSprintOnTeam,
   moveActiveIssuesToBacklog,
   moveActiveIssuesToSprint,
   moveActiveIssuesToUnsprinted,

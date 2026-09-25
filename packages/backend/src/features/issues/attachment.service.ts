@@ -2,7 +2,11 @@ import { ErrorCode } from "@blackwall/shared";
 import { NotFoundError } from "../../lib/errors";
 import { issueData } from "./issue.data";
 import { attachmentData } from "./attachment.data";
-import { saveFile } from "../../lib/file-upload";
+import { deleteFile, saveFile } from "../../lib/file-upload";
+import { jobService } from "@blackwall/queue";
+
+/** How long an uploaded file may stay unlinked from an issue before it's deleted. */
+export const ORPHAN_ATTACHMENT_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Get an issue by its key or throw a 404 error.
@@ -48,15 +52,36 @@ export async function uploadAttachment(input: {
       filePath,
       mimeType: input.file.type,
       originalFileName,
+      sizeBytes: input.file.size,
     });
   }
 
-  return attachmentData.createOrphanAttachment({
+  const attachment = await attachmentData.createOrphanAttachment({
     userId: input.userId,
     filePath,
     mimeType: input.file.type,
     originalFileName,
+    sizeBytes: input.file.size,
   });
+
+  await jobService.addJob({
+    type: "cleanup-orphan-attachment",
+    payload: { attachmentId: attachment.id },
+    delay: ORPHAN_ATTACHMENT_TTL_MS,
+  });
+
+  return attachment;
+}
+
+/**
+ * Delete an uploaded file that was never linked to an issue. Runs as a delayed job.
+ * @param input attachment id
+ */
+export async function cleanupOrphanAttachment(input: { attachmentId: string }) {
+  const deleted = await attachmentData.deleteOrphanAttachment(input);
+  if (deleted) {
+    deleteFile(deleted.filePath);
+  }
 }
 
 /**
@@ -149,6 +174,8 @@ export async function deleteAttachment(input: {
     issue,
     actorId: input.userId,
   });
+
+  deleteFile(attachment.filePath);
 }
 
 export const attachmentService = {
@@ -157,4 +184,5 @@ export const attachmentService = {
   getAttachment,
   getAttachmentForDownload,
   deleteAttachment,
+  cleanupOrphanAttachment,
 };

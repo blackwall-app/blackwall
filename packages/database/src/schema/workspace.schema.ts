@@ -23,6 +23,9 @@ export const workspace = sqliteTable(
   (table) => [uniqueIndex("workspace_slug_unique").on(table.slug)],
 );
 
+export const workspaceRoleValues = ["owner", "admin", "member"] as const;
+export type WorkspaceRole = (typeof workspaceRoleValues)[number];
+
 export const workspaceUser = sqliteTable(
   "workspace_user",
   {
@@ -32,6 +35,7 @@ export const workspaceUser = sqliteTable(
     userId: text()
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    role: text({ enum: workspaceRoleValues }).notNull().default("member"),
     joinedAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -50,15 +54,21 @@ export const workspaceInvitation = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    workspaceId: text("workspace_id")
+    workspaceId: text()
       .notNull()
-      .references(() => workspace.id),
-    createdById: text("created_by_id")
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    createdById: text()
       .notNull()
       .references(() => user.id),
     email: text().notNull(),
-    token: text().notNull().unique(),
-    expiresAt: integer({ mode: "timestamp_ms" }),
+    // SHA-256 of the token sent in the invite link. The raw token is never stored.
+    tokenHash: text().notNull().unique(),
+    expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+    acceptedAt: integer({ mode: "timestamp_ms" }),
+    acceptedById: text().references(() => user.id, { onDelete: "set null" }),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$default(() => new Date()),
   },
   (table) => [
     index("workspace_invitation_workspace_id_idx").on(table.workspaceId),
@@ -68,5 +78,6 @@ export const workspaceInvitation = sqliteTable(
 
 export type Workspace = typeof workspace.$inferSelect;
 export type NewWorkspace = typeof workspace.$inferInsert;
+export type WorkspaceUser = typeof workspaceUser.$inferSelect;
 export type WorkspaceInvitation = typeof workspaceInvitation.$inferSelect;
 export type SerializedWorkspace = JSONParsed<Workspace>;

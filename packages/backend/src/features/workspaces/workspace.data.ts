@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, dbSchema } from "@blackwall/database";
+import type { WorkspaceRole } from "@blackwall/database/schema";
 
 export async function createWorkspace(input: { displayName: string; slug: string }) {
   const [workspace] = await db
@@ -33,12 +34,17 @@ export async function getWorkspaceBySlug(slug: string) {
   return workspace;
 }
 
-export async function addUserToWorkspace(input: { userId: string; workspaceId: string }) {
+export async function addUserToWorkspace(input: {
+  userId: string;
+  workspaceId: string;
+  role?: WorkspaceRole;
+}) {
   const user = await db
     .insert(dbSchema.workspaceUser)
     .values({
       userId: input.userId,
       workspaceId: input.workspaceId,
+      role: input.role,
     })
     .execute();
 

@@ -8,6 +8,7 @@ export async function createOrphanAttachment(input: {
   filePath: string;
   mimeType: string;
   originalFileName: string;
+  sizeBytes: number;
 }) {
   const [attachment] = await db
     .insert(dbSchema.issueAttachment)
@@ -17,6 +18,7 @@ export async function createOrphanAttachment(input: {
       filePath: input.filePath,
       mimeType: input.mimeType,
       originalFileName: input.originalFileName,
+      sizeBytes: input.sizeBytes,
     })
     .returning();
 
@@ -29,6 +31,7 @@ export async function createAttachment(input: {
   filePath: string;
   mimeType: string;
   originalFileName: string;
+  sizeBytes: number;
 }) {
   return await db.transaction(async (tx) => {
     const [attachment] = await tx
@@ -39,6 +42,7 @@ export async function createAttachment(input: {
         filePath: input.filePath,
         mimeType: input.mimeType,
         originalFileName: input.originalFileName,
+        sizeBytes: input.sizeBytes,
       })
       .returning();
 
@@ -50,7 +54,7 @@ export async function createAttachment(input: {
           actorId: input.userId,
         },
         "attachment_added",
-        attachment.id,
+        { attachmentId: attachment.id },
       ),
     );
 
@@ -88,7 +92,7 @@ export async function associateAttachmentsWithIssue(input: {
               actorId: input.userId,
             },
             "attachment_added",
-            attachmentId,
+            { attachmentId },
           ),
         );
       }
@@ -157,7 +161,7 @@ export async function deleteAttachment(input: {
           actorId: input.actorId,
         },
         "attachment_removed",
-        input.attachmentId,
+        { attachmentId: input.attachmentId },
       ),
     );
 
@@ -167,6 +171,24 @@ export async function deleteAttachment(input: {
   });
 }
 
+/**
+ * Delete an attachment only if it's still not linked to an issue.
+ * @returns the deleted attachment, or undefined if it was linked or doesn't exist
+ */
+export async function deleteOrphanAttachment(input: { attachmentId: string }) {
+  const [deleted] = await db
+    .delete(dbSchema.issueAttachment)
+    .where(
+      and(
+        eq(dbSchema.issueAttachment.id, input.attachmentId),
+        isNull(dbSchema.issueAttachment.issueId),
+      ),
+    )
+    .returning();
+
+  return deleted;
+}
+
 export const attachmentData = {
   createOrphanAttachment,
   createAttachment,
@@ -174,4 +196,5 @@ export const attachmentData = {
   getAttachmentById,
   getAttachmentForServing,
   deleteAttachment,
+  deleteOrphanAttachment,
 };

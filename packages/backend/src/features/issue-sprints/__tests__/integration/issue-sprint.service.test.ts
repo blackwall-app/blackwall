@@ -31,11 +31,6 @@ describe("issueSprintService", () => {
       .update(dbSchema.issueSprint)
       .set({ status: "active" })
       .where(eq(dbSchema.issueSprint.id, sprintId));
-
-    await testDb.db
-      .update(dbSchema.team)
-      .set({ activeSprintId: sprintId })
-      .where(eq(dbSchema.team.id, teamId));
   }
 
   it("starts a planned sprint and marks it active on the team", async () => {
@@ -54,10 +49,11 @@ describe("issueSprintService", () => {
 
     const storedTeam = await testDb.db.query.team.findFirst({
       where: { id: teamId },
+      with: { activeSprint: true },
     });
 
     expect(startedSprint.status).toBe("active");
-    expect(storedTeam?.activeSprintId).toBe(sprint.id);
+    expect(storedTeam?.activeSprint?.id).toBe(sprint.id);
   });
 
   it("rejects starting a sprint while another sprint is already active", async () => {
@@ -74,11 +70,6 @@ describe("issueSprintService", () => {
       status: "planned",
     });
 
-    await testDb.db
-      .update(dbSchema.team)
-      .set({ activeSprintId: activeSprint.id })
-      .where(eq(dbSchema.team.id, teamId));
-
     let error: unknown;
     try {
       await issueSprintService.startSprint({
@@ -91,6 +82,39 @@ describe("issueSprintService", () => {
     }
 
     expect(error).toBeInstanceOf(BadRequestError);
+  });
+
+  it("rejects a second active sprint even when the caller didn't see the first one", async () => {
+    await createIssueSprint(testDb, {
+      teamId,
+      createdById: userId,
+      name: "Started Elsewhere",
+      status: "active",
+    });
+    const plannedSprint = await createIssueSprint(testDb, {
+      teamId,
+      createdById: userId,
+      name: "Planned Sprint",
+      status: "planned",
+    });
+
+    let error: unknown;
+    try {
+      await issueSprintService.startSprint({
+        sprintId: plannedSprint.id,
+        teamId,
+        activeSprintId: null,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    const reloaded = await testDb.db.query.issueSprint.findFirst({
+      where: { id: plannedSprint.id },
+    });
+
+    expect(error).toBeInstanceOf(BadRequestError);
+    expect(reloaded?.status).toBe("planned");
   });
 
   it("completes a sprint by moving unfinished issues to the backlog", async () => {
@@ -144,12 +168,13 @@ describe("issueSprintService", () => {
     });
     const team = await testDb.db.query.team.findFirst({
       where: { id: teamId },
+      with: { activeSprint: true },
     });
 
     expect(reloadedActiveIssue?.sprintId).toBeNull();
     expect(reloadedDoneIssue?.sprintId).toBe(sprint.id);
     expect(completedSprint?.status).toBe("completed");
-    expect(team?.activeSprintId).toBeNull();
+    expect(team?.activeSprint).toBeNull();
   });
 
   it("completes a sprint by moving unfinished issues to another planned sprint", async () => {
@@ -242,6 +267,7 @@ describe("issueSprintService", () => {
     });
     const team = await testDb.db.query.team.findFirst({
       where: { id: teamId },
+      with: { activeSprint: true },
     });
 
     expect(nextSprint).not.toBeNull();
@@ -249,6 +275,6 @@ describe("issueSprintService", () => {
     expect(nextSprint?.startDate.toISOString()).toBe("2026-03-10T00:00:00.000Z");
     expect(nextSprint?.endDate.toISOString()).toBe("2026-03-14T23:59:59.999Z");
     expect(reloadedIssue?.sprintId).toBe(nextSprint?.id);
-    expect(team?.activeSprintId).toBeNull();
+    expect(team?.activeSprint).toBeNull();
   });
 });

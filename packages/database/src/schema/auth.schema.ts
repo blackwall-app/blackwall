@@ -10,14 +10,14 @@ export const user = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    name: text("name").notNull(),
-    email: text("email").notNull().unique(),
-    emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
-    image: text("image"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
-    lastWorkspaceId: text("last_workspace_id").references(() => workspace.id),
-    lastTeamId: text("last_team_id").references(() => team.id),
+    name: text().notNull(),
+    email: text().notNull().unique(),
+    emailVerified: integer({ mode: "boolean" }).default(false),
+    image: text(),
+    createdAt: integer({ mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer({ mode: "timestamp_ms" }).notNull(),
+    lastWorkspaceId: text().references(() => workspace.id, { onDelete: "set null" }),
+    lastTeamId: text().references(() => team.id, { onDelete: "set null" }),
     preferredTheme: text({
       enum: ["system", "light", "dark"],
     }).default("system"),
@@ -37,17 +37,17 @@ export const session = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    userId: text("user_id")
+    userId: text()
       .notNull()
-      .references(() => user.id),
-    token: text("token").notNull().unique(),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .references(() => user.id, { onDelete: "cascade" }),
+    token: text().notNull().unique(),
+    expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+    ipAddress: text(),
+    userAgent: text(),
+    createdAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    updatedAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -60,26 +60,26 @@ export const account = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    userId: text("user_id")
+    userId: text()
       .notNull()
-      .references(() => user.id),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", {
+      .references(() => user.id, { onDelete: "cascade" }),
+    accountId: text().notNull(),
+    providerId: text().notNull(),
+    accessToken: text(),
+    refreshToken: text(),
+    accessTokenExpiresAt: integer({
       mode: "timestamp_ms",
     }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
+    refreshTokenExpiresAt: integer({
       mode: "timestamp_ms",
     }),
-    scope: text("scope"),
-    idToken: text("id_token"),
-    password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    scope: text(),
+    idToken: text(),
+    password: text(),
+    createdAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    updatedAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -90,13 +90,13 @@ export const verification = sqliteTable("verification", {
   id: text()
     .primaryKey()
     .$defaultFn(() => randomUUIDv7()),
-  identifier: text("identifier").notNull().unique(),
-  value: text("value").notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  identifier: text().notNull().unique(),
+  value: text().notNull(),
+  expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+  createdAt: integer({ mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+  updatedAt: integer({ mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
 });

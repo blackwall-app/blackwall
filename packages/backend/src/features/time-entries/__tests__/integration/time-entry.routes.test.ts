@@ -21,14 +21,14 @@ describe("Time Entry Routes", () => {
   const createTimeEntry = async (
     issueId: string,
     issueKey: string,
-    data?: { duration?: number; description?: string },
+    data?: { durationMinutes?: number; description?: string },
   ) => {
     const { client, headers } = getCtx();
     return client.api.issues[":issueKey"]["time-entries"].$post(
       {
         param: { issueKey },
         json: {
-          duration: data?.duration ?? 30,
+          durationMinutes: data?.durationMinutes ?? 30,
           description: data?.description,
         },
       },
@@ -53,8 +53,8 @@ describe("Time Entry Routes", () => {
 
     it("should return list of time entries for issue", async () => {
       const issue = await createTestIssue();
-      await createTimeEntry(issue.id, issue.key, { duration: 30 });
-      await createTimeEntry(issue.id, issue.key, { duration: 60 });
+      await createTimeEntry(issue.id, issue.key, { durationMinutes: 30 });
+      await createTimeEntry(issue.id, issue.key, { durationMinutes: 60 });
 
       const { client, headers } = getCtx();
       const res = await client.api.issues[":issueKey"]["time-entries"].$get(
@@ -95,8 +95,8 @@ describe("Time Entry Routes", () => {
 
     it("should return total time logged", async () => {
       const issue = await createTestIssue();
-      await createTimeEntry(issue.id, issue.key, { duration: 30 });
-      await createTimeEntry(issue.id, issue.key, { duration: 60 });
+      await createTimeEntry(issue.id, issue.key, { durationMinutes: 30 });
+      await createTimeEntry(issue.id, issue.key, { durationMinutes: 60 });
 
       const { client, headers } = getCtx();
       const res = await client.api.issues[":issueKey"]["time-entries"].total.$get(
@@ -125,13 +125,15 @@ describe("Time Entry Routes", () => {
       const issue = await createTestIssue();
 
       const res = await createTimeEntry(issue.id, issue.key, {
-        duration: 45,
+        durationMinutes: 45,
         description: "Working on feature",
       });
 
       expect(res.status).toBe(201);
-      const json = (await res.json()) as { entry: { duration: number; description: string } };
-      expect(json.entry.duration).toBe(45);
+      const json = (await res.json()) as {
+        entry: { durationMinutes: number; description: string };
+      };
+      expect(json.entry.durationMinutes).toBe(45);
       expect(json.entry.description).toBe("Working on feature");
     });
 
@@ -143,7 +145,7 @@ describe("Time Entry Routes", () => {
         {
           param: { issueKey: issue.key },
           json: {
-            duration: -10,
+            durationMinutes: -10,
           },
         },
         { headers: headers() },
@@ -160,7 +162,7 @@ describe("Time Entry Routes", () => {
         {
           param: { issueKey: "NON-EXISTENT" },
           json: {
-            duration: 30,
+            durationMinutes: 30,
           },
         },
         { headers: headers() },
@@ -174,13 +176,11 @@ describe("Time Entry Routes", () => {
   describe("DELETE /issues/:issueKey/time-entries/:timeEntryId", () => {
     it("should delete a time entry", async () => {
       const issue = await createTestIssue();
-      const createRes = await createTimeEntry(issue.id, issue.key, { duration: 30 });
+      const createRes = await createTimeEntry(issue.id, issue.key, { durationMinutes: 30 });
       const createJson = (await createRes.json()) as { entry: { id: string } };
 
       const { client, headers } = getCtx();
-      const res = await client.api.issues[":issueKey"]["time-entries"][
-        ":timeEntryId"
-      ].$delete(
+      const res = await client.api.issues[":issueKey"]["time-entries"][":timeEntryId"].$delete(
         { param: { issueKey: issue.key, timeEntryId: createJson.entry.id } },
         { headers: headers() },
       );
@@ -199,9 +199,7 @@ describe("Time Entry Routes", () => {
       const issue = await createTestIssue();
       const { client, headers } = getCtx();
 
-      const res = await client.api.issues[":issueKey"]["time-entries"][
-        ":timeEntryId"
-      ].$delete(
+      const res = await client.api.issues[":issueKey"]["time-entries"][":timeEntryId"].$delete(
         { param: { issueKey: issue.key, timeEntryId: "00000000-0000-0000-0000-000000000000" } },
         { headers: headers() },
       );
@@ -212,9 +210,7 @@ describe("Time Entry Routes", () => {
     it("should return 404 for non-existent issue", async () => {
       const { client, headers } = getCtx();
 
-      const res = await client.api.issues[":issueKey"]["time-entries"][
-        ":timeEntryId"
-      ].$delete(
+      const res = await client.api.issues[":issueKey"]["time-entries"][":timeEntryId"].$delete(
         {
           param: {
             issueKey: "NON-EXISTENT",

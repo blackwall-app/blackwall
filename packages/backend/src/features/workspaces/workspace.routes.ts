@@ -61,7 +61,7 @@ const workspaceRoutes = new Hono<AppEnv>()
     validator("json", createWorkspaceSchema),
     async (c) => {
       const workspace = await workspaceService.createWorkspace(c.req.valid("json"));
-      await workspaceService.UNCHECKED_addUserToWorkspace({
+      await workspaceService.UNCHECKED_addOwnerToWorkspace({
         userId: c.get("user")!.id,
         workspaceId: workspace.id,
       });

@@ -116,6 +116,19 @@ describe("Invitation Routes", () => {
       const json = await res.json();
       expect(json).toHaveProperty("message", "Invitation accepted successfully.");
       expect(json).toHaveProperty("workspaceSlug");
+
+      const stored = await getCtx().testDb.db.query.workspaceInvitation.findFirst({
+        where: { id: createJson.invitation.id },
+      });
+      expect(stored?.acceptedAt).not.toBeNull();
+      expect(stored?.acceptedById).not.toBeNull();
+      expect(stored?.tokenHash).not.toBe(token);
+
+      const reuseRes = await client.api.invitations[":token"].$get(
+        { param: { token } },
+        { headers: {} },
+      );
+      expect(reuseRes.status).toBe(404);
     });
   });
 

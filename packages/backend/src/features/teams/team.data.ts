@@ -1,29 +1,38 @@
-import { db, dbSchema } from "@blackwall/database";
-import { and, eq } from "drizzle-orm";
+import { db, dbSchema, type DbTransaction } from "@blackwall/database";
+import { and, eq, sql } from "drizzle-orm";
 import { ErrorCode } from "@blackwall/shared";
-import { ConflictError } from "../../lib/errors";
+import { ConflictError, isSqliteUniqueConstraintError } from "../../lib/errors";
 
-function isSqliteUniqueConstraintError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "SQLITE_CONSTRAINT_UNIQUE"
-  );
+/**
+ * A team taking a key removes that key's alias, so `KEY-12` links point at the new owner.
+ */
+async function claimTeamKey(tx: DbTransaction, input: { workspaceId: string; key: string }) {
+  await tx
+    .delete(dbSchema.teamKeyAlias)
+    .where(
+      and(
+        eq(dbSchema.teamKeyAlias.workspaceId, input.workspaceId),
+        eq(dbSchema.teamKeyAlias.key, input.key),
+      ),
+    );
 }
 
 export async function createTeam(input: { name: string; key: string; workspaceId: string }) {
   try {
-    const [team] = await db
-      .insert(dbSchema.team)
-      .values({
-        name: input.name,
-        key: input.key,
-        workspaceId: input.workspaceId,
-      })
-      .returning();
+    return await db.transaction(async (tx) => {
+      await claimTeamKey(tx, { workspaceId: input.workspaceId, key: input.key });
 
-    return team;
+      const [team] = await tx
+        .insert(dbSchema.team)
+        .values({
+          name: input.name,
+          key: input.key,
+          workspaceId: input.workspaceId,
+        })
+        .returning();
+
+      return team;
+    });
   } catch (error) {
     if (isSqliteUniqueConstraintError(error)) {
       throw new ConflictError(
@@ -147,7 +156,7 @@ export async function listUserTeamsWithActiveSprint(input: {
     where: {
       workspaceId: input.workspaceId,
       users: { id: input.userId },
-      activeSprintId: { isNotNull: true },
+      activeSprint: true,
     },
     with: {
       activeSprint: true,
@@ -174,7 +183,6 @@ export async function listTeamsWithCounts(input: { workspaceId: string }) {
       avatar: team.avatar,
       createdAt: team.createdAt,
       workspaceId: team.workspaceId,
-      activeSprintId: team.activeSprintId,
     },
     usersCount: team.users?.length ?? 0,
     issuesCount: team.issues?.length ?? 0,
@@ -197,14 +205,37 @@ export async function updateTeam(input: {
     return null;
   }
 
-  try {
-    const [updated] = await db
-      .update(dbSchema.team)
-      .set(input.updates)
-      .where(eq(dbSchema.team.id, team.id))
-      .returning();
+  const newKey = input.updates.key;
+  const keyChanged = newKey !== undefined && newKey !== team.key;
 
-    return updated;
+  try {
+    return await db.transaction(async (tx) => {
+      if (keyChanged) {
+        await claimTeamKey(tx, { workspaceId: input.workspaceId, key: newKey });
+      }
+
+      const [updated] = await tx
+        .update(dbSchema.team)
+        .set(input.updates)
+        .where(eq(dbSchema.team.id, team.id))
+        .returning();
+
+      if (keyChanged) {
+        // Keep the old key resolvable, then move every issue to the new prefix.
+        await tx.insert(dbSchema.teamKeyAlias).values({
+          workspaceId: input.workspaceId,
+          key: team.key,
+          teamId: team.id,
+        });
+
+        await tx
+          .update(dbSchema.issue)
+          .set({ key: sql`${newKey} || '-' || ${dbSchema.issue.keyNumber}` })
+          .where(eq(dbSchema.issue.teamId, team.id));
+      }
+
+      return updated;
+    });
   } catch (error) {
     if (isSqliteUniqueConstraintError(error)) {
       throw new ConflictError(

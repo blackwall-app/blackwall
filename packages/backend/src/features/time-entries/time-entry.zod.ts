@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createTimeEntrySchema = z.object({
-  duration: z.number().int().positive(),
+  durationMinutes: z.number().int().positive(),
   description: z.string().optional(),
 });
 
@@ -9,7 +9,7 @@ export const timeEntrySchema = z.object({
   id: z.string(),
   issueId: z.string(),
   userId: z.string(),
-  duration: z.number(),
+  durationMinutes: z.number(),
   description: z.string().nullable().optional(),
   createdAt: z.string().optional(), // Drizzle usually handles dates as strings or Date objects, keeping it loose for now or assuming string from JSON
   updatedAt: z.string().optional(),

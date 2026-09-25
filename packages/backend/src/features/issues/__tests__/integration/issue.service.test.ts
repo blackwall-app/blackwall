@@ -38,11 +38,6 @@ describe("issueService", () => {
       .update(dbSchema.issueSprint)
       .set({ status: "active" })
       .where(eq(dbSchema.issueSprint.id, sprintId));
-
-    await testDb.db
-      .update(dbSchema.team)
-      .set({ activeSprintId: sprintId })
-      .where(eq(dbSchema.team.id, teamId));
   }
 
   it("lists issues from the active sprint when requested", async () => {

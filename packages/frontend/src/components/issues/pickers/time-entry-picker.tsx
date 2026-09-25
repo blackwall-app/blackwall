@@ -105,14 +105,16 @@ const timeEntriesLoader = query(async (issueKey: string) => {
   return entries;
 }, "timeEntriesList");
 
-const logTimeEntry = action(async (issueKey: string, duration: number, description?: string) => {
-  await api.api.issues[`:issueKey`]["time-entries"].$post({
-    param: { issueKey },
-    json: { duration, description },
-  });
+const logTimeEntry = action(
+  async (issueKey: string, durationMinutes: number, description?: string) => {
+    await api.api.issues[`:issueKey`]["time-entries"].$post({
+      param: { issueKey },
+      json: { durationMinutes, description },
+    });
 
-  throw reload({ revalidate: ["timeEntryTotal", "timeEntriesList", "issueShow"] });
-});
+    throw reload({ revalidate: ["timeEntryTotal", "timeEntriesList", "issueShow"] });
+  },
+);
 
 const deleteTimeEntry = action(async (issueKey: string, timeEntryId: string) => {
   await api.api.issues[`:issueKey`]["time-entries"][`:timeEntryId`].$delete({
@@ -287,7 +289,7 @@ function TimeEntryItem(props: {
         <UserAvatar user={props.entry.user} size="xs" />
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <span class="font-medium text-sm">{formatDuration(props.entry.duration)}</span>
+            <span class="font-medium text-sm">{formatDuration(props.entry.durationMinutes)}</span>
             <span class="text-xs text-muted-foreground">{relativeTime()}</span>
           </div>
           <Show when={props.entry.description}>
@@ -322,7 +324,9 @@ function TimeEntryItem(props: {
             </AlertDialogMedia>
             <AlertDialogTitle>{m.time_entry_delete_title()}</AlertDialogTitle>
             <AlertDialogDescription>
-              {m.time_entry_delete_description({ duration: formatDuration(props.entry.duration) })}
+              {m.time_entry_delete_description({
+                duration: formatDuration(props.entry.durationMinutes),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

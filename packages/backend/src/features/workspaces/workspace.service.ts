@@ -43,11 +43,12 @@ async function getWorkspaceBySlug(slug: string, userId: string) {
 }
 
 /**
- * Adds a user to a workspace. Only used when signing up, existing users should invite other users instead.
+ * Adds the creator of a new workspace as its owner. Only used when a workspace is created;
+ * everyone else joins through an invitation.
  * @param input user id and workspace id
  */
-async function UNCHECKED_addUserToWorkspace(input: { userId: string; workspaceId: string }) {
-  return workspaceData.addUserToWorkspace(input);
+async function UNCHECKED_addOwnerToWorkspace(input: { userId: string; workspaceId: string }) {
+  return workspaceData.addUserToWorkspace({ ...input, role: "owner" });
 }
 
 /**
@@ -196,7 +197,7 @@ export const workspaceService = {
   listWorkspaceMembers,
   getWorkspaceMember,
   isWorkspaceMember,
-  UNCHECKED_addUserToWorkspace,
+  UNCHECKED_addOwnerToWorkspace,
   saveLastWorkspaceForUser,
   getPreferredWorkspaceForUser,
 };

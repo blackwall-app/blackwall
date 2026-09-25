@@ -4,6 +4,7 @@ import { renderToHTMLString } from "@tiptap/static-renderer";
 import StarterKit from "@tiptap/starter-kit";
 import { sendEmail } from "../lib/emails";
 import { commentData } from "../features/issues/comment.data";
+import { attachmentService } from "../features/issues/attachment.service";
 import { userData } from "../features/users/user.data";
 import { env } from "../lib/zod-env";
 
@@ -98,3 +99,14 @@ jobService.registerHandler("comment-email", async (payload: CommentEmailPayload)
     });
   }
 });
+
+type CleanupOrphanAttachmentPayload = {
+  attachmentId: string;
+};
+
+jobService.registerHandler(
+  "cleanup-orphan-attachment",
+  async (payload: CleanupOrphanAttachmentPayload) => {
+    await attachmentService.cleanupOrphanAttachment(payload);
+  },
+);

@@ -1,23 +1,31 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { db, dbSchema } from "@blackwall/database";
 import type { ColorKey } from "@blackwall/database/schema";
 import { buildChangeEvent } from "./change-events";
+import { isSqliteUniqueConstraintError } from "../../lib/errors";
 
 export async function createLabel(input: {
   name: string;
   colorKey: ColorKey;
   workspaceId: string;
 }) {
-  const [label] = await db
-    .insert(dbSchema.label)
-    .values({
-      name: input.name,
-      colorKey: input.colorKey,
-      workspaceId: input.workspaceId,
-    })
-    .returning();
+  try {
+    const [label] = await db
+      .insert(dbSchema.label)
+      .values({
+        name: input.name,
+        colorKey: input.colorKey,
+        workspaceId: input.workspaceId,
+      })
+      .returning();
 
-  return label;
+    return label;
+  } catch (error) {
+    if (isSqliteUniqueConstraintError(error)) {
+      throw new Error("Label with this name already exists");
+    }
+    throw error;
+  }
 }
 
 export async function getLabelById(input: { labelId: string; workspaceId: string }) {
@@ -29,11 +37,12 @@ export async function getLabelById(input: { labelId: string; workspaceId: string
   });
 }
 
+/** Case-insensitive, matching the unique index on (workspace_id, name collate nocase). */
 export async function getLabelByName(input: { name: string; workspaceId: string }) {
   return db.query.label.findFirst({
     where: {
-      name: input.name,
       workspaceId: input.workspaceId,
+      RAW: (label) => sql`${label.name} = ${input.name} collate nocase`,
     },
   });
 }
@@ -73,6 +82,7 @@ export async function addLabelToIssue(input: {
     await tx.insert(dbSchema.labelOnIssue).values({
       issueId: input.issueId,
       labelId: input.labelId,
+      workspaceId: input.workspaceId,
     });
 
     await tx.insert(dbSchema.issueChangeEvent).values(
@@ -83,7 +93,7 @@ export async function addLabelToIssue(input: {
           actorId: input.actorId,
         },
         "label_added",
-        input.labelId,
+        { labelId: input.labelId },
       ),
     );
   });
@@ -113,7 +123,7 @@ export async function removeLabelFromIssue(input: {
           actorId: input.actorId,
         },
         "label_removed",
-        input.labelId,
+        { labelId: input.labelId },
       ),
     );
   });

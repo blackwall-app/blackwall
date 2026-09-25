@@ -120,7 +120,7 @@ const timeEntryRoutes = new Hono<AppEnv>()
         issueId: issue.id,
         workspaceId: workspace.id,
         userId: user.id,
-        duration: body.duration,
+        durationMinutes: body.durationMinutes,
         description: body.description,
       });
 

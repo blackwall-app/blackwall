@@ -1,8 +1,7 @@
 import { db, dbSchema, type DbTransaction } from "@blackwall/database";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function ensureSequenceExists(input: {
-  workspaceId: string;
   teamId: string;
   tx?: DbTransaction;
 }): Promise<void> {
@@ -11,7 +10,6 @@ export async function ensureSequenceExists(input: {
   await transactionalDb
     .insert(dbSchema.issueSequence)
     .values({
-      workspaceId: input.workspaceId,
       teamId: input.teamId,
       currentSequence: 0,
     })
@@ -19,7 +17,6 @@ export async function ensureSequenceExists(input: {
 }
 
 export async function getNextSequenceNumber(input: {
-  workspaceId: string;
   teamId: string;
   tx?: DbTransaction;
 }): Promise<number> {
@@ -32,12 +29,7 @@ export async function getNextSequenceNumber(input: {
     .set({
       currentSequence: sql`${dbSchema.issueSequence.currentSequence} + 1`,
     })
-    .where(
-      and(
-        eq(dbSchema.issueSequence.workspaceId, input.workspaceId),
-        eq(dbSchema.issueSequence.teamId, input.teamId),
-      ),
-    )
+    .where(eq(dbSchema.issueSequence.teamId, input.teamId))
     .returning();
 
   if (!updated) {

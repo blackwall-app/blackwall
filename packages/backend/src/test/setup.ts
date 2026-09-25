@@ -1,5 +1,5 @@
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { client, db } from "@blackwall/database";
+import { migrateDatabase } from "@blackwall/database/migrate";
 
 type SqliteTableRow = { name: string };
 
@@ -20,9 +20,7 @@ async function resetTestDatabase() {
 
 export async function createTestDb() {
   await resetTestDatabase();
-  migrate(db, {
-    migrationsFolder: process.env.MIGRATIONS_DIR ?? "./migrations",
-  });
+  await migrateDatabase(process.env.MIGRATIONS_DIR ?? "./migrations");
 
   return { db, client };
 }

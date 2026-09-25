@@ -15,7 +15,8 @@ export async function searchIssues(input: {
     where: {
       workspaceId: input.workspaceId,
       teamId: { in: input.teamIds },
-      OR: [{ summary: { like: searchPattern } }, { description: { like: searchPattern } }],
+      deletedAt: { isNull: true },
+      OR: [{ summary: { like: searchPattern } }, { descriptionText: { like: searchPattern } }],
     },
     limit: 50,
   });

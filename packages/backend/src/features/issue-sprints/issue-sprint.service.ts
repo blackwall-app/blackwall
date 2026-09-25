@@ -1,6 +1,6 @@
 import { ErrorCode } from "@blackwall/shared";
 import { issueSprintData } from "./issue-sprint.data";
-import { BadRequestError, NotFoundError } from "../../lib/errors";
+import { BadRequestError, NotFoundError, isSqliteUniqueConstraintError } from "../../lib/errors";
 import type { CompleteIssueSprint } from "./issue-sprint.zod";
 
 /**
@@ -105,11 +105,17 @@ async function startSprint(input: {
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot start archived sprint", ErrorCode.CANNOT_START_ARCHIVED_SPRINT);
+    throw new BadRequestError(
+      "Cannot start archived sprint",
+      ErrorCode.CANNOT_START_ARCHIVED_SPRINT,
+    );
   }
 
   if (sprint.status === "completed") {
-    throw new BadRequestError("Cannot start completed sprint", ErrorCode.CANNOT_START_COMPLETED_SPRINT);
+    throw new BadRequestError(
+      "Cannot start completed sprint",
+      ErrorCode.CANNOT_START_COMPLETED_SPRINT,
+    );
   }
 
   if (sprint.status === "active") {
@@ -123,15 +129,21 @@ async function startSprint(input: {
     );
   }
 
-  await issueSprintData.setSprintStatus({
-    sprintId: input.sprintId,
-    status: "active",
-  });
-
-  await issueSprintData.setActiveSprintOnTeam({
-    teamId: input.teamId,
-    sprintId: input.sprintId,
-  });
+  try {
+    await issueSprintData.setSprintStatus({
+      sprintId: input.sprintId,
+      status: "active",
+    });
+  } catch (error) {
+    // A concurrent request started another sprint first; the one-active-per-team index rejected this one.
+    if (isSqliteUniqueConstraintError(error)) {
+      throw new BadRequestError(
+        "Cannot start sprint while another sprint is active",
+        ErrorCode.CANNOT_START_WHILE_SPRINT_ACTIVE,
+      );
+    }
+    throw error;
+  }
 
   const startedSprint = await issueSprintData.getSprintById({
     sprintId: input.sprintId,
@@ -170,11 +182,17 @@ async function updateSprint(input: {
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot update archived sprint", ErrorCode.CANNOT_UPDATE_ARCHIVED_SPRINT);
+    throw new BadRequestError(
+      "Cannot update archived sprint",
+      ErrorCode.CANNOT_UPDATE_ARCHIVED_SPRINT,
+    );
   }
 
   if (sprint.status === "completed") {
-    throw new BadRequestError("Cannot update completed sprint", ErrorCode.CANNOT_UPDATE_COMPLETED_SPRINT);
+    throw new BadRequestError(
+      "Cannot update completed sprint",
+      ErrorCode.CANNOT_UPDATE_COMPLETED_SPRINT,
+    );
   }
 
   return issueSprintData.updateSprint({
@@ -187,7 +205,7 @@ async function updateSprint(input: {
 }
 
 /**
- * Mark a sprint as completed and clear the active sprint from the team.
+ * Mark a sprint as completed.
  * @param input sprint id and team id
  * @throws NotFoundError if sprint not found
  * @throws BadRequestError if sprint is already completed
@@ -209,7 +227,10 @@ async function completeSprint(input: {
   }
 
   if (sprint.archivedAt) {
-    throw new BadRequestError("Cannot complete archived sprint", ErrorCode.CANNOT_COMPLETE_ARCHIVED_SPRINT);
+    throw new BadRequestError(
+      "Cannot complete archived sprint",
+      ErrorCode.CANNOT_COMPLETE_ARCHIVED_SPRINT,
+    );
   }
 
   if (sprint.status === "completed") {
@@ -224,7 +245,10 @@ async function completeSprint(input: {
   }
 
   if (input.activeSprintId !== input.sprintId) {
-    throw new BadRequestError("Sprint is not currently active", ErrorCode.SPRINT_NOT_CURRENTLY_ACTIVE);
+    throw new BadRequestError(
+      "Sprint is not currently active",
+      ErrorCode.SPRINT_NOT_CURRENTLY_ACTIVE,
+    );
   }
 
   if (input.completion.onUndoneIssues === "moveToBacklog") {
@@ -243,7 +267,10 @@ async function completeSprint(input: {
     }
 
     if (targetSprint.status !== "planned") {
-      throw new BadRequestError("Target sprint must be planned", ErrorCode.TARGET_SPRINT_MUST_BE_PLANNED);
+      throw new BadRequestError(
+        "Target sprint must be planned",
+        ErrorCode.TARGET_SPRINT_MUST_BE_PLANNED,
+      );
     }
 
     await issueSprintData.moveActiveIssuesToSprint({
@@ -274,7 +301,6 @@ async function completeSprint(input: {
   }
 
   await issueSprintData.completeSprint({ sprintId: input.sprintId });
-  await issueSprintData.setActiveSprintOnTeam({ teamId: input.teamId, sprintId: null });
 }
 
 /**
@@ -302,7 +328,10 @@ async function archiveSprint(input: {
   }
 
   if (input.activeSprintId === input.sprintId || sprint.status === "active") {
-    throw new BadRequestError("Cannot archive active sprint", ErrorCode.CANNOT_ARCHIVE_ACTIVE_SPRINT);
+    throw new BadRequestError(
+      "Cannot archive active sprint",
+      ErrorCode.CANNOT_ARCHIVE_ACTIVE_SPRINT,
+    );
   }
 
   await issueSprintData.moveActiveIssuesToBacklog({

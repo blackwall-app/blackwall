@@ -34,11 +34,11 @@ describe("change-events", () => {
     } as any;
   }
 
-  it("builds simple change events with an optional related entity id", () => {
-    expect(buildChangeEvent(ctx, "attachment_added", "attachment-1")).toEqual({
+  it("builds simple change events with an optional related entity reference", () => {
+    expect(buildChangeEvent(ctx, "attachment_added", { attachmentId: "attachment-1" })).toEqual({
       ...ctx,
       eventType: "attachment_added",
-      relatedEntityId: "attachment-1",
+      attachmentId: "attachment-1",
     });
   });
 
@@ -84,5 +84,39 @@ describe("change-events", () => {
         to: "done",
       },
     });
+  });
+
+  it("records a description change without storing the document", () => {
+    const original = buildOriginalIssue();
+
+    const event = buildIssueUpdatedEvent(
+      ctx,
+      {
+        description: {
+          type: "doc",
+          content: [{ type: "paragraph", content: [{ type: "text", text: "Rewritten" }] }],
+        },
+      },
+      original,
+    );
+
+    expect(event?.eventType).toBe("description_changed");
+    expect(event?.changes).toBeNull();
+  });
+
+  it("keeps other field changes when the description also changed", () => {
+    const original = buildOriginalIssue();
+
+    const event = buildIssueUpdatedEvent(
+      ctx,
+      {
+        priority: "urgent",
+        description: { type: "doc", content: [] },
+      },
+      original,
+    );
+
+    expect(event?.eventType).toBe("description_changed");
+    expect(event?.changes).toEqual({ priority: { from: "medium", to: "urgent" } });
   });
 });

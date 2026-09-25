@@ -17,11 +17,14 @@ describe("invitationService", () => {
       slug: "test-workspace",
     } as any);
     spyOn(invitationData, "createInvitation").mockResolvedValue({
-      id: "inv-1",
+      invitation: {
+        id: "inv-1",
+        tokenHash: "hash",
+        workspaceId: "ws-1",
+        email: "invitee@example.com",
+        expiresAt: new Date(Date.now() + 60_000),
+      },
       token: "test-token",
-      workspaceId: "ws-1",
-      email: "invitee@example.com",
-      expiresAt: null,
     } as any);
     const addJobSpy = spyOn(jobService, "addJob").mockResolvedValue({} as any);
 
@@ -46,9 +49,8 @@ describe("invitationService", () => {
   });
 
   it("returns null for an expired invitation", async () => {
-    spyOn(invitationData, "getInvitationByToken").mockResolvedValue({
+    spyOn(invitationData, "getPendingInvitationByToken").mockResolvedValue({
       id: "inv-1",
-      token: "expired-token",
       expiresAt: new Date(Date.now() - 60_000),
       email: "test@example.com",
     } as any);
@@ -59,10 +61,9 @@ describe("invitationService", () => {
   });
 
   it("throws when accepting an invitation sent to a different email address", async () => {
-    spyOn(invitationData, "getInvitationByToken").mockResolvedValue({
+    spyOn(invitationData, "getPendingInvitationByToken").mockResolvedValue({
       id: "inv-1",
-      token: "token",
-      expiresAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
       email: "correct@example.com",
       workspaceId: "ws-1",
       workspace: { slug: "test-ws" },
@@ -84,17 +85,16 @@ describe("invitationService", () => {
   });
 
   it("accepts an invitation with case-insensitive email matching and adds the user", async () => {
-    spyOn(invitationData, "getInvitationByToken").mockResolvedValue({
+    spyOn(invitationData, "getPendingInvitationByToken").mockResolvedValue({
       id: "inv-1",
-      token: "token",
-      expiresAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
       email: "invitee@example.com",
       workspaceId: "ws-1",
       workspace: { slug: "test-ws" },
     } as any);
     spyOn(workspaceData, "isWorkspaceMember").mockResolvedValue(false);
     const addUserSpy = spyOn(workspaceData, "addUserToWorkspace").mockResolvedValue({} as any);
-    spyOn(invitationData, "deleteInvitation").mockResolvedValue(undefined);
+    spyOn(invitationData, "markInvitationAccepted").mockResolvedValue(undefined);
 
     const result = await invitationService.acceptInvitation({
       token: "token",
@@ -107,17 +107,16 @@ describe("invitationService", () => {
   });
 
   it("does not add an already-existing member to the workspace again", async () => {
-    spyOn(invitationData, "getInvitationByToken").mockResolvedValue({
+    spyOn(invitationData, "getPendingInvitationByToken").mockResolvedValue({
       id: "inv-1",
-      token: "token",
-      expiresAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
       email: "member@example.com",
       workspaceId: "ws-1",
       workspace: { slug: "test-ws" },
     } as any);
     spyOn(workspaceData, "isWorkspaceMember").mockResolvedValue(true);
     const addUserSpy = spyOn(workspaceData, "addUserToWorkspace").mockResolvedValue({} as any);
-    spyOn(invitationData, "deleteInvitation").mockResolvedValue(undefined);
+    spyOn(invitationData, "markInvitationAccepted").mockResolvedValue(undefined);
 
     await invitationService.acceptInvitation({
       token: "token",

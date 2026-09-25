@@ -48,7 +48,7 @@ const authRoutes = new Hono().post(
     });
 
     await Promise.all([
-      workspaceService.UNCHECKED_addUserToWorkspace({
+      workspaceService.UNCHECKED_addOwnerToWorkspace({
         workspaceId: workspace.id,
         userId: response.user.id,
       }),

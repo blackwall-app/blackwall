@@ -1,5 +1,14 @@
 import { randomUUIDv7 } from "bun";
-import { index, integer, sqliteTable, text, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import {
+  check,
+  index,
+  integer,
+  sqliteTable,
+  text,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import type { JSONParsed } from "hono/utils/types";
 import { lifecycleTimestamps } from "../utils";
 import { user } from "./auth.schema";
@@ -14,14 +23,14 @@ export const issueSprint = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    createdById: text("created_by_id")
+    createdById: text()
       .notNull()
-      .references((): AnySQLiteColumn => user.id),
+      .references(() => user.id),
     name: text().notNull(),
     goal: text(),
-    teamId: text("team_id")
+    teamId: text()
       .notNull()
-      .references((): AnySQLiteColumn => team.id),
+      .references(() => team.id, { onDelete: "cascade" }),
     startDate: integer({
       mode: "timestamp_ms",
     }).notNull(),
@@ -32,7 +41,7 @@ export const issueSprint = sqliteTable(
     finishedAt: integer({
       mode: "timestamp_ms",
     }),
-    archivedAt: integer("archived_at", {
+    archivedAt: integer({
       mode: "timestamp_ms",
     }),
     ...lifecycleTimestamps,
@@ -44,6 +53,15 @@ export const issueSprint = sqliteTable(
       table.teamId,
       table.archivedAt,
       table.createdAt,
+    ),
+    uniqueIndex("issue_sprint_one_active_per_team")
+      .on(table.teamId)
+      .where(sql`${table.status} = 'active'`),
+    // Target for the composite foreign key that keeps an issue's sprint inside the issue's team.
+    unique("issue_sprint_id_team_id_unique").on(table.id, table.teamId),
+    check(
+      "issue_sprint_finished_at_matches_status",
+      sql`(${table.status} = 'completed') = (${table.finishedAt} is not null)`,
     ),
   ],
 );

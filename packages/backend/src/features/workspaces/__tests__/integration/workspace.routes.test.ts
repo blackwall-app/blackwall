@@ -99,6 +99,11 @@ describe("Workspace Routes", () => {
       expect(json.workspace).toHaveProperty("id");
       expect(json.workspace.displayName).toBe("New Workspace");
       expect(json.workspace.slug).toBe("new-ws");
+
+      const membership = await getCtx().testDb.db.query.workspaceUser.findFirst({
+        where: { workspaceId: json.workspace.id },
+      });
+      expect(membership?.role).toBe("owner");
     });
 
     it("should return 400 when displayName is missing", async () => {

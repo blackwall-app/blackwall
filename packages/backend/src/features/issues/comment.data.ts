@@ -27,7 +27,7 @@ export async function createComment(input: {
           actorId: input.authorId,
         },
         "comment_added",
-        comment.id,
+        { commentId: comment.id },
       ),
     );
 
@@ -83,7 +83,7 @@ export async function softDeleteComment(input: {
           actorId: input.actorId,
         },
         "comment_deleted",
-        input.commentId,
+        { commentId: input.commentId },
       ),
     );
   });

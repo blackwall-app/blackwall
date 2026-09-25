@@ -15,10 +15,6 @@ export const relations = defineRelations(schema, (r) => ({
   workspace: {
     labels: r.many.label(),
     issueChangeEvents: r.many.issueChangeEvent(),
-    issueSprints: r.many.issueSprint({
-      from: r.workspace.id.through(r.team.workspaceId),
-      to: r.issueSprint.id.through(r.team.activeSprintId),
-    }),
     teams: r.many.team({
       alias: "workspace_id_team_id_via_user",
       from: r.workspace.id.through(r.user.lastWorkspaceId),
@@ -152,8 +148,9 @@ export const relations = defineRelations(schema, (r) => ({
     }),
     issues: r.many.issue(),
     activeSprint: r.one.issueSprint({
-      from: r.team.activeSprintId,
-      to: r.issueSprint.id,
+      from: r.team.id,
+      to: r.issueSprint.teamId,
+      where: { status: "active" },
     }),
   },
   account: {
@@ -169,9 +166,10 @@ export const relations = defineRelations(schema, (r) => ({
     }),
   },
   issueSprint: {
-    workspaces: r.many.workspace({
-      from: r.issueSprint.id.through(r.team.activeSprintId),
-      to: r.workspace.id.through(r.team.workspaceId),
+    team: r.one.team({
+      from: r.issueSprint.teamId,
+      to: r.team.id,
+      optional: false,
     }),
     issues: r.many.issue(),
   },

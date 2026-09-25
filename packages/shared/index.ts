@@ -1,6 +1,7 @@
 export { ErrorCode, type ApiErrorCode } from "./error-codes";
 export { tiptapDocumentSchema } from "./tiptap/tiptap-document-schema";
 export { validateTiptapContent } from "./tiptap/validate";
+export { tiptapToPlainText } from "./tiptap/plain-text";
 
 export const possibleColors = [
   "red",

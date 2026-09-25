@@ -153,7 +153,10 @@ const publicInvitationRoutes = new Hono<AppEnv>()
         workspaceId: invitation.workspaceId,
       });
 
-      await invitationService.deleteInvitation(invitation.id);
+      await invitationService.markInvitationAccepted({
+        invitationId: invitation.id,
+        userId: response.user.id,
+      });
 
       const setCookie = headers.get("Set-Cookie");
       if (setCookie) {

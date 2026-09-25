@@ -20,17 +20,18 @@ async function createInvitation(input: {
     throw new Error("Workspace not found");
   }
 
-  const invitation = await invitationData.createInvitation({
+  const created = await invitationData.createInvitation({
     workspaceId: input.workspaceId,
     createdById: input.inviterId,
     email: input.email,
   });
 
-  if (!invitation) {
+  if (!created) {
     throw new Error("Failed to create invitation");
   }
 
-  const invitationUrl = `${env.APP_BASE_URL}/invite/${invitation.token}`;
+  const { tokenHash: _tokenHash, ...invitation } = created.invitation;
+  const invitationUrl = `${env.APP_BASE_URL}/invite/${created.token}`;
 
   await jobService.addJob({
     type: "invite-email",
@@ -43,24 +44,24 @@ async function createInvitation(input: {
   });
 
   return {
-    invitation,
+    invitation: { ...invitation, token: created.token },
     invitationUrl,
   };
 }
 
 /**
- * Get an invitation by its token. Returns null if not found or expired.
+ * Get a pending invitation by its token. Returns null if not found, expired, or already accepted.
  * @param token invitation token
  * @returns invitation data or null
  */
 async function getInvitationByToken(token: string) {
-  const invitation = await invitationData.getInvitationByToken(token);
+  const invitation = await invitationData.getPendingInvitationByToken(token);
 
   if (!invitation) {
     return null;
   }
 
-  if (invitation.expiresAt && invitation.expiresAt < new Date()) {
+  if (invitation.expiresAt < new Date()) {
     return null;
   }
 
@@ -96,22 +97,25 @@ async function acceptInvitation(input: { token: string; userId: string; userEmai
     });
   }
 
-  await invitationData.deleteInvitation(invitation.id);
+  await invitationData.markInvitationAccepted({
+    invitationId: invitation.id,
+    userId: input.userId,
+  });
 
   return { workspaceSlug: invitation.workspace.slug };
 }
 
 /**
- * Delete an invitation by its id.
- * @param invitationId invitation id
+ * Record that an invitation was used. The row is kept so it's clear who joined through it.
+ * @param input invitation id and the id of the user who accepted it
  */
-async function deleteInvitation(invitationId: string) {
-  await invitationData.deleteInvitation(invitationId);
+async function markInvitationAccepted(input: { invitationId: string; userId: string }) {
+  await invitationData.markInvitationAccepted(input);
 }
 
 export const invitationService = {
   createInvitation,
   getInvitationByToken,
   acceptInvitation,
-  deleteInvitation,
+  markInvitationAccepted,
 };

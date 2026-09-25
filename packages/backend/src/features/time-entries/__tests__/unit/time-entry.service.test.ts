@@ -16,7 +16,7 @@ describe("timeEntryService", () => {
         issueId: "issue-1",
         workspaceId: "ws-1",
         userId: "user-1",
-        duration: 0,
+        durationMinutes: 0,
       });
     } catch (caught) {
       error = caught;
@@ -31,7 +31,7 @@ describe("timeEntryService", () => {
       issueId: "issue-1",
       workspaceId: "ws-1",
       userId: "user-1",
-      duration: 30,
+      durationMinutes: 30,
       description: "Focused work",
       deletedAt: null,
       createdAt: new Date(),
@@ -41,16 +41,16 @@ describe("timeEntryService", () => {
       issueId: "issue-1",
       workspaceId: "ws-1",
       userId: "user-1",
-      duration: 30,
+      durationMinutes: 30,
       description: "Focused work",
     });
 
-    expect(entry.duration).toBe(30);
+    expect(entry.durationMinutes).toBe(30);
     expect(createSpy).toHaveBeenCalledWith({
       issueId: "issue-1",
       workspaceId: "ws-1",
       userId: "user-1",
-      duration: 30,
+      durationMinutes: 30,
       description: "Focused work",
     });
   });

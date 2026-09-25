@@ -38,13 +38,13 @@ export function buildTeam(overrides: Partial<TeamInsert> = {}): TeamInsert {
     key: "TST",
     workspaceId: overrides.workspaceId ?? "",
     avatar: null,
-    activeSprintId: null,
     ...overrides,
   };
 }
 
 export function buildIssueSprint(overrides: Partial<IssueSprintInsert> = {}): IssueSprintInsert {
   return {
+    finishedAt: overrides.status === "completed" ? new Date() : null,
     name: "Test Sprint",
     goal: "Test goal",
     startDate: new Date("2024-01-01"),

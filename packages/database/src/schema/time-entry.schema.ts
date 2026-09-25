@@ -11,13 +11,13 @@ export const timeEntry = sqliteTable(
     id: text()
       .primaryKey()
       .$defaultFn(() => randomUUIDv7()),
-    issueId: text("issue_id")
+    issueId: text()
       .notNull()
       .references(() => issue.id, { onDelete: "cascade" }),
-    userId: text("user_id")
+    userId: text()
       .notNull()
       .references(() => user.id),
-    duration: integer().notNull(),
+    durationMinutes: integer().notNull(),
     description: text(),
     ...lifecycleTimestamps,
   },

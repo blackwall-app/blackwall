@@ -23,7 +23,10 @@ async function getTeamForUserOrThrow(input: {
   const team = await teamData.getTeamForUser(input);
 
   if (!team) {
-    throw new NotFoundError("Team not found or access denied", ErrorCode.TEAM_NOT_FOUND_OR_ACCESS_DENIED);
+    throw new NotFoundError(
+      "Team not found or access denied",
+      ErrorCode.TEAM_NOT_FOUND_OR_ACCESS_DENIED,
+    );
   }
 
   return team;
@@ -81,11 +84,11 @@ async function listIssuesForTeam(
     pagination: input.pagination,
   };
 
-  if (input.onlyOnActiveSprint && team.activeSprintId && !input.withoutSprint) {
+  if (input.onlyOnActiveSprint && team.activeSprint && !input.withoutSprint) {
     const result = await issueData.listIssuesInSprint({
       workspaceId: input.workspaceId,
       teamId: team.id,
-      sprintId: team.activeSprintId,
+      sprintId: team.activeSprint.id,
       statusFilters: input.statusFilters,
       ...pagination,
     });
@@ -211,7 +214,7 @@ async function updateIssuesBulk(input: {
   }
 
   return issueData.updateIssuesBulk({
-    issueKeys: input.issueKeys,
+    issues: issuesInUserTeams,
     workspaceId: input.workspaceId,
     actorId: input.userId,
     updates: input.updates,
@@ -265,7 +268,7 @@ async function softDeleteIssuesBulk(input: {
   }
 
   return issueData.softDeleteIssuesBulk({
-    issueKeys: input.issueKeys,
+    issues: issuesInUserTeams,
     workspaceId: input.workspaceId,
     actorId: input.userId,
   });

@@ -19,7 +19,6 @@ export const teamSchema = z.object({
   name: z.string(),
   key: z.string(),
   workspaceId: z.string(),
-  activeSprintId: z.string().nullable().optional(),
   createdAt: z.any(),
   updatedAt: z.any(),
 });

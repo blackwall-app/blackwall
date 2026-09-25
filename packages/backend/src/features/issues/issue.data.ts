@@ -3,7 +3,7 @@ import { db, dbSchema } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
 import { getNextSequenceNumber } from "./key-sequences";
 import { buildChangeEvent, buildIssueUpdatedEvent } from "./change-events";
-import { ErrorCode } from "@blackwall/shared";
+import { ErrorCode, tiptapToPlainText } from "@blackwall/shared";
 import { BadRequestError } from "../../lib/errors";
 import { ORDER_GAP, calculateMovedIssueOrder } from "./issue-order";
 
@@ -127,7 +127,6 @@ export async function createIssue(input: {
 }) {
   const result = await db.transaction(async (tx) => {
     const keyNumber = await getNextSequenceNumber({
-      workspaceId: input.workspaceId,
       teamId: input.teamId,
       tx,
     });
@@ -136,6 +135,7 @@ export async function createIssue(input: {
       .insert(dbSchema.issue)
       .values({
         ...input.issue,
+        descriptionText: tiptapToPlainText(input.issue.description),
         createdById: input.createdById,
         assignedToId: input.issue.assignedToId ?? undefined,
         keyNumber,
@@ -166,68 +166,83 @@ export async function createIssue(input: {
   return result;
 }
 
+const issueDetailsWith = {
+  assignedTo: true,
+  labels: true,
+  issueSprint: true,
+  team: {
+    with: {
+      activeSprint: true,
+    },
+  },
+  comments: {
+    where: { deletedAt: { isNull: true } },
+    orderBy: { id: "asc" },
+    with: {
+      author: true,
+    },
+  },
+  changeEvents: {
+    orderBy: { createdAt: "asc" },
+    with: {
+      actor: true,
+    },
+  },
+} as const;
+
 export async function getIssueById(input: { issueId: string }) {
   return db.query.issue.findFirst({
     where: {
       id: input.issueId,
       deletedAt: { isNull: true },
     },
-    with: {
-      assignedTo: true,
-      labels: true,
-      issueSprint: true,
-      team: {
-        with: {
-          activeSprint: true,
-        },
-      },
-      comments: {
-        where: { deletedAt: { isNull: true } },
-        orderBy: { id: "asc" },
-        with: {
-          author: true,
-        },
-      },
-      changeEvents: {
-        orderBy: { createdAt: "asc" },
-        with: {
-          actor: true,
-        },
-      },
-    },
+    with: issueDetailsWith,
   });
 }
 
+/**
+ * Maps a key that uses a team's old key (e.g. `OLD-12` after the team was renamed to `NEW`)
+ * to the issue's current key.
+ * @returns the current key, or null if the prefix isn't a known alias
+ */
+async function resolveAliasedIssueKey(input: { workspaceId: string; issueKey: string }) {
+  const match = /^(.+)-(\d+)$/.exec(input.issueKey);
+  if (!match) return null;
+
+  const alias = await db.query.teamKeyAlias.findFirst({
+    where: { workspaceId: input.workspaceId, key: match[1] },
+  });
+  if (!alias) return null;
+
+  const issue = await db.query.issue.findFirst({
+    columns: { key: true },
+    where: { teamId: alias.teamId, keyNumber: Number(match[2]) },
+  });
+
+  return issue?.key ?? null;
+}
+
 export async function getIssueByKey(input: { workspaceId: string; issueKey: string }) {
-  return db.query.issue.findFirst({
+  const issue = await db.query.issue.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: input.issueKey,
       deletedAt: { isNull: true },
     },
-    with: {
-      assignedTo: true,
-      labels: true,
-      issueSprint: true,
-      team: {
-        with: {
-          activeSprint: true,
-        },
-      },
-      comments: {
-        where: { deletedAt: { isNull: true } },
-        orderBy: { id: "asc" },
-        with: {
-          author: true,
-        },
-      },
-      changeEvents: {
-        orderBy: { createdAt: "asc" },
-        with: {
-          actor: true,
-        },
-      },
+    with: issueDetailsWith,
+  });
+  if (issue) return issue;
+
+  const currentKey = await resolveAliasedIssueKey(input);
+  if (!currentKey) return undefined;
+
+  return db.query.issue.findFirst({
+    where: {
+      workspaceId: input.workspaceId,
+      key: currentKey,
+      deletedAt: { isNull: true },
     },
+    with: issueDetailsWith,
   });
 }
 
@@ -255,6 +270,11 @@ export type UpdateIssueInput = Partial<
   >
 >;
 
+function withDescriptionText(updates: UpdateIssueInput) {
+  if (updates.description === undefined) return updates;
+  return { ...updates, descriptionText: tiptapToPlainText(updates.description) };
+}
+
 export async function updateIssue(input: {
   issueId: string;
   workspaceId: string;
@@ -265,7 +285,7 @@ export async function updateIssue(input: {
   const result = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(dbSchema.issue)
-      .set(input.updates)
+      .set(withDescriptionText(input.updates))
       .where(eq(dbSchema.issue.id, input.issueId))
       .returning();
 
@@ -290,21 +310,27 @@ export async function updateIssue(input: {
 }
 
 export async function updateIssuesBulk(input: {
-  issueKeys: string[];
+  issues: Issue[];
   workspaceId: string;
   actorId: string;
   updates: UpdateIssueInput;
 }) {
-  const issues = await getIssuesByKeys(input);
-
   const result = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(dbSchema.issue)
-      .set(input.updates)
-      .where(inArray(dbSchema.issue.key, input.issueKeys))
+      .set(withDescriptionText(input.updates))
+      .where(
+        and(
+          eq(dbSchema.issue.workspaceId, input.workspaceId),
+          inArray(
+            dbSchema.issue.id,
+            input.issues.map((issue) => issue.id),
+          ),
+        ),
+      )
       .returning();
 
-    const events = issues
+    const events = input.issues
       .map((issue) => {
         return buildIssueUpdatedEvent(
           {
@@ -329,7 +355,7 @@ export async function updateIssuesBulk(input: {
 }
 
 export async function softDeleteIssuesBulk(input: {
-  issueKeys: string[];
+  issues: Issue[];
   workspaceId: string;
   actorId: string;
 }) {
@@ -337,7 +363,15 @@ export async function softDeleteIssuesBulk(input: {
     const updated = await tx
       .update(dbSchema.issue)
       .set({ deletedAt: new Date() })
-      .where(inArray(dbSchema.issue.key, input.issueKeys))
+      .where(
+        and(
+          eq(dbSchema.issue.workspaceId, input.workspaceId),
+          inArray(
+            dbSchema.issue.id,
+            input.issues.map((issue) => issue.id),
+          ),
+        ),
+      )
       .returning();
 
     return updated;

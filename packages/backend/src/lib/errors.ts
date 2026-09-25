@@ -50,3 +50,18 @@ export class ConflictError extends AppError {
     super(message, 409, code);
   }
 }
+
+function sqliteErrorCode(error: unknown): unknown {
+  if (typeof error !== "object" || error === null) return undefined;
+  if ("code" in error) return error.code;
+  if ("cause" in error) return sqliteErrorCode(error.cause);
+  return undefined;
+}
+
+/**
+ * True when a write failed because it would break a unique constraint or unique index.
+ * Also checks `error.cause`, where Drizzle puts the driver error when it wraps one.
+ */
+export function isSqliteUniqueConstraintError(error: unknown) {
+  return sqliteErrorCode(error) === "SQLITE_CONSTRAINT_UNIQUE";
+}

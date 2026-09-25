@@ -12,10 +12,10 @@ async function createTimeEntry(input: {
   issueId: string;
   workspaceId: string;
   userId: string;
-  duration: number;
+  durationMinutes: number;
   description?: string;
 }) {
-  if (input.duration <= 0) {
+  if (input.durationMinutes <= 0) {
     throw new BadRequestError("Duration must be positive", ErrorCode.DURATION_MUST_BE_POSITIVE);
   }
 

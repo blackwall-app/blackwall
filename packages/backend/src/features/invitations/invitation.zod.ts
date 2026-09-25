@@ -22,7 +22,7 @@ export const invitationResponseSchema = z.object({
     id: z.string(),
     email: z.string(),
     workspaceId: z.string(),
-    inviterId: z.string(),
+    createdById: z.string(),
     token: z.string(),
     expiresAt: z.any(), // Date or string
   }),

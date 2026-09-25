@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { db, dbSchema } from "@blackwall/database";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { E2E_DEFAULTS } from "./constants.ts";
 
 type JSONContent = {
@@ -65,7 +66,7 @@ export type CreateInvitationOptions = {
   createdById: string;
   email: string;
   token: string;
-  expiresAt?: Date | null;
+  expiresAt?: Date;
 };
 
 export function emptyDoc(): JSONContent {
@@ -123,6 +124,7 @@ export async function insertBaseFixtures(): Promise<SeededBaseFixtures> {
   await db.insert(dbSchema.workspaceUser).values({
     workspaceId: workspace.id,
     userId: user.id,
+    role: "owner",
   });
 
   const [team] = await db
@@ -139,7 +141,6 @@ export async function insertBaseFixtures(): Promise<SeededBaseFixtures> {
   }
 
   await db.insert(dbSchema.issueSequence).values({
-    workspaceId: workspace.id,
     teamId: team.id,
     currentSequence: 0,
   });
@@ -163,12 +164,7 @@ export async function createIssue(
   const [sequence] = await db
     .update(dbSchema.issueSequence)
     .set({ currentSequence: sql`${dbSchema.issueSequence.currentSequence} + 1` })
-    .where(
-      and(
-        eq(dbSchema.issueSequence.workspaceId, options.workspaceId),
-        eq(dbSchema.issueSequence.teamId, options.teamId),
-      ),
-    )
+    .where(eq(dbSchema.issueSequence.teamId, options.teamId))
     .returning();
 
   if (!sequence) {
@@ -216,6 +212,7 @@ export async function createSprint(
   options: CreateSprintOptions,
 ): Promise<typeof dbSchema.issueSprint.$inferSelect> {
   const now = new Date();
+  const status = options.status ?? "planned";
   const [sprint] = await db
     .insert(dbSchema.issueSprint)
     .values({
@@ -223,7 +220,8 @@ export async function createSprint(
       createdById: options.createdById,
       name: options.name,
       goal: options.goal ?? null,
-      status: options.status ?? "planned",
+      status,
+      finishedAt: status === "completed" ? now : null,
       startDate: options.startDate ?? now,
       endDate: options.endDate ?? new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
       archivedAt: options.archivedAt ?? null,
@@ -232,13 +230,6 @@ export async function createSprint(
 
   if (!sprint) {
     throw new Error("Failed to create sprint");
-  }
-
-  if (sprint.status === "active") {
-    await db
-      .update(dbSchema.team)
-      .set({ activeSprintId: sprint.id })
-      .where(eq(dbSchema.team.id, options.teamId));
   }
 
   return sprint;
@@ -317,7 +308,7 @@ export async function createInvitation(
       workspaceId: options.workspaceId,
       createdById: options.createdById,
       email: options.email,
-      token: options.token,
+      tokenHash: createHash("sha256").update(options.token).digest("hex"),
       expiresAt: options.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     })
     .returning();

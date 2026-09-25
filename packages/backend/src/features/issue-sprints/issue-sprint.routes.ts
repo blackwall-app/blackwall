@@ -90,7 +90,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
 
       const sprint = await issueSprintService.getActiveSprint({
         teamId: team.id,
-        activeSprintId: team.activeSprintId,
+        activeSprintId: team.activeSprint?.id ?? null,
       });
 
       return c.json({ sprint });
@@ -274,7 +274,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       const sprint = await issueSprintService.startSprint({
         sprintId,
         teamId: team.id,
-        activeSprintId: team.activeSprintId,
+        activeSprintId: team.activeSprint?.id ?? null,
       });
 
       return c.json({ sprint });
@@ -367,7 +367,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
         sprintId,
         teamId: team.id,
         createdById: user.id,
-        activeSprintId: team.activeSprintId,
+        activeSprintId: team.activeSprint?.id ?? null,
         completion: body,
       });
 
@@ -408,7 +408,7 @@ const issueSprintRoutes = new Hono<AppEnv>()
       await issueSprintService.archiveSprint({
         sprintId,
         teamId: team.id,
-        activeSprintId: team.activeSprintId,
+        activeSprintId: team.activeSprint?.id ?? null,
       });
 
       return c.json({ success: true });

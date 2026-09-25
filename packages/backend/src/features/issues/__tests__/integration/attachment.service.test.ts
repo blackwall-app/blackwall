@@ -67,8 +67,7 @@ describe("attachmentService", () => {
 
     expect(
       issueEvents.some(
-        (event) =>
-          event.eventType === "attachment_added" && event.relatedEntityId === attachment.id,
+        (event) => event.eventType === "attachment_added" && event.attachmentId === attachment.id,
       ),
     ).toBe(true);
   });
@@ -83,6 +82,62 @@ describe("attachmentService", () => {
     });
 
     expect(attachment.issueId).toBeNull();
+    expect(attachment.sizeBytes).toBe(5);
+    expect(await Bun.file(attachment.filePath).exists()).toBe(true);
+
+    const cleanupJob = await testDb.db.query.job.findFirst({
+      where: { type: "cleanup-orphan-attachment" },
+    });
+    expect(JSON.parse(cleanupJob!.payload)).toEqual({ attachmentId: attachment.id });
+    expect(cleanupJob!.runAt!.getTime()).toBeGreaterThan(Date.now() + 23 * 60 * 60 * 1000);
+  });
+
+  it("cleans up an orphan attachment that was never linked, including the file", async () => {
+    const attachment = await attachmentService.uploadAttachment({
+      workspaceSlug,
+      workspaceId,
+      issueKey: null,
+      userId,
+      file: new File(["draft"], "draft.png", { type: "image/png" }),
+    });
+
+    await attachmentService.cleanupOrphanAttachment({ attachmentId: attachment.id });
+
+    const stored = await testDb.db.query.issueAttachment.findFirst({
+      where: { id: attachment.id },
+    });
+    expect(stored).toBeUndefined();
+    expect(await Bun.file(attachment.filePath).exists()).toBe(false);
+  });
+
+  it("keeps an attachment that was linked to an issue before cleanup ran", async () => {
+    const issue = await createIssue(testDb, {
+      workspaceId,
+      teamId,
+      createdById: userId,
+      key: `${teamKey}-310`,
+      keyNumber: 310,
+    });
+    const attachment = await attachmentService.uploadAttachment({
+      workspaceSlug,
+      workspaceId,
+      issueKey: null,
+      userId,
+      file: new File(["draft"], "draft.png", { type: "image/png" }),
+    });
+    await attachmentService.associateAttachments({
+      workspaceId,
+      issueKey: issue.key,
+      userId,
+      attachmentIds: [attachment.id],
+    });
+
+    await attachmentService.cleanupOrphanAttachment({ attachmentId: attachment.id });
+
+    const stored = await testDb.db.query.issueAttachment.findFirst({
+      where: { id: attachment.id },
+    });
+    expect(stored?.issueId).toBe(issue.id);
     expect(await Bun.file(attachment.filePath).exists()).toBe(true);
   });
 

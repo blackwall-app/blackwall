@@ -1,15 +1,17 @@
-import * as z from "zod";
+import { Schema } from "effect";
 
-const envSchema = z.object({
-  DATABASE_URL: z.string(),
+const DbEnvSchema = Schema.Struct({
+  DATABASE_URL: Schema.String,
 });
 
-const env_internal = envSchema.safeParse(process.env);
+const decodeDbEnv = Schema.decodeUnknownSync(DbEnvSchema);
 
-if (!env_internal.success) {
-  console.error("Invalid environment variables for database");
-  console.error(z.treeifyError(env_internal.error));
-  process.exit(1);
-}
-
-export const dbEnv = env_internal.data;
+export const dbEnv: typeof DbEnvSchema.Type = (() => {
+  try {
+    return decodeDbEnv(process.env);
+  } catch (cause) {
+    console.error("Invalid environment variables for database");
+    console.error(cause);
+    process.exit(1);
+  }
+})();

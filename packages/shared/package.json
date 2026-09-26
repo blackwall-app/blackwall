@@ -16,6 +16,7 @@
     "@tiptap/starter-kit": "^3.14.0",
     "@tiptap/static-renderer": "^3.14.0",
     "@tiptap/suggestion": "^3.14.0",
+    "effect": "4.0.0-rc.117",
     "zod": "4"
   },
   "devDependencies": {

@@ -37,10 +37,11 @@
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0"
   },
+  "devDependencies": {
+    "effect": "^4.0.0-rc.117",
+    "typescript": "^5"
+  },
   "patchedDependencies": {
     "tinykeys@3.0.0": "patches/tinykeys@3.0.0.patch"
-  },
-  "devDependencies": {
-    "typescript": "^5"
   }
 }

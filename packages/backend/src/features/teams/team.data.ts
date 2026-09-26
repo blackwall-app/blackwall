@@ -1,4 +1,4 @@
-import { db, dbSchema, type DbTransaction } from "@blackwall/database";
+import { db, dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
 import { and, eq, sql } from "drizzle-orm";
 import { ErrorCode } from "@blackwall/shared";
 import { ConflictError, isSqliteUniqueConstraintError } from "../../lib/errors";
@@ -7,8 +7,7 @@ import { ConflictError, isSqliteUniqueConstraintError } from "../../lib/errors";
  * A team taking a key removes that key's alias, so `KEY-12` links point at the new owner.
  */
 function claimTeamKey(tx: DbTransaction, input: { workspaceId: string; key: string }) {
-  tx
-    .delete(dbSchema.teamKeyAlias)
+  tx.delete(dbSchema.teamKeyAlias)
     .where(
       and(
         eq(dbSchema.teamKeyAlias.workspaceId, input.workspaceId),
@@ -18,23 +17,36 @@ function claimTeamKey(tx: DbTransaction, input: { workspaceId: string; key: stri
     .run();
 }
 
-export async function createTeam(input: { name: string; key: string; workspaceId: string }) {
+export function insertTeam(
+  tx: DbTransaction,
+  input: { name: string; key: string; workspaceId: string },
+) {
+  claimTeamKey(tx, { workspaceId: input.workspaceId, key: input.key });
+
+  const [team] = tx
+    .insert(dbSchema.team)
+    .values({
+      name: input.name,
+      key: input.key,
+      workspaceId: input.workspaceId,
+    })
+    .returning()
+    .all();
+
+  return team;
+}
+
+export async function createTeam(
+  input: { name: string; key: string; workspaceId: string },
+  tx?: DbTransaction,
+) {
+  // With an explicit transaction the outer transaction owns error mapping.
+  if (tx !== undefined) {
+    return insertTeam(tx, input);
+  }
+
   try {
-    return await db.transaction((tx) => {
-      claimTeamKey(tx, { workspaceId: input.workspaceId, key: input.key });
-
-      const [team] = tx
-        .insert(dbSchema.team)
-        .values({
-          name: input.name,
-          key: input.key,
-          workspaceId: input.workspaceId,
-        })
-        .returning()
-        .all();
-
-      return team;
-    });
+    return await db.transaction((trx) => insertTeam(trx, input));
   } catch (error) {
     if (isSqliteUniqueConstraintError(error)) {
       throw new ConflictError(
@@ -47,11 +59,20 @@ export async function createTeam(input: { name: string; key: string; workspaceId
   }
 }
 
-export async function addUserToTeam(input: { userId: string; teamId: string }) {
-  await db.insert(dbSchema.userTeam).values({
-    userId: input.userId,
-    teamId: input.teamId,
-  });
+export function insertTeamMember(tx: DbHandle, input: { userId: string; teamId: string }) {
+  tx.insert(dbSchema.userTeam)
+    .values({
+      userId: input.userId,
+      teamId: input.teamId,
+    })
+    .run();
+}
+
+export async function addUserToTeam(
+  input: { userId: string; teamId: string },
+  handle: DbHandle = db,
+) {
+  insertTeamMember(handle, input);
 }
 
 export async function isTeamMember(input: { userId: string; teamId: string }) {
@@ -225,14 +246,15 @@ export async function updateTeam(input: {
 
       if (keyChanged) {
         // Keep the old key resolvable, then move every issue to the new prefix.
-        tx.insert(dbSchema.teamKeyAlias).values({
-          workspaceId: input.workspaceId,
-          key: team.key,
-          teamId: team.id,
-        }).run();
+        tx.insert(dbSchema.teamKeyAlias)
+          .values({
+            workspaceId: input.workspaceId,
+            key: team.key,
+            teamId: team.id,
+          })
+          .run();
 
-        tx
-          .update(dbSchema.issue)
+        tx.update(dbSchema.issue)
           .set({ key: sql`${newKey} || '-' || ${dbSchema.issue.keyNumber}` })
           .where(eq(dbSchema.issue.teamId, team.id))
           .run();
@@ -288,7 +310,9 @@ export async function listWorkspaceUsersNotInTeam(input: { workspaceId: string; 
 
 export const teamData = {
   createTeam,
+  insertTeam,
   addUserToTeam,
+  insertTeamMember,
   isTeamMember,
   getTeams,
   getTeamByKey,

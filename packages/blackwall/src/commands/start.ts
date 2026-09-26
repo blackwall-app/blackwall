@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
-import { app as apiApp } from "@blackwall/backend/src/index";
+import { app as apiApp, disposeEffectApi } from "@blackwall/backend/src/index";
 import { migrateDatabase } from "@blackwall/database/migrate";
 import { jobService } from "@blackwall/queue";
 import "@blackwall/backend/src/jobs/register";
@@ -38,6 +38,7 @@ export async function start(options: StartOptions) {
     console.log("\n[blackwall] Shutting down...");
     controller.abort();
     server.stop();
+    void disposeEffectApi();
   };
 
   process.on("SIGINT", shutdown);

@@ -17,7 +17,9 @@ const dbSchema = schema;
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export { db, dbSchema, client, type DbTransaction };
+type DbHandle = typeof db | DbTransaction;
+
+export { db, dbSchema, client, type DbHandle, type DbTransaction };
 
 // Re-export everything from schema for convenience
 export * from "./schema";

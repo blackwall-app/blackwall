@@ -46,6 +46,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "effect": "4.0.0-rc.117",
     "hono": "^4.11.5",
     "lucide-solid": "^0.562.0",
     "rigid-ui": "^0.0.2",

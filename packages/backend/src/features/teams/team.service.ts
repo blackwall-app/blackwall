@@ -13,6 +13,15 @@ async function createTeam(input: { name: string; key: string; workspaceId: strin
 }
 
 /**
+ * Derive a team key from a name: its first three non-space characters, uppercased.
+ * @param name team or workspace display name
+ * @returns team key
+ */
+export function teamKeyFromName(name: string) {
+  return name.split(" ").join("").slice(0, 3).toUpperCase();
+}
+
+/**
  * Create a new team based on an existing workspace.
  * @param input workspace object containing displayName and id
  * @returns the newly created team
@@ -20,11 +29,10 @@ async function createTeam(input: { name: string; key: string; workspaceId: strin
 async function createTeamBasedOnWorkspace(input: {
   workspace: Pick<Workspace, "displayName" | "id">;
 }) {
-  const key = input.workspace.displayName.split(" ").join("").slice(0, 3).toUpperCase();
   return teamData.createTeam({
     name: input.workspace.displayName,
     workspaceId: input.workspace.id,
-    key,
+    key: teamKeyFromName(input.workspace.displayName),
   });
 }
 

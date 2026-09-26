@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { Scalar } from "@scalar/hono-api-reference";
 import { openAPIRouteHandler } from "hono-openapi";
+import { handleEffectRequest } from "./api";
 import { betterAuthRoutes } from "./features/auth/better-auth.routes";
 import { env } from "./lib/zod-env";
 import { workspaceRoutes } from "./features/workspaces/workspace.routes";
@@ -40,6 +41,10 @@ const app = new Hono<AppEnv>()
     }),
   )
   .onError(errorHandler)
+
+  // Effect HttpApi (v4). New endpoints live here; Hono routes below are
+  // mid-migration and move over group by group.
+  .all("/api/effect/*", (c) => handleEffectRequest(c.req.raw))
 
   // Public routes
   .route("/api/better-auth", betterAuthRoutes)
@@ -98,6 +103,7 @@ app.get(
 
 export type AppType = typeof app;
 export { app };
+export { disposeEffectApi } from "./api";
 
 export default {
   port: 8000,

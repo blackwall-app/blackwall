@@ -1,34 +1,48 @@
-import * as z from "zod";
+import { Schema } from "effect";
 
-export const envSchema = z.object({
-  APP_BASE_URL: z.url(),
-  APP_SECRET: z.string(),
+const RawEnvSchema = Schema.Struct({
+  APP_BASE_URL: Schema.String.pipe(
+    Schema.check(
+      Schema.makeFilter((url: string) => (URL.canParse(url) ? undefined : "Expected a valid URL")),
+    ),
+  ),
+  APP_SECRET: Schema.String,
 
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_ID: Schema.optional(Schema.String),
+  GOOGLE_CLIENT_SECRET: Schema.optional(Schema.String),
 
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  EMAIL_FROM: z.string().optional().default("Blackwall <noreply@blackwall.dev>"),
+  SMTP_HOST: Schema.optional(Schema.String),
+  SMTP_PORT: Schema.optional(Schema.FiniteFromString),
+  SMTP_USER: Schema.optional(Schema.String),
+  SMTP_PASS: Schema.optional(Schema.String),
+  EMAIL_FROM: Schema.optional(Schema.String),
 
-  AWS_REGION: z.string().optional(),
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_REGION: Schema.optional(Schema.String),
+  AWS_ACCESS_KEY_ID: Schema.optional(Schema.String),
+  AWS_SECRET_ACCESS_KEY: Schema.optional(Schema.String),
 
-  ARGON2_MEMORY_COST: z.coerce.number().optional().default(65536),
-  ARGON2_TIME_COST: z.coerce.number().optional().default(2),
+  ARGON2_MEMORY_COST: Schema.optional(Schema.FiniteFromString),
+  ARGON2_TIME_COST: Schema.optional(Schema.FiniteFromString),
 
-  FILES_DIR: z.string().optional().default("blackwall_data/uploads"),
+  FILES_DIR: Schema.optional(Schema.String),
 });
 
-const env_internal = envSchema.safeParse(process.env);
+const decodeEnv = Schema.decodeUnknownSync(RawEnvSchema);
 
-if (!env_internal.success) {
-  console.error("Invalid environment variables");
-  console.error(z.treeifyError(env_internal.error));
-  process.exit(1);
-}
+const raw: typeof RawEnvSchema.Type = (() => {
+  try {
+    return decodeEnv(process.env);
+  } catch (cause) {
+    console.error("Invalid environment variables");
+    console.error(cause);
+    process.exit(1);
+  }
+})();
 
-export const env = env_internal.data;
+export const env = {
+  ...raw,
+  EMAIL_FROM: raw.EMAIL_FROM ?? "Blackwall <noreply@blackwall.dev>",
+  ARGON2_MEMORY_COST: raw.ARGON2_MEMORY_COST ?? 65536,
+  ARGON2_TIME_COST: raw.ARGON2_TIME_COST ?? 2,
+  FILES_DIR: raw.FILES_DIR ?? "blackwall_data/uploads",
+};

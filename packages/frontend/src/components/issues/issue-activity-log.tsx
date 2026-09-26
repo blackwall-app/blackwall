@@ -1,5 +1,6 @@
 import { UserAvatar } from "@/components/custom-ui/avatar";
-import type { IssueChangeEventType, SerializedUser } from "@blackwall/database/schema";
+import type { IssueChangeEventType } from "@blackwall/database/schema";
+import type { UserSummary } from "@blackwall/shared";
 import type { InferDbType } from "@blackwall/database/types";
 import { issueMappings } from "@/lib/mappings";
 import { formatRelative } from "@/lib/dates";
@@ -43,26 +44,26 @@ type EventTimelineItem = {
   type: "event";
   date: string;
   data: Event;
-  assignedTo: SerializedUser | null;
+  assignedTo: UserSummary | null;
 };
 
 export type TimelineItem = CommentTimelineItem | EventTimelineItem;
 
 export type IssueActivityLogProps = {
   issue: IssueWithCommentsAndEvents;
-  assignableUsers: SerializedUser[];
+  assignableUsers: ReadonlyArray<UserSummary>;
   workspaceSlug: string;
 };
 
 export type IssueEventItemProps = {
   event: Event;
-  assignedTo: SerializedUser | null;
+  assignedTo: UserSummary | null;
 };
 
 function buildTimelineItems(
   comments: Comment[],
   events: Event[],
-  assignableUsers: SerializedUser[],
+  assignableUsers: ReadonlyArray<UserSummary>,
 ): TimelineItem[] {
   const items: TimelineItem[] = [];
 
@@ -110,7 +111,7 @@ function formatEventTypeText(eventType: IssueChangeEventType): string {
   }
 }
 
-function getEventEntityText(event: Event, assignedTo: SerializedUser | null): string | undefined {
+function getEventEntityText(event: Event, assignedTo: UserSummary | null): string | undefined {
   switch (event.eventType) {
     case "assignee_changed": {
       const assignedToId = event.changes?.assignedToId?.to;
@@ -172,7 +173,7 @@ export function IssueEventItem(props: IssueEventItemProps) {
 
   return (
     <div class="flex flex-row gap-1 flex-wrap items-center text-muted-foreground text-sm pl-4">
-      <UserAvatar user={props.event.actor as unknown as SerializedUser} size="5" />
+      <UserAvatar user={props.event.actor} size="5" />
       <p>{props.event.actor.name}</p>
       <p class="font-medium">{eventTypeText()}</p>
       <Show when={eventEntityText()}>{(entity) => <p>{entity()}</p>}</Show>

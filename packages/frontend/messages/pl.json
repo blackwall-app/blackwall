@@ -602,5 +602,6 @@
   "error_user_already_exists": "Konto z tym adresem e-mail już istnieje.",
   "error_user_not_found": "Nie znaleziono użytkownika",
   "error_validation_error": "Walidacja nie powiodła się",
-  "error_workspace_not_found": "Nie znaleziono przestrzeni roboczej"
+  "error_workspace_not_found": "Nie znaleziono przestrzeni roboczej",
+  "error_workspace_slug_taken": "Ten adres przestrzeni roboczej jest już zajęty"
 }

@@ -1,8 +1,8 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
 import { Hono } from "hono";
 import { auth } from "./better-auth";
-import { workspaceService } from "../workspaces/workspace.service";
-import { teamService } from "../teams/team.service";
+import { runtime } from "../../lib/effect/runtime";
+import { WorkspaceService } from "../workspaces/WorkspaceService";
 import { signupEmailSchema, signupResponseSchema } from "./auth.zod";
 
 /**
@@ -38,25 +38,15 @@ const authRoutes = new Hono().post(
       returnHeaders: true,
     });
 
-    const workspace = await workspaceService.createWorkspace({
-      displayName: workspaceDisplayName,
-      slug: workspaceUrlSlug,
-    });
-
-    const team = await teamService.createTeamBasedOnWorkspace({
-      workspace,
-    });
-
-    await Promise.all([
-      workspaceService.UNCHECKED_addOwnerToWorkspace({
-        workspaceId: workspace.id,
-        userId: response.user.id,
-      }),
-      teamService.UNCHECKED_addUserToTeam({
-        teamId: team.id,
-        userId: response.user.id,
-      }),
-    ]);
+    const { workspace, team } = await runtime.runPromise(
+      WorkspaceService.use((workspaces) =>
+        workspaces.createWorkspace({
+          displayName: workspaceDisplayName,
+          slug: workspaceUrlSlug,
+          ownerId: response.user.id,
+        }),
+      ),
+    );
 
     const setCookie = headers.get("Set-Cookie");
     if (setCookie) {

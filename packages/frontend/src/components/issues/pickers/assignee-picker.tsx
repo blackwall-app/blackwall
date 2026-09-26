@@ -1,7 +1,7 @@
 import { UserAvatar } from "@/components/custom-ui/avatar";
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
 import { Button } from "@/components/ui/button";
-import type { SerializedUser } from "@blackwall/database/schema";
+import type { UserSummary } from "@blackwall/shared";
 import { cn } from "@/lib/utils";
 import { Popover } from "@kobalte/core/popover";
 import ChevronsUpDownIcon from "lucide-solid/icons/chevrons-up-down";
@@ -21,7 +21,7 @@ const updateAssignee = action(async (issueKey: string, assignedToId: string | nu
 
 type AssigneePickerPopoverProps =
   | {
-      assignableUsers: SerializedUser[];
+      assignableUsers: ReadonlyArray<UserSummary>;
       assignedToId: string | null;
       workspaceSlug: string;
       teamKey: string;
@@ -31,7 +31,7 @@ type AssigneePickerPopoverProps =
       controlled?: false;
     }
   | {
-      assignableUsers: SerializedUser[];
+      assignableUsers: ReadonlyArray<UserSummary>;
       assignedToId: string | null;
       workspaceSlug: string;
       teamKey: string;

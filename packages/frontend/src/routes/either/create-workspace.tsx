@@ -2,11 +2,11 @@ import { AuthCard } from "@/components/blocks/auth";
 import { Button } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { useNavigate } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
-import type { CreateWorkspace } from "@blackwall/backend/src/features/workspaces/workspace.zod";
+import type { CreateWorkspace } from "@blackwall/shared";
 import { slugify } from "@/lib/utils";
 
 export default function CreateWorkspacePage() {
@@ -21,11 +21,7 @@ export default function CreateWorkspacePage() {
       slug: "",
     } satisfies CreateWorkspace,
     onSubmit: async ({ value }) => {
-      const res = await api.api.workspaces.$post({
-        json: value,
-      });
-
-      const { workspace } = await res.json();
+      const { workspace } = await runApi((client) => client.workspaces.create({ payload: value }));
       navigate(`/${workspace.slug}`);
     },
     listeners: {

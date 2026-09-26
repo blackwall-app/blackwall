@@ -1,6 +1,6 @@
 import { FastLink } from "@/components/custom-ui/fast-link";
 import { Index, Show } from "solid-js";
-import type { SerializedUser, SerializedWorkspace } from "@blackwall/database/schema";
+import type { Workspace, WorkspaceMember } from "@blackwall/shared";
 import { UserAvatar } from "../custom-ui/avatar";
 import { useSessionData } from "@/context/session-context";
 import { Button } from "../ui/button";
@@ -10,13 +10,9 @@ import ChevronRightIcon from "lucide-solid/icons/chevron-right";
 import { m } from "@/paraglide/messages";
 import { Badge } from "../custom-ui/badge";
 
-type UserForWorkspaceMemberList = SerializedUser & {
-  teams?: { name: string }[];
-};
-
 export type WorkspaceMemberListProps = {
-  members: UserForWorkspaceMemberList[];
-  workspace: SerializedWorkspace;
+  members: ReadonlyArray<WorkspaceMember>;
+  workspace: Workspace;
 };
 
 export function WorkspaceMemberList(props: WorkspaceMemberListProps) {
@@ -49,13 +45,10 @@ export function WorkspaceMemberList(props: WorkspaceMemberListProps) {
   );
 }
 
-function WorkspaceMemberListItem(props: {
-  member: UserForWorkspaceMemberList;
-  workspace: SerializedWorkspace;
-}) {
+function WorkspaceMemberListItem(props: { member: WorkspaceMember; workspace: Workspace }) {
   const session = useSessionData();
   const isCurrentUser = () => props.member.id === session().user.id;
-  const teamNames = () => props.member.teams?.map((t) => t.name).join(", ") || "No teams";
+  const teamNames = () => props.member.teams.map((t) => t.name).join(", ") || "No teams";
 
   return (
     <FastLink

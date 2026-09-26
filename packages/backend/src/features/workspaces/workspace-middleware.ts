@@ -1,7 +1,8 @@
 import { ErrorCode } from "@blackwall/shared";
 import { createMiddleware } from "hono/factory";
-import { BadRequestError, NotFoundError, UnauthorizedError } from "../../lib/errors";
-import { workspaceService } from "./workspace.service";
+import { runtime } from "../../lib/effect/runtime";
+import { BadRequestError, UnauthorizedError } from "../../lib/errors";
+import { WorkspaceService } from "./WorkspaceService";
 
 export const workspaceMiddleware = createMiddleware(async (c, next) => {
   const workspaceSlug = c.req.header("x-blackwall-workspace-slug");
@@ -17,11 +18,9 @@ export const workspaceMiddleware = createMiddleware(async (c, next) => {
     throw new UnauthorizedError("Unauthorized");
   }
 
-  const workspace = await workspaceService.getWorkspaceBySlug(workspaceSlug, user.id);
-
-  if (!workspace) {
-    throw new NotFoundError("Workspace not found", ErrorCode.WORKSPACE_NOT_FOUND);
-  }
+  const workspace = await runtime.runPromise(
+    WorkspaceService.use((workspaces) => workspaces.requireWorkspace(workspaceSlug, user.id)),
+  );
 
   c.set("workspace", workspace);
 

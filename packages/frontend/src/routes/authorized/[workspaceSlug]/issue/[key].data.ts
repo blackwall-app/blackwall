@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { query } from "@solidjs/router";
 
@@ -8,13 +9,11 @@ export const issueLoader = query(async (issueKey: string, workspaceSlug: string)
     throw new Error(m.loader_invalid_issue_key());
   }
 
-  const [issueRes, membersRes, sprintsRes] = await Promise.all([
+  const [issueRes, { members }, sprintsRes] = await Promise.all([
     api.api.issues[":issueKey"].$get({
       param: { issueKey },
     }),
-    api.api.workspaces[":slug"].members.$get({
-      param: { slug: workspaceSlug },
-    }),
+    runApi((client) => client.workspaces.listMembers({ params: { slug: workspaceSlug } })),
     teamKey
       ? api.api.teams[":teamKey"].sprints.$get({
           param: { teamKey },
@@ -23,7 +22,6 @@ export const issueLoader = query(async (issueKey: string, workspaceSlug: string)
   ]);
 
   const { issue } = await issueRes.json();
-  const { members } = await membersRes.json();
   const sprints = sprintsRes ? (await sprintsRes.json()).sprints : [];
   const openSprints = sprints.filter((sprint) => sprint.status !== "completed");
 

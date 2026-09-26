@@ -1,4 +1,9 @@
 import { Schema } from "effect";
+import { HttpApiEndpoint, HttpApiGroup } from "effect/unstable/httpapi";
+import { Authorization } from "./auth";
+import { ErrorCode } from "./error-codes";
+import { ApiError, NotWorkspaceMember, WorkspaceNotFound } from "./errors";
+import { Team, User } from "./models";
 
 const DisplayName = Schema.String.pipe(Schema.check(Schema.isMinLength(2), Schema.isMaxLength(30)));
 
@@ -44,44 +49,101 @@ export const WorkspaceMemberParamsSchema = Schema.Struct({
 
 export type WorkspaceMemberParams = typeof WorkspaceMemberParamsSchema.Type;
 
-export class Workspace extends Schema.Class<Workspace>("blackwall/Workspace")({
+export const Workspace = Schema.Struct({
   id: Schema.String,
   displayName: Schema.String,
   slug: WorkspaceSlug,
   logoUrl: Schema.NullOr(Schema.String),
-}) {}
+});
 
-export class WorkspaceResponse extends Schema.Class<WorkspaceResponse>(
-  "blackwall/WorkspaceResponse",
-)({
+export type Workspace = typeof Workspace.Type;
+
+export const WorkspaceResponse = Schema.Struct({
   workspace: Workspace,
-}) {}
+});
 
-export class WorkspaceListResponse extends Schema.Class<WorkspaceListResponse>(
-  "blackwall/WorkspaceListResponse",
-)({
+export const PreferredWorkspaceResponse = Schema.Struct({
+  workspace: Schema.NullOr(Workspace),
+});
+
+export const WorkspaceListResponse = Schema.Struct({
   workspaces: Schema.Array(Workspace),
+});
+
+/** A workspace member with the teams they belong to in that workspace. */
+export const WorkspaceMember = Schema.Struct({
+  ...User.fields,
+  teams: Schema.Array(Team),
+});
+
+export type WorkspaceMember = typeof WorkspaceMember.Type;
+
+export const WorkspaceMemberListResponse = Schema.Struct({
+  members: Schema.Array(WorkspaceMember),
+});
+
+export const WorkspaceMemberResponse = Schema.Struct({
+  member: WorkspaceMember,
+});
+
+export class WorkspaceSlugTaken extends ApiError<WorkspaceSlugTaken>()("WorkspaceSlugTaken", {
+  code: ErrorCode.WORKSPACE_SLUG_TAKEN,
+  status: 409,
+  message: "Workspace slug is already taken",
 }) {}
 
-export const WorkspaceMemberSchema = Schema.Struct({
-  id: Schema.String,
-  name: Schema.String,
-  email: Schema.String,
-  image: Schema.optional(Schema.NullOr(Schema.String)),
-  role: Schema.optional(Schema.String),
-  joinedAt: Schema.optional(Schema.Unknown),
-});
+export class MemberNotFound extends ApiError<MemberNotFound>()("MemberNotFound", {
+  code: ErrorCode.MEMBER_NOT_FOUND,
+  status: 404,
+  message: "Member not found",
+}) {}
 
-export type WorkspaceMember = typeof WorkspaceMemberSchema.Type;
-
-export const WorkspaceMemberListSchema = Schema.Struct({
-  members: Schema.Array(WorkspaceMemberSchema),
-});
-
-export type WorkspaceMemberList = typeof WorkspaceMemberListSchema.Type;
-
-export const WorkspaceMemberResponseSchema = Schema.Struct({
-  member: WorkspaceMemberSchema,
-});
-
-export type WorkspaceMemberResponse = typeof WorkspaceMemberResponseSchema.Type;
+export class WorkspacesApi extends HttpApiGroup.make("workspaces")
+  .add(
+    HttpApiEndpoint.get("list", "/", {
+      success: WorkspaceListResponse,
+    }),
+  )
+  .add(
+    HttpApiEndpoint.post("create", "/", {
+      payload: CreateWorkspaceSchema,
+      success: WorkspaceResponse,
+      error: WorkspaceSlugTaken,
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("preferred", "/preferred", {
+      success: PreferredWorkspaceResponse,
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("getBySlug", "/:slug", {
+      params: WorkspaceSlugParamsSchema,
+      success: WorkspaceResponse,
+      error: [WorkspaceNotFound, NotWorkspaceMember],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.patch("update", "/:workspaceId", {
+      params: WorkspaceIdParamsSchema,
+      payload: UpdateWorkspaceSchema,
+      success: WorkspaceResponse,
+      error: [WorkspaceNotFound, NotWorkspaceMember],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("listMembers", "/:slug/members", {
+      params: WorkspaceSlugParamsSchema,
+      success: WorkspaceMemberListResponse,
+      error: [WorkspaceNotFound, NotWorkspaceMember],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("getMember", "/:slug/members/:userId", {
+      params: WorkspaceMemberParamsSchema,
+      success: WorkspaceMemberResponse,
+      error: [WorkspaceNotFound, NotWorkspaceMember, MemberNotFound],
+    }),
+  )
+  .middleware(Authorization)
+  .prefix("/workspaces") {}

@@ -1,10 +1,8 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { query, redirect } from "@solidjs/router";
 
 export const redirectToPreferredWorkspace = query(async () => {
-  const res = await api.api.workspaces.preferred.$get();
-
-  const { workspace } = await res.json();
+  const { workspace } = await runApi((client) => client.workspaces.preferred());
 
   if (!workspace) {
     // TODO redirect to onboarding

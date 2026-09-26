@@ -1,25 +1,22 @@
 import { Api } from "@blackwall/shared";
-import { Database } from "@blackwall/database/effect";
 import { Layer } from "effect";
 import { HttpRouter, HttpServer } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
-import { Auth } from "../features/auth/Auth";
-import { WorkspacesHandlers } from "./workspaces";
+import { AppLayer, memoMap, runtime } from "../lib/effect/runtime";
+import { HandlersLive } from "./handlers";
 
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
-}).pipe(Layer.provide(WorkspacesHandlers));
+}).pipe(Layer.provide(HandlersLive));
 
 const DocsLive = HttpApiScalar.layer(Api, { path: "/docs" });
 
-const AllRoutes = Layer.mergeAll(ApiLive, DocsLive);
-
 const { dispose, handler } = HttpRouter.toWebHandler(
-  AllRoutes.pipe(
+  Layer.mergeAll(ApiLive, DocsLive).pipe(
     Layer.provide(HttpServer.layerServices),
-    Layer.provide(Database.layer),
-    Layer.provide(Auth.layer),
+    Layer.provide(AppLayer),
   ),
+  { memoMap },
 );
 
 const EFFECT_PREFIX = "/api/effect";
@@ -30,4 +27,7 @@ export const handleEffectRequest = (request: Request): Promise<Response> => {
   return handler(new Request(new URL(path + url.search, url.origin).href, request));
 };
 
-export const disposeEffectApi = dispose;
+export const disposeEffectApi = async () => {
+  await dispose();
+  await runtime.dispose();
+};

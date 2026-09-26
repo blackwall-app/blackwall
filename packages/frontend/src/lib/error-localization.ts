@@ -14,6 +14,7 @@ const errorMessageMap: Record<string, () => string> = {
   [ErrorCode.WORKSPACE_NOT_FOUND]: () => m.error_workspace_not_found(),
   [ErrorCode.NOT_WORKSPACE_MEMBER]: () => m.error_not_workspace_member(),
   [ErrorCode.MEMBER_NOT_FOUND]: () => m.error_member_not_found(),
+  [ErrorCode.WORKSPACE_SLUG_TAKEN]: () => m.error_workspace_slug_taken(),
   [ErrorCode.TEAM_NOT_FOUND]: () => m.error_team_not_found(),
   [ErrorCode.TEAM_NOT_FOUND_OR_ACCESS_DENIED]: () => m.error_team_not_found_or_access_denied(),
   [ErrorCode.TEAM_NOT_FOUND_OR_NOT_MEMBER]: () => m.error_team_not_found_or_not_member(),

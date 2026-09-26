@@ -16,12 +16,15 @@ export const AuthorizationLive = Layer.effect(
           const request = yield* HttpServerRequest.HttpServerRequest;
           const session = yield* auth.getSession(request.headers).pipe(Effect.orDie);
           if (session === null) {
-            return yield* new Unauthorized({ message: "Unauthorized" });
+            return yield* new Unauthorized();
           }
+          const { user } = session;
           return yield* Effect.provideService(httpEffect, CurrentUser, {
-            email: session.user.email,
-            id: session.user.id,
-            name: session.user.name,
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            lastWorkspaceId: user.lastWorkspaceId ?? null,
+            lastTeamId: user.lastTeamId ?? null,
           });
         }),
     });

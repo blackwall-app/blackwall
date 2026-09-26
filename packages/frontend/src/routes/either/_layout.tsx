@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { SerializedWorkspace } from "@blackwall/database";
+import type { Workspace } from "@blackwall/shared";
 import ArrowLeft from "lucide-solid/icons/arrow-left";
 import LogOutIcon from "lucide-solid/icons/log-out";
 
@@ -68,7 +68,7 @@ const EitherUserMenu: Component = () => {
   );
 };
 
-const BackButton: Component<{ preferredWorkspace: SerializedWorkspace }> = (props) => {
+const BackButton: Component<{ preferredWorkspace: Workspace }> = (props) => {
   return (
     <A
       class={cn(buttonVariants({ variant: "ghost" }), "absolute top-3 left-3 z-100")}

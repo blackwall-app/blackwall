@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { authClient } from "@/lib/auth-client";
 import { query } from "@solidjs/router";
 
@@ -12,11 +12,10 @@ export const eitherLoader = query(async () => {
     };
   }
 
-  const preferredWorkspaceRes = await api.api.workspaces.preferred.$get();
-  const preferredWorkspace = await preferredWorkspaceRes.json();
+  const { workspace } = await runApi((client) => client.workspaces.preferred());
 
   return {
     sessionData: session.data,
-    preferredWorkspace: preferredWorkspace.workspace ?? null,
+    preferredWorkspace: workspace,
   };
 }, "eitherLoader");

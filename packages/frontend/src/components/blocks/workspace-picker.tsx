@@ -5,17 +5,14 @@ import { createSignal } from "solid-js";
 import { PickerPopover } from "../custom-ui/picker-popover";
 import { Button } from "../ui/button";
 import { query, useNavigate } from "@solidjs/router";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { createResource } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 
-const workspacesQuery = query(async () => {
-  const res = await api.api.workspaces.$get();
-
-  const data = await res.json();
-
-  return data;
-}, "list-workspaces");
+const workspacesQuery = query(
+  () => runApi((client) => client.workspaces.list()),
+  "list-workspaces",
+);
 
 export function WorkspacePicker() {
   const [open, setOpen] = createSignal(false);

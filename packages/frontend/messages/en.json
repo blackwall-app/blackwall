@@ -588,5 +588,6 @@
   "error_user_already_exists": "An account with this email already exists.",
   "error_user_not_found": "User not found",
   "error_validation_error": "Validation failed",
-  "error_workspace_not_found": "Workspace not found"
+  "error_workspace_not_found": "Workspace not found",
+  "error_workspace_slug_taken": "This workspace URL is already taken"
 }

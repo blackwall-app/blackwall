@@ -23,7 +23,8 @@ import {
   teamWithMembersSchema,
   userListSchema,
 } from "./settings.zod";
-import { workspaceService } from "../workspaces/workspace.service";
+import { runtime } from "../../lib/effect/runtime";
+import { WorkspaceService } from "../workspaces/WorkspaceService";
 import { ErrorCode } from "@blackwall/shared";
 import { BadRequestError, NotFoundError } from "../../lib/errors";
 import { teamData } from "../teams/team.data";
@@ -115,7 +116,10 @@ const settingsRoutes = new Hono<AppEnv>()
     }
 
     if (!file.type.startsWith("image/")) {
-      throw new BadRequestError("Only image files are supported", ErrorCode.ONLY_IMAGE_FILES_SUPPORTED);
+      throw new BadRequestError(
+        "Only image files are supported",
+        ErrorCode.ONLY_IMAGE_FILES_SUPPORTED,
+      );
     }
 
     const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
@@ -239,11 +243,15 @@ const settingsRoutes = new Hono<AppEnv>()
       const { displayName } = c.req.valid("json");
 
       if (displayName) {
-        const updatedWorkspace = await workspaceService.updateWorkspace({
-          actorId: user.id,
-          workspaceId: workspace.id,
-          displayName,
-        });
+        const updatedWorkspace = await runtime.runPromise(
+          WorkspaceService.use((workspaces) =>
+            workspaces.updateWorkspace({
+              actorId: user.id,
+              workspaceId: workspace.id,
+              displayName,
+            }),
+          ),
+        );
 
         return c.json({ workspace: updatedWorkspace });
       }

@@ -8,3 +8,5 @@ export * from "./auth";
 export * from "./models";
 export { Api } from "./api";
 export * from "./workspaces";
+export * from "./teams";
+export * from "./issues";

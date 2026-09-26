@@ -1,5 +1,5 @@
 import { EmptyFilter, and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
-import { db, dbSchema } from "@blackwall/database";
+import { db, dbSchema, type DbHandle } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
 import { getNextSequenceNumber } from "./key-sequences";
 import { buildChangeEvent, buildIssueUpdatedEvent } from "./change-events";
@@ -146,16 +146,18 @@ export async function createIssue(input: {
       .returning()
       .all();
 
-    tx.insert(dbSchema.issueChangeEvent).values(
-      buildChangeEvent(
-        {
-          issueId: issue.id,
-          workspaceId: input.workspaceId,
-          actorId: input.createdById,
-        },
-        "issue_created",
-      ),
-    ).run();
+    tx.insert(dbSchema.issueChangeEvent)
+      .values(
+        buildChangeEvent(
+          {
+            issueId: issue.id,
+            workspaceId: input.workspaceId,
+            actorId: input.createdById,
+          },
+          "issue_created",
+        ),
+      )
+      .run();
 
     return issue;
   });
@@ -206,16 +208,19 @@ export async function getIssueById(input: { issueId: string }) {
  * to the issue's current key.
  * @returns the current key, or null if the prefix isn't a known alias
  */
-async function resolveAliasedIssueKey(input: { workspaceId: string; issueKey: string }) {
+async function resolveAliasedIssueKey(
+  input: { workspaceId: string; issueKey: string },
+  handle: DbHandle,
+) {
   const match = /^(.+)-(\d+)$/.exec(input.issueKey);
   if (!match) return null;
 
-  const alias = await db.query.teamKeyAlias.findFirst({
+  const alias = await handle.query.teamKeyAlias.findFirst({
     where: { workspaceId: input.workspaceId, key: match[1] },
   });
   if (!alias) return null;
 
-  const issue = await db.query.issue.findFirst({
+  const issue = await handle.query.issue.findFirst({
     columns: { key: true },
     where: { teamId: alias.teamId, keyNumber: Number(match[2]) },
   });
@@ -223,8 +228,11 @@ async function resolveAliasedIssueKey(input: { workspaceId: string; issueKey: st
   return issue?.key ?? null;
 }
 
-export async function getIssueByKey(input: { workspaceId: string; issueKey: string }) {
-  const issue = await db.query.issue.findFirst({
+export async function getIssueByKey(
+  input: { workspaceId: string; issueKey: string },
+  handle: DbHandle = db,
+) {
+  const issue = await handle.query.issue.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: input.issueKey,
@@ -234,10 +242,10 @@ export async function getIssueByKey(input: { workspaceId: string; issueKey: stri
   });
   if (issue) return issue;
 
-  const currentKey = await resolveAliasedIssueKey(input);
+  const currentKey = await resolveAliasedIssueKey(input, handle);
   if (!currentKey) return undefined;
 
-  return db.query.issue.findFirst({
+  return handle.query.issue.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: currentKey,
@@ -432,8 +440,7 @@ function rebalanceIssueOrders(
   for (let index = 0; index < laneIssues.length; index++) {
     const nextOrder = (index + 1) * ORDER_GAP;
     if (laneIssues[index]!.sortOrder !== nextOrder) {
-      tx
-        .update(dbSchema.issue)
+      tx.update(dbSchema.issue)
         .set({ sortOrder: nextOrder })
         .where(eq(dbSchema.issue.id, laneIssues[index]!.id))
         .run();
@@ -526,8 +533,7 @@ export async function moveIssue(input: {
       );
     }
 
-    tx
-      .update(dbSchema.issue)
+    tx.update(dbSchema.issue)
       .set({ sortOrder, status: input.status })
       .where(eq(dbSchema.issue.id, input.issueId))
       .run();

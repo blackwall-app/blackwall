@@ -103,12 +103,15 @@ export async function getTeamByKey(input: { workspaceId: string; teamKey: string
   });
 }
 
-export async function getTeamForUser(input: {
-  workspaceId: string;
-  teamKey: string;
-  userId: string;
-}) {
-  const team = await db.query.team.findFirst({
+export async function getTeamForUser(
+  input: {
+    workspaceId: string;
+    teamKey: string;
+    userId: string;
+  },
+  handle: DbHandle = db,
+) {
+  const team = await handle.query.team.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: input.teamKey,

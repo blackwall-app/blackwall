@@ -1,0 +1,65 @@
+import { Database } from "@blackwall/database/effect";
+import { IssueNotFound, TeamNotFoundOrAccessDenied } from "@blackwall/shared";
+import { Context, Effect, Layer } from "effect";
+import { TeamService } from "../teams/TeamService";
+import { issueData } from "./issue.data";
+
+type IssueWithDetails = NonNullable<Awaited<ReturnType<typeof issueData.getIssueByKey>>>;
+
+export class IssueService extends Context.Service<
+  IssueService,
+  {
+    /**
+     * The issue with this key in the workspace. Also resolves keys a team used
+     * before a rename. Doesn't check team membership.
+     */
+    readonly requireIssue: (input: {
+      workspaceId: string;
+      issueKey: string;
+    }) => Effect.Effect<IssueWithDetails, IssueNotFound>;
+    /** Like `requireIssue`, and the user must belong to the issue's team. */
+    readonly requireIssueForUser: (input: {
+      workspaceId: string;
+      issueKey: string;
+      userId: string;
+    }) => Effect.Effect<IssueWithDetails, IssueNotFound | TeamNotFoundOrAccessDenied>;
+  }
+>()("blackwall/IssueService") {
+  static readonly layer = Layer.effect(
+    IssueService,
+    Effect.gen(function* () {
+      const database = yield* Database;
+      const teams = yield* TeamService;
+
+      const requireIssue = Effect.fn("IssueService.requireIssue")(
+        function* (input: { workspaceId: string; issueKey: string }) {
+          const issue = yield* database.use((db) => issueData.getIssueByKey(input, db));
+          if (issue === undefined) {
+            return yield* new IssueNotFound();
+          }
+          return issue;
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const requireIssueForUser = Effect.fn("IssueService.requireIssueForUser")(function* (input: {
+        workspaceId: string;
+        issueKey: string;
+        userId: string;
+      }) {
+        const issue = yield* requireIssue(input);
+        if (issue.team === null) {
+          return yield* new IssueNotFound();
+        }
+        yield* teams.requireTeamForUser({
+          workspaceId: input.workspaceId,
+          teamKey: issue.team.key,
+          userId: input.userId,
+        });
+        return issue;
+      });
+
+      return IssueService.of({ requireIssue, requireIssueForUser });
+    }),
+  );
+}

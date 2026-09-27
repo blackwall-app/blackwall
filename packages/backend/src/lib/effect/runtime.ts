@@ -6,6 +6,7 @@ import { GlobalSearchService } from "../../features/global-search/GlobalSearchSe
 import { InvitationService } from "../../features/invitations/InvitationService";
 import { IssueService } from "../../features/issues/IssueService";
 import { LabelService } from "../../features/issues/LabelService";
+import { ProfileService } from "../../features/settings/ProfileService";
 import { TeamService } from "../../features/teams/TeamService";
 import { TimeEntryService } from "../../features/time-entries/TimeEntryService";
 import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
@@ -22,6 +23,7 @@ const ServicesLive = Layer.mergeAll(
   TimeEntryService.layer,
   GlobalSearchService.layer,
   InvitationService.layer,
+  ProfileService.layer,
 ).pipe(
   Layer.provideMerge(IssueService.layer),
   Layer.provideMerge(TeamService.layer),

@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { useSessionData } from "@/context/session-context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
+import type { UserSummary } from "@blackwall/shared";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { Popover } from "@kobalte/core/popover";
@@ -74,10 +75,12 @@ function NameForm(props: NameFormProps) {
     },
     onSubmit: async ({ value }) => {
       try {
-        await api.api.settings.teams[":teamKey"].$patch({
-          param: { teamKey: params.teamKey! },
-          json: { name: value.name },
-        });
+        await runApi((client) =>
+          client.settings.updateTeam({
+            params: { teamKey: params.teamKey! },
+            payload: { name: value.name },
+          }),
+        );
 
         toast.success(m.settings_teams_toast_name_updated());
         revalidate("teamSettings");
@@ -142,10 +145,12 @@ function KeyForm(props: KeyFormProps) {
     },
     onSubmit: async ({ value }) => {
       try {
-        await api.api.settings.teams[":teamKey"].$patch({
-          param: { teamKey: params.teamKey! },
-          json: { key: value.key.toUpperCase() },
-        });
+        await runApi((client) =>
+          client.settings.updateTeam({
+            params: { teamKey: params.teamKey! },
+            payload: { key: value.key.toUpperCase() },
+          }),
+        );
 
         toast.success(m.settings_teams_toast_key_updated());
 
@@ -198,7 +203,7 @@ function KeyForm(props: KeyFormProps) {
 }
 
 type MembersSectionProps = {
-  members: { id: string; name: string; email: string | null; image: string | null }[];
+  members: ReadonlyArray<UserSummary>;
 };
 
 function MembersSection(props: MembersSectionProps) {
@@ -221,10 +226,12 @@ function MembersSection(props: MembersSectionProps) {
 
   const handleAddMember = async (userId: string) => {
     try {
-      await api.api.settings.teams[":teamKey"].members.$post({
-        param: { teamKey: params.teamKey! },
-        json: { userId },
-      });
+      await runApi((client) =>
+        client.settings.addTeamMember({
+          params: { teamKey: params.teamKey! },
+          payload: { userId },
+        }),
+      );
 
       toast.success(m.settings_teams_toast_member_added());
       revalidate("teamSettings");
@@ -237,9 +244,9 @@ function MembersSection(props: MembersSectionProps) {
 
   const handleRemoveMember = async (userId: string) => {
     try {
-      await api.api.settings.teams[":teamKey"].members[":userId"].$delete({
-        param: { teamKey: params.teamKey!, userId },
-      });
+      await runApi((client) =>
+        client.settings.removeTeamMember({ params: { teamKey: params.teamKey!, userId } }),
+      );
 
       toast.success(m.settings_teams_toast_member_removed());
       revalidate("teamSettings");

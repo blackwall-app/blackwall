@@ -8,7 +8,6 @@ import { env } from "./lib/zod-env";
 import { issueRoutes } from "./features/issues/issue.routes";
 import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
 import { issueSprintRoutes } from "./features/issue-sprints/issue-sprint.routes";
-import { settingsRoutes } from "./features/settings/settings.routes";
 import type { AppEnv } from "./lib/hono-env";
 import { errorHandler } from "./lib/error-handler";
 import { csrf } from "hono/csrf";
@@ -43,8 +42,7 @@ const app = new Hono<AppEnv>()
   // Protected per-workspace routes
   .route("/api/issues", issueRoutes)
   .route("/api/issues", attachmentRoutes)
-  .route("/api/teams", issueSprintRoutes)
-  .route("/api/settings", settingsRoutes);
+  .route("/api/teams", issueSprintRoutes);
 
 app.get(
   "/api/docs/openapi",

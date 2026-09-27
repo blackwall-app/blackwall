@@ -1,5 +1,5 @@
 import type { PickerOption } from "@/components/custom-ui/picker";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { isLocale, locales, localStorageKey, setLocale } from "@/paraglide/runtime.js";
 import { action, useAction } from "@solidjs/router";
@@ -21,9 +21,7 @@ function getLocaleLabel(locale: LocaleId): string {
 }
 
 const changeLocaleAction = action(async (locale: LocalePreference) => {
-  await api.api.settings.profile.locale.$patch({
-    json: { locale },
-  });
+  await runApi((client) => client.settings.updateLocale({ payload: { locale } }));
 });
 
 export const useLocale = (input: { preferredLocale?: string | null }) => {

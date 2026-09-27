@@ -5,6 +5,7 @@ import { RequestValidation } from "./errors";
 import { InvitationsApi } from "./invitations";
 import { LabelsApi } from "./labels";
 import { SearchApi } from "./search";
+import { SettingsApi } from "./settings";
 import { TeamsApi } from "./teams";
 import { TimeEntriesApi } from "./time-entries";
 import { WorkspacesApi } from "./workspaces";
@@ -20,4 +21,5 @@ export class Api extends HttpApi.make("blackwall-api")
   .add(SearchApi)
   .add(InvitationsApi)
   .add(AuthApi)
+  .add(SettingsApi)
   .middleware(RequestValidation) {}

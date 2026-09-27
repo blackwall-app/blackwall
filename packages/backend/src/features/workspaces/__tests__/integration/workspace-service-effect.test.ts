@@ -39,7 +39,9 @@ describe("WorkspaceService with a real database", () => {
     expect(
       await workspaceData.isWorkspaceMember({ userId: owner.id, workspaceId: workspace.id }),
     ).toBe(true);
-    expect(await teamData.isTeamMember({ userId: owner.id, teamId: team.id })).toBe(true);
+    expect(await teamData.isTeamMember({ userId: owner.id, teamId: team.id }, testDb.db)).toBe(
+      true,
+    );
   });
 
   test("rejects a duplicate slug with a typed error and keeps the list working", async () => {

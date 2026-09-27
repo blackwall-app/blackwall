@@ -1,5 +1,5 @@
 import type { PickerOption } from "@/components/custom-ui/picker";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import MonitorIcon from "lucide-solid/icons/monitor";
 import MoonIcon from "lucide-solid/icons/moon";
@@ -57,9 +57,7 @@ export const useTheme = () => {
     if (theme) {
       setCurrentThemeId(themeId);
       applyTheme(themeId);
-      await api.api.settings["profile"]["theme"].$patch({
-        json: { theme: themeId },
-      });
+      await runApi((client) => client.settings.updateTheme({ payload: { theme: themeId } }));
     }
   };
 

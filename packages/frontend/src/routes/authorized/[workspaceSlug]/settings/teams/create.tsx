@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { action, redirect, useAction, useParams } from "@solidjs/router";
@@ -17,12 +17,14 @@ import { slugify } from "@/lib/utils";
 
 const createTeamAction = action(
   async (workspaceSlug: string, input: { name: string; key: string }) => {
-    await api.api.settings.teams.$post({
-      json: {
-        name: input.name,
-        key: input.key.toUpperCase(),
-      },
-    });
+    await runApi((client) =>
+      client.settings.createTeam({
+        payload: {
+          name: input.name,
+          key: input.key.toUpperCase(),
+        },
+      }),
+    );
 
     throw redirect(`/${workspaceSlug}/settings/teams`, {
       revalidate: ["teamsSettings"],

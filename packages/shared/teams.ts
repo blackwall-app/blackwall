@@ -48,6 +48,18 @@ export const TeamUserListResponse = Schema.Struct({
   users: Schema.Array(User),
 });
 
+export class TeamNotFound extends ApiError<TeamNotFound>()("TeamNotFound", {
+  code: ErrorCode.TEAM_NOT_FOUND,
+  status: 404,
+  message: "Team not found",
+}) {}
+
+export class NotTeamMember extends ApiError<NotTeamMember>()("NotTeamMember", {
+  code: ErrorCode.NOT_TEAM_MEMBER,
+  status: 403,
+  message: "Current user is not a member of the team",
+}) {}
+
 export class TeamNotFoundOrAccessDenied extends ApiError<TeamNotFoundOrAccessDenied>()(
   "TeamNotFoundOrAccessDenied",
   {

@@ -16,3 +16,4 @@ export * from "./time-entries";
 export * from "./search";
 export * from "./invitations";
 export * from "./auth-api";
+export * from "./settings";

@@ -13,7 +13,7 @@ import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { useSessionData } from "@/context/session-context";
 import { useWorkspaceData } from "@/context/workspace-context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { createAsync, useParams } from "@solidjs/router";
@@ -83,9 +83,9 @@ function WorkspaceNameForm(props: WorkspaceNameFormProps) {
     },
     onSubmit: async ({ value }) => {
       try {
-        await api.api.settings.workspace.$patch({
-          json: { displayName: value.name },
-        });
+        await runApi((client) =>
+          client.settings.updateWorkspace({ payload: { displayName: value.name } }),
+        );
         toast.success(m.settings_workspace_toast_name_updated());
         form.reset({ name: value.name });
       } catch (error) {

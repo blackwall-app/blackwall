@@ -8,7 +8,7 @@ import {
 } from "@blackwall/shared";
 import { Context, Effect, Layer } from "effect";
 import { teamData } from "../teams/team.data";
-import { teamKeyFromName } from "../teams/team.service";
+import { teamKeyFromName } from "../teams/team-key";
 import { workspaceData } from "./workspace.data";
 
 type WorkspaceMemberRow = NonNullable<Awaited<ReturnType<typeof workspaceData.getWorkspaceMember>>>;

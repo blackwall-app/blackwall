@@ -1,7 +1,6 @@
 import { db, dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
+import type { Team } from "@blackwall/database/schema";
 import { and, eq, sql } from "drizzle-orm";
-import { ErrorCode } from "@blackwall/shared";
-import { ConflictError, isSqliteUniqueConstraintError } from "../../lib/errors";
 
 /**
  * A team taking a key removes that key's alias, so `KEY-12` links point at the new owner.
@@ -36,47 +35,18 @@ export function insertTeam(
   return team;
 }
 
-export async function createTeam(
-  input: { name: string; key: string; workspaceId: string },
-  tx?: DbTransaction,
-) {
-  // With an explicit transaction the outer transaction owns error mapping.
-  if (tx !== undefined) {
-    return insertTeam(tx, input);
-  }
-
-  try {
-    return await db.transaction((trx) => insertTeam(trx, input));
-  } catch (error) {
-    if (isSqliteUniqueConstraintError(error)) {
-      throw new ConflictError(
-        "Team key already exists in this workspace",
-        ErrorCode.TEAM_KEY_ALREADY_EXISTS,
-      );
-    }
-
-    throw error;
-  }
-}
-
 export function insertTeamMember(tx: DbHandle, input: { userId: string; teamId: string }) {
   tx.insert(dbSchema.userTeam)
     .values({
       userId: input.userId,
       teamId: input.teamId,
     })
+    .onConflictDoNothing()
     .run();
 }
 
-export async function addUserToTeam(
-  input: { userId: string; teamId: string },
-  handle: DbHandle = db,
-) {
-  insertTeamMember(handle, input);
-}
-
-export async function isTeamMember(input: { userId: string; teamId: string }) {
-  const membership = await db.query.userTeam.findFirst({
+export async function isTeamMember(input: { userId: string; teamId: string }, handle: DbHandle) {
+  const membership = await handle.query.userTeam.findFirst({
     where: {
       userId: input.userId,
       teamId: input.teamId,
@@ -86,8 +56,11 @@ export async function isTeamMember(input: { userId: string; teamId: string }) {
   return membership !== undefined;
 }
 
-export async function getTeamByKey(input: { workspaceId: string; teamKey: string }) {
-  return db.query.team.findFirst({
+export async function getTeamByKey(
+  input: { workspaceId: string; teamKey: string },
+  handle: DbHandle,
+) {
+  return handle.query.team.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: input.teamKey,
@@ -165,8 +138,8 @@ export async function listUserTeamsWithActiveSprint(
   });
 }
 
-export async function listTeamsWithCounts(input: { workspaceId: string }) {
-  const teams = await db.query.team.findMany({
+export async function listTeamsWithCounts(input: { workspaceId: string }, handle: DbHandle) {
+  const teams = await handle.query.team.findMany({
     where: {
       workspaceId: input.workspaceId,
     },
@@ -176,120 +149,82 @@ export async function listTeamsWithCounts(input: { workspaceId: string }) {
     },
   });
 
-  return teams.map((team) => ({
-    team: {
-      id: team.id,
-      name: team.name,
-      key: team.key,
-      avatar: team.avatar,
-      createdAt: team.createdAt,
-      workspaceId: team.workspaceId,
-    },
-    usersCount: team.users?.length ?? 0,
-    issuesCount: team.issues?.length ?? 0,
+  return teams.map(({ users, issues, ...team }) => ({
+    team,
+    usersCount: users.length,
+    issuesCount: issues.length,
   }));
 }
 
-export async function updateTeam(input: {
-  workspaceId: string;
-  teamKey: string;
-  updates: { name?: string; key?: string };
-}) {
-  const team = await db.query.team.findFirst({
-    where: {
-      workspaceId: input.workspaceId,
-      key: input.teamKey,
-    },
-  });
-
-  if (!team) {
-    return null;
-  }
-
-  const newKey = input.updates.key;
+/**
+ * Renaming the key keeps the old one as an alias and moves every issue to the new prefix.
+ */
+export function updateTeam(
+  tx: DbTransaction,
+  input: {
+    team: Pick<Team, "id" | "key" | "workspaceId">;
+    updates: { name?: string | undefined; key?: string | undefined };
+  },
+) {
+  const { team, updates } = input;
+  const newKey = updates.key;
   const keyChanged = newKey !== undefined && newKey !== team.key;
 
-  try {
-    return await db.transaction((tx) => {
-      if (keyChanged) {
-        claimTeamKey(tx, { workspaceId: input.workspaceId, key: newKey });
-      }
-
-      const [updated] = tx
-        .update(dbSchema.team)
-        .set(input.updates)
-        .where(eq(dbSchema.team.id, team.id))
-        .returning()
-        .all();
-
-      if (keyChanged) {
-        // Keep the old key resolvable, then move every issue to the new prefix.
-        tx.insert(dbSchema.teamKeyAlias)
-          .values({
-            workspaceId: input.workspaceId,
-            key: team.key,
-            teamId: team.id,
-          })
-          .run();
-
-        tx.update(dbSchema.issue)
-          .set({ key: sql`${newKey} || '-' || ${dbSchema.issue.keyNumber}` })
-          .where(eq(dbSchema.issue.teamId, team.id))
-          .run();
-      }
-
-      return updated;
-    });
-  } catch (error) {
-    if (isSqliteUniqueConstraintError(error)) {
-      throw new ConflictError(
-        "Team key already exists in this workspace",
-        ErrorCode.TEAM_KEY_ALREADY_EXISTS,
-      );
-    }
-
-    throw error;
+  if (keyChanged) {
+    claimTeamKey(tx, { workspaceId: team.workspaceId, key: newKey });
   }
+
+  const [updated] = tx
+    .update(dbSchema.team)
+    .set(updates)
+    .where(eq(dbSchema.team.id, team.id))
+    .returning()
+    .all();
+
+  if (keyChanged) {
+    tx.insert(dbSchema.teamKeyAlias)
+      .values({
+        workspaceId: team.workspaceId,
+        key: team.key,
+        teamId: team.id,
+      })
+      .run();
+
+    tx.update(dbSchema.issue)
+      .set({ key: sql`${newKey} || '-' || ${dbSchema.issue.keyNumber}` })
+      .where(eq(dbSchema.issue.teamId, team.id))
+      .run();
+  }
+
+  return updated;
 }
 
-export async function removeUserFromTeam(input: { teamId: string; userId: string }) {
-  await db
+export async function removeUserFromTeam(
+  input: { teamId: string; userId: string },
+  handle: DbHandle,
+) {
+  await handle
     .delete(dbSchema.userTeam)
     .where(
       and(eq(dbSchema.userTeam.teamId, input.teamId), eq(dbSchema.userTeam.userId, input.userId)),
     );
 }
 
-export async function listWorkspaceUsersNotInTeam(input: { workspaceId: string; teamKey: string }) {
-  const team = await db.query.team.findFirst({
-    where: {
-      workspaceId: input.workspaceId,
-      key: input.teamKey,
-    },
-    with: {
-      users: true,
-    },
-  });
-
-  if (!team) {
-    return [];
-  }
-
-  const teamUserIds = new Set(team.users?.map((u) => u.id) ?? []);
-
-  const workspaceUsers = await db.query.user.findMany({
-    where: {
-      workspaces: { id: input.workspaceId },
-    },
-  });
+export async function listWorkspaceUsersNotInTeam(
+  input: { workspaceId: string; teamId: string },
+  handle: DbHandle,
+) {
+  const [teamUsers, workspaceUsers] = await Promise.all([
+    handle.query.userTeam.findMany({ where: { teamId: input.teamId } }),
+    handle.query.user.findMany({ where: { workspaces: { id: input.workspaceId } } }),
+  ]);
+  const teamUserIds = new Set(teamUsers.map((u) => u.userId));
 
   return workspaceUsers.filter((u) => !teamUserIds.has(u.id));
 }
 
 export const teamData = {
-  createTeam,
   insertTeam,
-  addUserToTeam,
   insertTeamMember,
   isTeamMember,
   getTeamByKey,

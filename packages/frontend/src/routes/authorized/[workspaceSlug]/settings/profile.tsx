@@ -19,16 +19,14 @@ import {
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { useSessionData } from "@/context/session-context";
-import { api, apiFetch } from "@/lib/api";
-import { backendUrl } from "@/lib/env";
+import { runApi } from "@/lib/api-effect";
 import { cn } from "@/lib/utils";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import Trash2 from "lucide-solid/icons/trash-2";
 import { createSignal, Show } from "solid-js";
 import * as z from "zod";
-
-const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+import { AVATAR_MAX_BYTES } from "@blackwall/shared";
 
 export default function ProfileSettingsPage() {
   const session = useSessionData();
@@ -104,9 +102,7 @@ function DisplayNameForm(props: DisplayNameFormProps) {
     },
     onSubmit: async ({ value }) => {
       try {
-        await api.api.settings.profile.$patch({
-          json: { name: value.name },
-        });
+        await runApi((client) => client.settings.updateProfile({ payload: { name: value.name } }));
         toast.success(m.settings_profile_toast_name_updated());
         form.reset({ name: value.name });
       } catch (error) {
@@ -158,7 +154,7 @@ function AvatarUpload() {
     if (!file.type.startsWith("image/")) {
       return m.settings_profile_avatar_validation_image_only();
     }
-    if (file.size > MAX_AVATAR_FILE_SIZE) {
+    if (file.size > AVATAR_MAX_BYTES) {
       return m.settings_profile_avatar_validation_max_size();
     }
     return null;
@@ -178,10 +174,7 @@ function AvatarUpload() {
     formData.append("file", file);
 
     try {
-      await apiFetch(`${backendUrl}/api/settings/profile/avatar`, {
-        method: "PATCH",
-        body: formData,
-      });
+      await runApi((client) => client.settings.updateAvatar({ payload: formData }));
       toast.success(m.settings_profile_toast_avatar_updated());
       window.location.reload();
     } catch (error) {
@@ -198,10 +191,7 @@ function AvatarUpload() {
     formData.append("intent", "remove");
 
     try {
-      await apiFetch(`${backendUrl}/api/settings/profile/avatar`, {
-        method: "PATCH",
-        body: formData,
-      });
+      await runApi((client) => client.settings.updateAvatar({ payload: formData }));
       toast.success(m.settings_profile_toast_avatar_removed());
       window.location.reload();
     } catch (error) {
@@ -277,12 +267,14 @@ function PasswordChangeDialog() {
     },
     onSubmit: async ({ value }) => {
       try {
-        await api.api.settings.profile.password.$post({
-          json: {
-            currentPassword: value.currentPassword,
-            newPassword: value.newPassword,
-          },
-        });
+        await runApi((client) =>
+          client.settings.changePassword({
+            payload: {
+              currentPassword: value.currentPassword,
+              newPassword: value.newPassword,
+            },
+          }),
+        );
         toast.success(m.settings_profile_toast_password_updated());
         form.reset();
         setIsOpen(false);

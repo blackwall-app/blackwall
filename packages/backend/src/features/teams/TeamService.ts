@@ -1,10 +1,25 @@
-import { Database } from "@blackwall/database/effect";
+import { Database, type DatabaseError } from "@blackwall/database/effect";
 import type { Team, User } from "@blackwall/database/schema";
-import { TeamKeyAlreadyExists, TeamNotFoundOrAccessDenied } from "@blackwall/shared";
+import {
+  MemberNotFound,
+  NotTeamMember,
+  TeamKeyAlreadyExists,
+  TeamNotFound,
+  TeamNotFoundOrAccessDenied,
+} from "@blackwall/shared";
 import { Context, Effect, Layer } from "effect";
+import { workspaceData } from "../workspaces/workspace.data";
 import { teamData } from "./team.data";
 
 type TeamWithActiveSprint = NonNullable<Awaited<ReturnType<typeof teamData.getTeamForUser>>>;
+type TeamWithCounts = Awaited<ReturnType<typeof teamData.listTeamsWithCounts>>[number];
+
+const mapTeamKeyConflict = <A>(effect: Effect.Effect<A, DatabaseError>) =>
+  effect.pipe(
+    Effect.catchTag("DatabaseError", (error) =>
+      error.isUniqueViolation ? Effect.fail(new TeamKeyAlreadyExists()) : Effect.die(error),
+    ),
+  );
 
 export class TeamService extends Context.Service<
   TeamService,
@@ -48,6 +63,55 @@ export class TeamService extends Context.Service<
       teamKey: string;
       userId: string;
     }) => Effect.Effect<Array<User>, TeamNotFoundOrAccessDenied>;
+    /** Every team in the workspace, whether or not the user belongs to it. */
+    readonly listTeamsWithCounts: (input: {
+      workspaceId: string;
+    }) => Effect.Effect<Array<TeamWithCounts>>;
+    /** The team with this key. Any workspace member can read it. */
+    readonly requireTeam: (input: {
+      workspaceId: string;
+      teamKey: string;
+    }) => Effect.Effect<Team, TeamNotFound>;
+    /** Like `createTeam`, and adds the user to the new team in the same transaction. */
+    readonly createTeamWithMember: (input: {
+      workspaceId: string;
+      name: string;
+      key: string;
+      userId: string;
+    }) => Effect.Effect<Team, TeamKeyAlreadyExists>;
+    /** Renames a team. The old key keeps resolving through an alias. */
+    readonly updateTeam: (input: {
+      workspaceId: string;
+      teamKey: string;
+      name?: string | undefined;
+      key?: string | undefined;
+    }) => Effect.Effect<Team, TeamNotFound | TeamKeyAlreadyExists>;
+    readonly getTeamWithMembers: (input: {
+      workspaceId: string;
+      teamKey: string;
+    }) => Effect.Effect<{ team: Team; members: Array<User> }, TeamNotFound>;
+    /** Workspace members who aren't in the team yet. */
+    readonly listAvailableUsers: (input: {
+      workspaceId: string;
+      teamKey: string;
+    }) => Effect.Effect<Array<User>, TeamNotFound>;
+    /**
+     * Adds a workspace member to a team. Only the team's own members can add
+     * people. Adding an existing member does nothing.
+     */
+    readonly addMember: (input: {
+      workspaceId: string;
+      teamKey: string;
+      actorId: string;
+      userId: string;
+    }) => Effect.Effect<void, TeamNotFound | NotTeamMember | MemberNotFound>;
+    /** Only the team's own members can remove people. */
+    readonly removeMember: (input: {
+      workspaceId: string;
+      teamKey: string;
+      actorId: string;
+      userId: string;
+    }) => Effect.Effect<void, TeamNotFound | NotTeamMember>;
   }
 >()("blackwall/TeamService") {
   static readonly layer = Layer.effect(
@@ -73,11 +137,7 @@ export class TeamService extends Context.Service<
       }) {
         return yield* database
           .transaction((tx) => teamData.insertTeam(tx, input))
-          .pipe(
-            Effect.catchTag("DatabaseError", (error) =>
-              error.isUniqueViolation ? Effect.fail(new TeamKeyAlreadyExists()) : Effect.die(error),
-            ),
-          );
+          .pipe(mapTeamKeyConflict);
       });
 
       const listTeamsForUser = Effect.fn("TeamService.listTeamsForUser")(function* (input: {
@@ -113,6 +173,133 @@ export class TeamService extends Context.Service<
         Effect.catchTag("DatabaseError", Effect.die),
       );
 
+      const listTeamsWithCounts = Effect.fn("TeamService.listTeamsWithCounts")(function* (input: {
+        workspaceId: string;
+      }) {
+        return yield* database.use((db) => teamData.listTeamsWithCounts(input, db));
+      }, Effect.orDie);
+
+      const requireTeam = Effect.fn("TeamService.requireTeam")(
+        function* (input: { workspaceId: string; teamKey: string }) {
+          const team = yield* database.use((db) => teamData.getTeamByKey(input, db));
+          if (team === undefined) {
+            return yield* new TeamNotFound();
+          }
+          return team;
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const createTeamWithMember = Effect.fn("TeamService.createTeamWithMember")(function* (input: {
+        workspaceId: string;
+        name: string;
+        key: string;
+        userId: string;
+      }) {
+        return yield* database
+          .transaction((tx) => {
+            const team = teamData.insertTeam(tx, {
+              workspaceId: input.workspaceId,
+              name: input.name,
+              key: input.key,
+            });
+            teamData.insertTeamMember(tx, { teamId: team.id, userId: input.userId });
+            return team;
+          })
+          .pipe(mapTeamKeyConflict);
+      });
+
+      const updateTeam = Effect.fn("TeamService.updateTeam")(function* (input: {
+        workspaceId: string;
+        teamKey: string;
+        name?: string | undefined;
+        key?: string | undefined;
+      }) {
+        const team = yield* requireTeam(input);
+        if (input.name === undefined && input.key === undefined) {
+          return team;
+        }
+        const updates = { name: input.name, key: input.key };
+        return yield* database
+          .transaction((tx) => teamData.updateTeam(tx, { team, updates }))
+          .pipe(mapTeamKeyConflict);
+      });
+
+      const getTeamWithMembers = Effect.fn("TeamService.getTeamWithMembers")(
+        function* (input: { workspaceId: string; teamKey: string }) {
+          const team = yield* requireTeam(input);
+          const members = yield* database.use((db) => teamData.listTeamUsers(input, db));
+          return { team, members };
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const listAvailableUsers = Effect.fn("TeamService.listAvailableUsers")(
+        function* (input: { workspaceId: string; teamKey: string }) {
+          const team = yield* requireTeam(input);
+          return yield* database.use((db) =>
+            teamData.listWorkspaceUsersNotInTeam(
+              { workspaceId: input.workspaceId, teamId: team.id },
+              db,
+            ),
+          );
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const requireTeamMember = Effect.fn("TeamService.requireTeamMember")(
+        function* (input: { workspaceId: string; teamKey: string; actorId: string }) {
+          const team = yield* requireTeam(input);
+          const isMember = yield* database.use((db) =>
+            teamData.isTeamMember({ userId: input.actorId, teamId: team.id }, db),
+          );
+          if (!isMember) {
+            return yield* new NotTeamMember();
+          }
+          return team;
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const addMember = Effect.fn("TeamService.addMember")(
+        function* (input: {
+          workspaceId: string;
+          teamKey: string;
+          actorId: string;
+          userId: string;
+        }) {
+          const team = yield* requireTeamMember(input);
+          const inWorkspace = yield* database.use((db) =>
+            workspaceData.isWorkspaceMember(
+              { userId: input.userId, workspaceId: input.workspaceId },
+              db,
+            ),
+          );
+          if (!inWorkspace) {
+            return yield* new MemberNotFound();
+          }
+          yield* database.use((db) =>
+            teamData.insertTeamMember(db, { teamId: team.id, userId: input.userId }),
+          );
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const removeMember = Effect.fn("TeamService.removeMember")(
+        function* (input: {
+          workspaceId: string;
+          teamKey: string;
+          actorId: string;
+          userId: string;
+        }) {
+          const team = yield* requireTeamMember(input);
+          yield* database.use((db) =>
+            teamData.removeUserFromTeam({ teamId: team.id, userId: input.userId }, db),
+          );
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
       return TeamService.of({
         requireTeamForUser,
         createTeam,
@@ -120,6 +307,14 @@ export class TeamService extends Context.Service<
         listTeamsWithActiveSprintForUser,
         getPreferredTeamForUser,
         listTeamUsers,
+        listTeamsWithCounts,
+        requireTeam,
+        createTeamWithMember,
+        updateTeam,
+        getTeamWithMembers,
+        listAvailableUsers,
+        addMember,
+        removeMember,
       });
     }),
   );

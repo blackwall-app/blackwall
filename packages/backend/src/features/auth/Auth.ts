@@ -63,6 +63,26 @@ const handleRequest = Effect.fn("Auth.handleRequest")(function* (request: Reques
   });
 });
 
+const changePassword = Effect.fn("Auth.changePassword")(function* (input: {
+  headers: globalThis.Headers | Record<string, string>;
+  currentPassword: string;
+  newPassword: string;
+  revokeOtherSessions: boolean;
+}) {
+  yield* Effect.tryPromise({
+    try: () =>
+      auth.api.changePassword({
+        headers: input.headers,
+        body: {
+          currentPassword: input.currentPassword,
+          newPassword: input.newPassword,
+          revokeOtherSessions: input.revokeOtherSessions,
+        },
+      }),
+    catch: (cause) => new AuthError({ message: "Failed to change password", cause }),
+  });
+});
+
 export class Auth extends Context.Service<
   Auth,
   {
@@ -78,9 +98,19 @@ export class Auth extends Context.Service<
       headers: RequestHeaders;
     }) => Effect.Effect<{ user: User; headers: globalThis.Headers }, UserAlreadyExists | AuthError>;
     readonly handleRequest: (request: Request) => Effect.Effect<Response, AuthError>;
+    /** Changes the password of the session's user. Fails on a wrong current password. */
+    readonly changePassword: (input: {
+      headers: globalThis.Headers | Record<string, string>;
+      currentPassword: string;
+      newPassword: string;
+      revokeOtherSessions: boolean;
+    }) => Effect.Effect<void, AuthError>;
   }
 >()("blackwall/Auth") {
-  static readonly layer = Layer.succeed(Auth, Auth.of({ getSession, signUpEmail, handleRequest }));
+  static readonly layer = Layer.succeed(
+    Auth,
+    Auth.of({ getSession, signUpEmail, handleRequest, changePassword }),
+  );
 }
 
 export type AuthService = Auth["Service"];

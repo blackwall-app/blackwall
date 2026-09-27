@@ -9,13 +9,7 @@ import { m } from "@/paraglide/messages.js";
 import { createColumnHelper } from "@tanstack/solid-table";
 import { A, createAsync, useParams } from "@solidjs/router";
 import { teamsSettingsLoader } from "./index.data";
-import type { SerializedTeam } from "@blackwall/database/schema";
-
-type TeamWithCounts = {
-  team: SerializedTeam;
-  usersCount: number;
-  issuesCount: number;
-};
+import type { SettingsTeamWithCounts } from "@blackwall/shared";
 
 export default function TeamsSettingsPage() {
   const params = useParams();
@@ -46,9 +40,9 @@ export default function TeamsSettingsPage() {
 function TeamTable() {
   const params = useParams();
   const teamsData = createAsync(() => teamsSettingsLoader());
-  const teams = () => (teamsData() ?? []) as TeamWithCounts[];
+  const teams = () => [...(teamsData() ?? [])];
 
-  const columnHelper = createColumnHelper<TeamWithCounts>();
+  const columnHelper = createColumnHelper<SettingsTeamWithCounts>();
 
   const columns = [
     columnHelper.accessor((row) => row.team.name, {
@@ -80,7 +74,7 @@ function TeamTable() {
     columnHelper.accessor((row) => row.team.createdAt, {
       id: "createdAt",
       header: m.settings_teams_table_header_created(),
-      cell: (info) => formatDateShort(new Date(info.getValue())),
+      cell: (info) => formatDateShort(info.getValue()),
     }),
   ];
 

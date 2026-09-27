@@ -1,3 +1,4 @@
+import { Effect, Fiber } from "effect";
 import { jobService } from "@blackwall/queue";
 // Register all job handlers
 import "@blackwall/backend/src/jobs/register";
@@ -19,17 +20,25 @@ const parseNumber = (value: string | undefined): number | undefined => {
 };
 
 export async function worker(options: WorkerOptions) {
-  const controller = new AbortController();
+  console.log("Starting job worker on queue: default");
 
-  process.on("SIGINT", () => {
-    console.log("\n[worker] Shutting down...");
-    controller.abort();
-  });
+  const fiber = Effect.runFork(
+    jobService.runWorker({
+      queue: "default",
+      pollIntervalMs: parseNumber(options.pollIntervalMs),
+      staleCheckIntervalMs: parseNumber(options.staleCheckIntervalMs),
+      cleanupIntervalMs: parseNumber(options.cleanupIntervalMs),
+      lockDurationMs: parseNumber(options.lockDurationMs),
+    }),
+  );
 
-  process.on("SIGTERM", () => {
+  const shutdown = () => {
     console.log("\n[worker] Shutting down...");
-    controller.abort();
-  });
+    Effect.runFork(Fiber.interrupt(fiber));
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 
   process.on("uncaughtException", (err) => {
     console.error("[worker] Uncaught exception:", err);
@@ -39,14 +48,5 @@ export async function worker(options: WorkerOptions) {
     console.error("[worker] Unhandled promise rejection:", reason);
   });
 
-  console.log("Starting job worker on queue: default");
-
-  await jobService.runWorker({
-    queue: "default",
-    pollIntervalMs: parseNumber(options.pollIntervalMs),
-    staleCheckIntervalMs: parseNumber(options.staleCheckIntervalMs),
-    cleanupIntervalMs: parseNumber(options.cleanupIntervalMs),
-    lockDurationMs: parseNumber(options.lockDurationMs),
-    signal: controller.signal,
-  });
+  await Effect.runPromise(Fiber.await(fiber));
 }

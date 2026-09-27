@@ -12,7 +12,8 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 
 - `effect@4.0.0-rc.117` is installed as a dev dependency at the repo root and
   as a dependency in `@blackwall/shared`, `@blackwall/database`,
-  `@blackwall/backend`, and `frontend`. Keep versions pinned in sync.
+  `@blackwall/backend`, `@blackwall/queue`, `blackwall`, and `frontend`. Keep
+  versions pinned in sync.
 - Stable imports come from `"effect"` (`Effect`, `Layer`, `Context`, `Schema`,
   `ManagedRuntime`). Server, client, and RPC modules live under
   `"effect/unstable/*"` (`http`, `httpapi`, `rpc`, `sql`, `schema`) and may

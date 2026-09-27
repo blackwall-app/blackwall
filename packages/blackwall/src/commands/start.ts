@@ -1,3 +1,4 @@
+import { Effect, Fiber } from "effect";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { app as apiApp, disposeEffectApi } from "@blackwall/backend/src/index";
@@ -32,22 +33,19 @@ export async function start(options: StartOptions) {
   console.log(`Server listening on port ${port}`);
   console.log(`Serving static files from ${options.publicDir}`);
 
-  const controller = new AbortController();
+  console.log("Starting job worker on queue: default");
+
+  const workerFiber = Effect.runFork(jobService.runWorker({ queue: "default" }));
 
   const shutdown = () => {
     console.log("\n[blackwall] Shutting down...");
-    controller.abort();
     server.stop();
-    void disposeEffectApi();
+    Effect.runFork(Fiber.interrupt(workerFiber));
   };
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  console.log("Starting job worker on queue: default");
-
-  await jobService.runWorker({
-    queue: "default",
-    signal: controller.signal,
-  });
+  await Effect.runPromise(Fiber.await(workerFiber));
+  await disposeEffectApi();
 }

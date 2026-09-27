@@ -1,7 +1,18 @@
 import "../../test/env.test";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { Effect, Fiber, References } from "effect";
 import { cleanupTestDb, createTestDb, type TestDb } from "../../test/setup";
 import { jobService } from "../../job.service";
+
+const startWorker = () =>
+  Effect.runFork(
+    jobService
+      .runWorker({ queue: "worker-queue", pollIntervalMs: 5 })
+      .pipe(Effect.provideService(References.MinimumLogLevel, "None")),
+  );
+
+const stopWorker = (fiber: ReturnType<typeof startWorker>) =>
+  Effect.runPromise(Fiber.interrupt(fiber));
 
 describe("jobService", () => {
   let testDb: TestDb;
@@ -212,6 +223,130 @@ describe("jobService", () => {
       await expect(jobService.retryFailedJob(job.id)).rejects.toThrow(
         `Only failed jobs can be retried: ${job.id}`,
       );
+    });
+  });
+
+  describe("runWorker", () => {
+    it("processes queued jobs", async () => {
+      const processed: number[] = [];
+      const done = Promise.withResolvers<void>();
+
+      jobService.registerHandler<{ n: number }>("worker-test", async (payload) => {
+        processed.push(payload.n);
+        if (processed.length === 2) done.resolve();
+      });
+
+      const fiber = startWorker();
+      await jobService.addJob({ type: "worker-test", payload: { n: 1 }, queue: "worker-queue" });
+      await jobService.addJob({ type: "worker-test", payload: { n: 2 }, queue: "worker-queue" });
+      await done.promise;
+      await stopWorker(fiber);
+
+      expect(processed).toEqual([1, 2]);
+      const jobs = await jobService.listJobs({ queue: "worker-queue", status: "completed" });
+      expect(jobs).toHaveLength(2);
+    });
+
+    it("keeps polling after a job fails", async () => {
+      const done = Promise.withResolvers<void>();
+
+      jobService.registerHandler("worker-fail", async () => {
+        throw new Error("Boom");
+      });
+      jobService.registerHandler("worker-ok", async () => {
+        done.resolve();
+      });
+
+      const failing = await jobService.addJob({
+        type: "worker-fail",
+        payload: {},
+        queue: "worker-queue",
+        maxAttempts: 1,
+      });
+      const retrying = await jobService.addJob({
+        type: "worker-fail",
+        payload: {},
+        queue: "worker-queue",
+        maxAttempts: 3,
+      });
+      const unhandled = await jobService.addJob({
+        type: "worker-unregistered",
+        payload: {},
+        queue: "worker-queue",
+        maxAttempts: 1,
+      });
+      await jobService.addJob({ type: "worker-ok", payload: {}, queue: "worker-queue" });
+
+      const fiber = startWorker();
+      await done.promise;
+      await stopWorker(fiber);
+
+      const failed = await jobService.getJobById(failing.id);
+      expect(failed?.status).toBe("failed");
+      expect(failed?.lastError).toBe("Boom");
+
+      const retried = await jobService.getJobById(retrying.id);
+      expect(retried?.status).toBe("pending");
+      expect(retried?.attempts).toBe(1);
+      expect(retried!.runAt!.getTime()).toBeGreaterThan(Date.now());
+
+      const unhandledJob = await jobService.getJobById(unhandled.id);
+      expect(unhandledJob?.status).toBe("failed");
+      expect(unhandledJob?.lastError).toContain("No handler registered");
+    });
+
+    it("recovers stale jobs on startup", async () => {
+      const done = Promise.withResolvers<void>();
+      jobService.registerHandler("worker-stale", async () => {
+        done.resolve();
+      });
+
+      const job = await jobService.addJob({
+        type: "worker-stale",
+        payload: {},
+        queue: "worker-queue",
+      });
+      await jobService.claimJob("worker-queue", -1000);
+
+      const fiber = startWorker();
+      await done.promise;
+      await stopWorker(fiber);
+
+      const recovered = await jobService.getJobById(job.id);
+      expect(recovered?.status).toBe("completed");
+      expect(recovered?.attempts).toBe(2);
+    });
+
+    it("waits for the in-flight job before stopping", async () => {
+      const started = Promise.withResolvers<void>();
+      const release = Promise.withResolvers<void>();
+
+      jobService.registerHandler("worker-slow", async () => {
+        started.resolve();
+        await release.promise;
+      });
+
+      const job = await jobService.addJob({
+        type: "worker-slow",
+        payload: {},
+        queue: "worker-queue",
+      });
+
+      const fiber = startWorker();
+      await started.promise;
+
+      let stopped = false;
+      const stopping = stopWorker(fiber).then(() => {
+        stopped = true;
+      });
+      await Bun.sleep(20);
+      expect(stopped).toBe(false);
+
+      release.resolve();
+      await stopping;
+
+      const completed = await jobService.getJobById(job.id);
+      expect(completed?.status).toBe("completed");
     });
   });
 });

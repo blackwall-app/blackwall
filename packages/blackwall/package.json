@@ -13,6 +13,7 @@
     "@blackwall/database": "workspace:*",
     "@blackwall/queue": "workspace:*",
     "commander": "^14.0.2",
+    "effect": "4.0.0-rc.117",
     "hono": "^4.11.5"
   },
   "devDependencies": {

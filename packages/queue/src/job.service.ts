@@ -1,3 +1,4 @@
+import { Effect, Schedule } from "effect";
 import type { Job, JobStatus } from "@blackwall/database";
 import { jobData } from "./job.data";
 
@@ -10,25 +11,17 @@ type ProcessResult = {
   handlerFound: boolean;
 };
 
-type WorkerLogger = {
-  info: (message: string) => void;
-  error: (message: string) => void;
-};
-
 type WorkerOptions = {
   queue: string;
   pollIntervalMs?: number;
   staleCheckIntervalMs?: number;
   cleanupIntervalMs?: number;
   lockDurationMs?: number;
-  signal?: AbortSignal;
-  logger?: Partial<WorkerLogger>;
 };
 
 type ProcessOptions = {
   queue: string;
   lockDurationMs?: number;
-  onStart?: (job: Job) => void;
 };
 
 const handlers = new Map<string, JobHandler>();
@@ -154,19 +147,7 @@ async function getJobById(id: string) {
   return jobData.getJobById(id);
 }
 
-function resolveLogger(logger?: Partial<WorkerLogger>): WorkerLogger {
-  return {
-    info: logger?.info ?? ((message) => console.log(message)),
-    error: logger?.error ?? ((message) => console.error(message)),
-  };
-}
-
-async function processNextJob(options: ProcessOptions): Promise<ProcessResult | null> {
-  const job = await claimJob(options.queue, options.lockDurationMs);
-  if (!job) return null;
-
-  options.onStart?.(job);
-
+async function runClaimedJob(job: Job): Promise<ProcessResult> {
   const handler = getHandler(job.type);
   if (!handler) {
     await failJob(job.id, `No handler registered for job type: ${job.type}`);
@@ -190,6 +171,12 @@ async function processNextJob(options: ProcessOptions): Promise<ProcessResult | 
   }
 }
 
+async function processNextJob(options: ProcessOptions): Promise<ProcessResult | null> {
+  const job = await claimJob(options.queue, options.lockDurationMs);
+  if (!job) return null;
+  return runClaimedJob(job);
+}
+
 /**
  * Claim and process a job from a queue using its registered handler.
  * @param queue queue name
@@ -202,69 +189,74 @@ async function processJob(queue: string, lockDurationMs = 30_000) {
   return { job: result.job, success: result.success, error: result.error };
 }
 
-async function runWorker(options: WorkerOptions) {
-  const {
-    queue,
-    pollIntervalMs = 1000,
-    staleCheckIntervalMs = 30_000,
-    cleanupIntervalMs = 60 * 60 * 1000,
-    lockDurationMs = 30_000,
-    signal,
-    logger,
-  } = options;
+const runNextJob = Effect.fnUntraced(
+  function* (queue: string, lockDurationMs: number) {
+    const job = yield* Effect.tryPromise(() => claimJob(queue, lockDurationMs));
+    if (!job) return false;
 
-  const log = resolveLogger(logger);
-
-  log.info(`[worker] Starting worker for queue: ${queue}`);
-
-  let lastStaleCheck = 0;
-  let lastCleanup = 0;
-
-  while (!signal?.aborted) {
-    const now = Date.now();
-
-    if (now - lastStaleCheck > staleCheckIntervalMs) {
-      const recovered = await recoverStaleJobs();
-      if (recovered > 0) {
-        log.info(`[worker] Recovered ${recovered} stale job(s)`);
-      }
-      lastStaleCheck = now;
-    }
-
-    if (now - lastCleanup > cleanupIntervalMs) {
-      await cleanupJobs();
-      lastCleanup = now;
-    }
-
-    const result = await processNextJob({
-      queue,
-      lockDurationMs,
-      onStart: (job) => {
-        log.info(`[worker] Processing ${job.type} (${job.id}), attempt ${job.attempts}`);
-      },
-    });
-
-    if (!result) {
-      await Bun.sleep(pollIntervalMs);
-      continue;
-    }
+    yield* Effect.logInfo(`Processing ${job.type} (${job.id}), attempt ${job.attempts}`);
+    const result = yield* Effect.tryPromise(() => runClaimedJob(job));
 
     if (result.success) {
-      log.info(`[worker] Completed ${result.job.id}`);
-      continue;
+      yield* Effect.logInfo(`Completed ${job.id}`);
+    } else if (!result.handlerFound) {
+      yield* Effect.logError(`No handler for job type: ${job.type}`);
+    } else {
+      yield* Effect.logError(`Failed ${job.id}: ${result.error}`);
     }
+    return true;
+  },
+  Effect.uninterruptible,
+  Effect.catch((error) => Effect.as(Effect.logError("Job processing failed", error), false)),
+);
 
-    if (!result.handlerFound) {
-      log.error(`[worker] No handler for job type: ${result.job.type}`);
-    }
+const recoverStaleJobsInWorker = Effect.tryPromise(() => recoverStaleJobs()).pipe(
+  Effect.tap((recovered) =>
+    recovered > 0 ? Effect.logInfo(`Recovered ${recovered} stale job(s)`) : Effect.void,
+  ),
+  Effect.uninterruptible,
+  Effect.catch((error) => Effect.logError("Stale job recovery failed", error)),
+);
 
-    if (result.error) {
-      log.error(`[worker] Failed ${result.job.id}: ${result.error}`);
-    }
-  }
+const cleanupJobsInWorker = Effect.tryPromise(() => cleanupJobs()).pipe(
+  Effect.uninterruptible,
+  Effect.catch((error) => Effect.logError("Job cleanup failed", error)),
+);
 
-  log.info("[worker] Stopped");
-}
+/**
+ * Process jobs from a queue until interrupted. Polling, stale-job recovery, and
+ * cleanup run as concurrent fibers. Interrupting waits for the in-flight job.
+ * @param options queue name and interval overrides
+ */
+const runWorker = Effect.fn("jobService.runWorker")(
+  function* (options: WorkerOptions) {
+    const {
+      queue,
+      pollIntervalMs = 1000,
+      staleCheckIntervalMs = 30_000,
+      cleanupIntervalMs = 60 * 60 * 1000,
+      lockDurationMs = 30_000,
+    } = options;
+
+    yield* Effect.logInfo(`Starting worker for queue: ${queue}`);
+
+    const drainQueue = runNextJob(queue, lockDurationMs).pipe(Effect.repeat({ while: Boolean }));
+
+    yield* Effect.all(
+      [
+        Effect.repeat(drainQueue, Schedule.spaced(pollIntervalMs)),
+        Effect.repeat(recoverStaleJobsInWorker, Schedule.spaced(staleCheckIntervalMs)),
+        Effect.repeat(cleanupJobsInWorker, Schedule.spaced(cleanupIntervalMs)),
+      ],
+      { concurrency: "unbounded", discard: true },
+    );
+  },
+  (effect, options) =>
+    effect.pipe(
+      Effect.onInterrupt(() => Effect.logInfo("Worker stopped")),
+      Effect.annotateLogs({ worker: options.queue }),
+    ),
+);
 
 /**
  * Clear all registered job handlers. Useful for testing.

@@ -1,10 +1,7 @@
 import { AssigneePickerPopover, StatusPickerPopover } from "@/components/issues/pickers";
 import { useAppForm } from "@/context/form-context";
-import type {
-  IssueStatus,
-  SerializedIssueAttachment,
-  SerializedTeam,
-} from "@blackwall/database/schema";
+import type { IssueStatus, SerializedIssueAttachment } from "@blackwall/database/schema";
+import type { Team } from "@blackwall/shared";
 import { useDialogContext } from "@kobalte/core/dialog";
 import { Popover } from "@kobalte/core/popover";
 import type { Editor, JSONContent } from "@tiptap/core";
@@ -35,6 +32,7 @@ import {
   useLocation,
 } from "@solidjs/router";
 import { api, apiFetch } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import type { CreateIssue } from "@blackwall/backend/src/features/issues/issue.zod";
 import type { CreateDialogDefaults } from "@/context/create-dialog.context";
 import { m } from "@/paraglide/messages.js";
@@ -44,13 +42,7 @@ type CreateDialogContentProps = {
 };
 
 const getTeamUsers = query(async (teamKey: string) => {
-  const res = await api.api.teams[":teamKey"].users.$get({
-    param: {
-      teamKey,
-    },
-  });
-
-  const { users } = await res.json();
+  const { users } = await runApi((client) => client.teams.listUsers({ params: { teamKey } }));
 
   return users;
 }, "team-users");
@@ -358,7 +350,7 @@ function CreateDialogContent(props: CreateDialogContentProps) {
 }
 
 function TeamPicker(props: {
-  teams: SerializedTeam[];
+  teams: ReadonlyArray<Team>;
   value: string;
   onChange: (teamKey: string) => void;
 }) {

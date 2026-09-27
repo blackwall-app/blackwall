@@ -1,6 +1,6 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import { A, useParams } from "@solidjs/router";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
@@ -8,7 +8,13 @@ import { Show } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 import { getLocale } from "@/paraglide/runtime";
 
-export function SprintSection(props: { sprint: SerializedIssueSprint | null }) {
+// Dates are strings when the sprint comes from the Hono sprint list.
+type SprintSummary = Pick<IssueSprint, "id" | "name" | "goal"> & {
+  startDate: Date | string;
+  endDate: Date | string;
+};
+
+export function SprintSection(props: { sprint: SprintSummary | null }) {
   const params = useParams();
 
   return (

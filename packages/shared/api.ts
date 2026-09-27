@@ -3,6 +3,7 @@ import { CommentsApi } from "./comments";
 import { RequestValidation } from "./errors";
 import { LabelsApi } from "./labels";
 import { SearchApi } from "./search";
+import { TeamsApi } from "./teams";
 import { TimeEntriesApi } from "./time-entries";
 import { WorkspacesApi } from "./workspaces";
 
@@ -10,6 +11,7 @@ import { WorkspacesApi } from "./workspaces";
 // above `RequestValidation`.
 export class Api extends HttpApi.make("blackwall-api")
   .add(WorkspacesApi)
+  .add(TeamsApi)
   .add(LabelsApi)
   .add(CommentsApi)
   .add(TimeEntriesApi)

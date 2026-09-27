@@ -1,4 +1,3 @@
-import { api } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import { query } from "@solidjs/router";
 
@@ -8,8 +7,7 @@ export const workspaceLoader = query(async (workspaceSlug: string) => {
     client.workspaces.getBySlug({ params: { slug: workspaceSlug } }),
   );
 
-  const teamsRes = await api.api.teams.$get();
-  const { teams } = await teamsRes.json();
+  const { teams } = await runApi((client) => client.teams.list());
 
   return { workspace, teams };
 }, "workspaceLayout");

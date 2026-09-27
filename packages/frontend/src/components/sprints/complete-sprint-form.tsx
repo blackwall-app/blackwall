@@ -4,6 +4,7 @@ import { action, redirect, useAction } from "@solidjs/router";
 import { api } from "@/lib/api";
 import type { InferDbType } from "@blackwall/database/types";
 import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { Team } from "@blackwall/shared";
 import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +33,7 @@ import { m } from "@/paraglide/messages.js";
 type CompleteSprintFormProps = {
   workspaceSlug: string;
   teamKey: string;
-  team: InferDbType<"team">;
+  team: Team;
   sprint: InferDbType<"issueSprint">;
   plannedSprints: SerializedIssueSprint[];
   hasUndoneIssues: boolean;

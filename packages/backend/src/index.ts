@@ -5,7 +5,6 @@ import { openAPIRouteHandler } from "hono-openapi";
 import { handleEffectRequest } from "./api";
 import { betterAuthRoutes } from "./features/auth/better-auth.routes";
 import { env } from "./lib/zod-env";
-import { teamRoutes } from "./features/teams/team.routes";
 import { issueRoutes } from "./features/issues/issue.routes";
 import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
 import { issueSprintRoutes } from "./features/issue-sprints/issue-sprint.routes";
@@ -51,7 +50,6 @@ const app = new Hono<AppEnv>()
   .route("/api/issues", attachmentDownloadRoutes)
 
   // Protected per-workspace routes
-  .route("/api/teams", teamRoutes)
   .route("/api/issues", issueRoutes)
   .route("/api/issues", attachmentRoutes)
   .route("/api/teams", issueSprintRoutes)

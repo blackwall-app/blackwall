@@ -86,14 +86,6 @@ export async function isTeamMember(input: { userId: string; teamId: string }) {
   return membership !== undefined;
 }
 
-export async function getTeams(input: { workspaceId: string }) {
-  return db.query.team.findMany({
-    where: {
-      workspaceId: input.workspaceId,
-    },
-  });
-}
-
 export async function getTeamByKey(input: { workspaceId: string; teamKey: string }) {
   return db.query.team.findFirst({
     where: {
@@ -125,8 +117,11 @@ export async function getTeamForUser(
   return team;
 }
 
-export async function listTeamUsers(input: { workspaceId: string; teamKey: string }) {
-  const team = await db.query.team.findFirst({
+export async function listTeamUsers(
+  input: { workspaceId: string; teamKey: string },
+  handle: DbHandle = db,
+) {
+  const team = await handle.query.team.findFirst({
     where: {
       workspaceId: input.workspaceId,
       key: input.teamKey,
@@ -139,31 +134,11 @@ export async function listTeamUsers(input: { workspaceId: string; teamKey: strin
   return team?.users.filter((u) => !!u) ?? [];
 }
 
-export async function getPreferredTeamForUser(input: { workspaceId: string; userId: string }) {
-  const [user, allUserTeams] = await Promise.all([
-    db.query.user.findFirst({ where: { id: input.userId } }),
-    db.query.team.findMany({
-      where: {
-        workspaceId: input.workspaceId,
-        users: { id: input.userId },
-      },
-    }),
-  ]);
-
-  if (allUserTeams.length === 0) {
-    return null;
-  }
-
-  if (user?.lastTeamId) {
-    const lastTeam = allUserTeams.find((team) => team.id === user.lastTeamId);
-    if (lastTeam) return lastTeam;
-  }
-
-  return allUserTeams[0];
-}
-
-export async function listUserTeams(input: { workspaceId: string; userId: string }) {
-  return db.query.team.findMany({
+export async function listUserTeams(
+  input: { workspaceId: string; userId: string },
+  handle: DbHandle = db,
+) {
+  return handle.query.team.findMany({
     where: {
       workspaceId: input.workspaceId,
       users: { id: input.userId },
@@ -174,11 +149,11 @@ export async function listUserTeams(input: { workspaceId: string; userId: string
   });
 }
 
-export async function listUserTeamsWithActiveSprint(input: {
-  workspaceId: string;
-  userId: string;
-}) {
-  return db.query.team.findMany({
+export async function listUserTeamsWithActiveSprint(
+  input: { workspaceId: string; userId: string },
+  handle: DbHandle,
+) {
+  return handle.query.team.findMany({
     where: {
       workspaceId: input.workspaceId,
       users: { id: input.userId },
@@ -317,11 +292,9 @@ export const teamData = {
   addUserToTeam,
   insertTeamMember,
   isTeamMember,
-  getTeams,
   getTeamByKey,
   getTeamForUser,
   listTeamUsers,
-  getPreferredTeamForUser,
   listUserTeams,
   listUserTeamsWithActiveSprint,
   listTeamsWithCounts,

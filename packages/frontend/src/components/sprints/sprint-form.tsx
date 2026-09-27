@@ -2,7 +2,7 @@ import * as z from "zod";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
 import { api } from "@/lib/api";
-import type { InferDbType } from "@blackwall/database/types";
+import type { Team } from "@blackwall/shared";
 import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { TanStackTextArea, TanStackTextField } from "@/components/ui/text-field";
 import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
@@ -15,7 +15,7 @@ import { m } from "@/paraglide/messages.js";
 type SprintFormProps = {
   workspaceSlug: string;
   teamKey: string;
-  team: InferDbType<"team">;
+  team: Team;
   title: string;
   buttonText: string;
 };

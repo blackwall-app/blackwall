@@ -1,14 +1,8 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { query } from "@solidjs/router";
 
 export const teamLoader = query(async (teamKey: string) => {
-  const teamsRes = await api.api.teams[":teamKey"].$get({
-    param: {
-      teamKey,
-    },
-  });
-
-  const { team } = await teamsRes.json();
+  const { team } = await runApi((client) => client.teams.getByKey({ params: { teamKey } }));
 
   return { team };
 }, "teamLayout");

@@ -4,6 +4,7 @@ import { CommentsHandlers } from "./comments";
 import { LabelsHandlers } from "./labels";
 import { RequestValidationLive } from "./request-validation";
 import { SearchHandlers } from "./search";
+import { TeamsHandlers } from "./teams";
 import { TimeEntriesHandlers } from "./time-entries";
 import { WorkspaceMembershipLive } from "./workspace-membership";
 import { WorkspacesHandlers } from "./workspaces";
@@ -21,6 +22,7 @@ export const MiddlewareLive = Layer.mergeAll(
  */
 export const HandlersLive = Layer.mergeAll(
   WorkspacesHandlers,
+  TeamsHandlers,
   LabelsHandlers,
   CommentsHandlers,
   TimeEntriesHandlers,

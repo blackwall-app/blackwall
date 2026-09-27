@@ -1,10 +1,9 @@
-import type { SerializedTeam } from "@blackwall/database/schema";
-import type { Workspace } from "@blackwall/shared";
+import type { TeamWithActiveSprint, Workspace } from "@blackwall/shared";
 import { createContext, useContext, type Accessor } from "solid-js";
 
 export type WorkspaceDataContextType = {
   workspace: Workspace;
-  teams: SerializedTeam[];
+  teams: ReadonlyArray<TeamWithActiveSprint>;
 };
 
 export const WorkspaceDataContext = createContext<Accessor<WorkspaceDataContextType>>();

@@ -4,9 +4,13 @@ import { Show, splitProps } from "solid-js";
 import * as ImagePrimitive from "@kobalte/core/image";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 
-import type { ColorKey, SerializedTeam, SerializedUser } from "@blackwall/database/schema";
 import { cn } from "@/lib/utils";
-import { createColorFromString } from "@blackwall/shared";
+import {
+  createColorFromString,
+  type ColorKey,
+  type Team,
+  type UserSummary,
+} from "@blackwall/shared";
 import { cva, type VariantProps } from "class-variance-authority";
 import UserIcon from "lucide-solid/icons/user";
 import Users from "lucide-solid/icons/users";
@@ -133,7 +137,7 @@ export function getInitials(name: string) {
 
 const UserAvatar = (
   props: {
-    user?: Pick<SerializedUser, "name" | "image"> | Pick<User, "name" | "image"> | null;
+    user?: Pick<UserSummary, "name" | "image"> | Pick<User, "name" | "image"> | null;
     class?: string;
   } & VariantProps<typeof avatarVariants>,
 ) => {
@@ -161,7 +165,9 @@ const UserAvatar = (
 };
 
 const TeamAvatar = (
-  props: { team?: SerializedTeam | null; class?: string } & VariantProps<typeof avatarVariants>,
+  props: { team?: Pick<Team, "name" | "avatar"> | null; class?: string } & VariantProps<
+    typeof avatarVariants
+  >,
 ) => {
   const color = () => createColorFromString(props.team!.name);
 

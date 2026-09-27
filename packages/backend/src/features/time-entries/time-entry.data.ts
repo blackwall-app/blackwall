@@ -1,27 +1,30 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { db, dbSchema } from "@blackwall/database";
+import { dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
 import { buildChangeEvent } from "../issues/change-events";
 
-export async function createTimeEntry(input: {
-  issueId: string;
-  workspaceId: string;
-  userId: string;
-  durationMinutes: number;
-  description?: string;
-}) {
-  const result = await db.transaction((tx) => {
-    const [entry] = tx
-      .insert(dbSchema.timeEntry)
-      .values({
-        issueId: input.issueId,
-        userId: input.userId,
-        durationMinutes: input.durationMinutes,
-        description: input.description,
-      })
-      .returning()
-      .all();
+export function insertTimeEntry(
+  tx: DbTransaction,
+  input: {
+    issueId: string;
+    workspaceId: string;
+    userId: string;
+    durationMinutes: number;
+    description?: string;
+  },
+) {
+  const [entry] = tx
+    .insert(dbSchema.timeEntry)
+    .values({
+      issueId: input.issueId,
+      userId: input.userId,
+      durationMinutes: input.durationMinutes,
+      description: input.description,
+    })
+    .returning()
+    .all();
 
-    tx.insert(dbSchema.issueChangeEvent).values(
+  tx.insert(dbSchema.issueChangeEvent)
+    .values(
       buildChangeEvent(
         {
           issueId: input.issueId,
@@ -31,16 +34,14 @@ export async function createTimeEntry(input: {
         "time_logged",
         { timeEntryId: entry.id },
       ),
-    ).run();
+    )
+    .run();
 
-    return entry;
-  });
-
-  return result;
+  return entry;
 }
 
-export async function listTimeEntriesForIssue(input: { issueId: string }) {
-  return db.query.timeEntry.findMany({
+export async function listTimeEntriesForIssue(input: { issueId: string }, handle: DbHandle) {
+  return handle.query.timeEntry.findMany({
     where: {
       issueId: input.issueId,
       deletedAt: { isNull: true },
@@ -58,25 +59,28 @@ export async function listTimeEntriesForIssue(input: { issueId: string }) {
   });
 }
 
-export async function getTimeEntryById(input: { timeEntryId: string; issueId: string }) {
-  return db.query.timeEntry.findFirst({
-    where: {
-      id: input.timeEntryId,
-      issueId: input.issueId,
-      deletedAt: { isNull: true },
-    },
-  });
-}
-
-export async function softDeleteTimeEntry(input: { timeEntryId: string }) {
-  await db
+/** Soft deletes the entry if it belongs to the issue. Returns it, or `undefined` if there was none. */
+export async function softDeleteTimeEntry(
+  input: { timeEntryId: string; issueId: string },
+  handle: DbHandle,
+) {
+  const [entry] = await handle
     .update(dbSchema.timeEntry)
     .set({ deletedAt: sql`(unixepoch() * 1000)` })
-    .where(eq(dbSchema.timeEntry.id, input.timeEntryId));
+    .where(
+      and(
+        eq(dbSchema.timeEntry.id, input.timeEntryId),
+        eq(dbSchema.timeEntry.issueId, input.issueId),
+        isNull(dbSchema.timeEntry.deletedAt),
+      ),
+    )
+    .returning();
+
+  return entry;
 }
 
-export async function getTotalTimeLoggedForIssue(input: { issueId: string }) {
-  const result = await db
+export async function getTotalTimeLoggedForIssue(input: { issueId: string }, handle: DbHandle) {
+  const result = await handle
     .select({
       total: sql<number>`coalesce(sum(${dbSchema.timeEntry.durationMinutes}), 0)`,
     })
@@ -89,9 +93,8 @@ export async function getTotalTimeLoggedForIssue(input: { issueId: string }) {
 }
 
 export const timeEntryData = {
-  createTimeEntry,
+  insertTimeEntry,
   listTimeEntriesForIssue,
-  getTimeEntryById,
   softDeleteTimeEntry,
   getTotalTimeLoggedForIssue,
 };

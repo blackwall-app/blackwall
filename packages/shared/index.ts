@@ -12,3 +12,5 @@ export * from "./teams";
 export * from "./issues";
 export * from "./labels";
 export * from "./comments";
+export * from "./time-entries";
+export * from "./search";

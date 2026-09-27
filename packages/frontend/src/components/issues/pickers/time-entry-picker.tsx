@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TextField } from "@/components/ui/text-field";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { query, createAsync, action, reload, useAction } from "@solidjs/router";
 import { formatRelative } from "@/lib/dates";
 import ClockIcon from "lucide-solid/icons/clock";
@@ -34,21 +34,8 @@ import EllipsisIcon from "lucide-solid/icons/ellipsis";
 import PlusIcon from "lucide-solid/icons/plus";
 import TrashIcon from "lucide-solid/icons/trash-2";
 import { createSignal, For, onMount, Show } from "solid-js";
-import type { InferDbType } from "@blackwall/database/types";
+import type { TimeEntryWithUser } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
-
-type TimeEntryWithUser = InferDbType<
-  "timeEntry",
-  {
-    user: {
-      columns: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-  }
->;
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -88,38 +75,32 @@ function parseDurationInput(input: string): number | null {
 }
 
 const totalTimeLoader = query(async (issueKey: string) => {
-  const res = await api.api.issues[`:issueKey`]["time-entries"].total.$get({
-    param: { issueKey },
-  });
-
-  const { totalMinutes } = await res.json();
+  const { totalMinutes } = await runApi((client) =>
+    client.timeEntries.total({ params: { issueKey } }),
+  );
   return totalMinutes;
 }, "timeEntryTotal");
 
 const timeEntriesLoader = query(async (issueKey: string) => {
-  const res = await api.api.issues[`:issueKey`]["time-entries"].$get({
-    param: { issueKey },
-  });
-
-  const { entries } = await res.json();
+  const { entries } = await runApi((client) => client.timeEntries.list({ params: { issueKey } }));
   return entries;
 }, "timeEntriesList");
 
 const logTimeEntry = action(
   async (issueKey: string, durationMinutes: number, description?: string) => {
-    await api.api.issues[`:issueKey`]["time-entries"].$post({
-      param: { issueKey },
-      json: { durationMinutes, description },
-    });
+    await runApi((client) =>
+      client.timeEntries.create({
+        params: { issueKey },
+        payload: { durationMinutes, description },
+      }),
+    );
 
     throw reload({ revalidate: ["timeEntryTotal", "timeEntriesList", "issueShow"] });
   },
 );
 
 const deleteTimeEntry = action(async (issueKey: string, timeEntryId: string) => {
-  await api.api.issues[`:issueKey`]["time-entries"][`:timeEntryId`].$delete({
-    param: { issueKey, timeEntryId },
-  });
+  await runApi((client) => client.timeEntries.delete({ params: { issueKey, timeEntryId } }));
 
   throw reload({ revalidate: ["timeEntryTotal", "timeEntriesList", "issueShow"] });
 });
@@ -270,7 +251,7 @@ function TimeEntryItem(props: {
   const [relativeTime, setRelativeTime] = createSignal<string>("");
 
   onMount(() => {
-    setRelativeTime(formatRelative(new Date(props.entry.createdAt), new Date()));
+    setRelativeTime(formatRelative(props.entry.createdAt, new Date()));
   });
 
   const _deleteEntry = useAction(deleteTimeEntry);

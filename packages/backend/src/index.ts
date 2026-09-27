@@ -9,8 +9,6 @@ import { teamRoutes } from "./features/teams/team.routes";
 import { issueRoutes } from "./features/issues/issue.routes";
 import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
 import { issueSprintRoutes } from "./features/issue-sprints/issue-sprint.routes";
-import { timeEntryRoutes } from "./features/time-entries/time-entry.routes";
-import { globalSearchRoutes } from "./features/global-search/global-search.routes";
 import { settingsRoutes } from "./features/settings/settings.routes";
 import {
   invitationRoutes,
@@ -57,8 +55,6 @@ const app = new Hono<AppEnv>()
   .route("/api/issues", issueRoutes)
   .route("/api/issues", attachmentRoutes)
   .route("/api/teams", issueSprintRoutes)
-  .route("/api/issues", timeEntryRoutes)
-  .route("/api/search", globalSearchRoutes)
   .route("/api/invitations", invitationRoutes)
   .route("/api/settings", settingsRoutes);
 

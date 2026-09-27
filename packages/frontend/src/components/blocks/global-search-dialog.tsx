@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { debounce } from "@solid-primitives/scheduled";
 import { query, createAsync } from "@solidjs/router";
 import SearchIcon from "lucide-solid/icons/search";
@@ -20,11 +20,7 @@ const globalSearchLoader = query(async (searchTerm: string) => {
     return { issues: [], users: [] };
   }
 
-  const res = await api.api.search.$get({
-    query: { q: searchTerm },
-  });
-
-  return res.json();
+  return runApi((client) => client.search.search({ query: { q: searchTerm } }));
 }, "globalSearch");
 
 export function GlobalSearchDialog(props: { workspaceSlug: string }) {

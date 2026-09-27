@@ -1,20 +1,20 @@
-import { db } from "@blackwall/database";
+import type { DbHandle } from "@blackwall/database";
 
-export async function searchIssues(input: {
-  searchTerm: string;
-  workspaceId: string;
-  teamIds: string[];
-}) {
-  if (input.teamIds.length === 0) {
-    return [];
-  }
-
+/** Issues in the workspace from teams the user belongs to. */
+export async function searchIssues(
+  input: {
+    searchTerm: string;
+    workspaceId: string;
+    userId: string;
+  },
+  handle: DbHandle,
+) {
   const searchPattern = `%${input.searchTerm.toLowerCase()}%`;
 
-  const issues = await db.query.issue.findMany({
+  const issues = await handle.query.issue.findMany({
     where: {
       workspaceId: input.workspaceId,
-      teamId: { in: input.teamIds },
+      team: { users: { id: input.userId } },
       deletedAt: { isNull: true },
       OR: [{ summary: { like: searchPattern } }, { descriptionText: { like: searchPattern } }],
     },
@@ -24,10 +24,13 @@ export async function searchIssues(input: {
   return issues;
 }
 
-export async function searchUsers(input: { searchTerm: string; workspaceId: string }) {
+export async function searchUsers(
+  input: { searchTerm: string; workspaceId: string },
+  handle: DbHandle,
+) {
   const searchPattern = `%${input.searchTerm.toLowerCase()}%`;
 
-  const users = await db.query.user.findMany({
+  const users = await handle.query.user.findMany({
     where: {
       workspaces: { id: input.workspaceId },
       name: { like: searchPattern },

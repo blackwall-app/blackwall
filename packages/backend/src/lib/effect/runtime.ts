@@ -2,9 +2,11 @@ import { Database } from "@blackwall/database/effect";
 import { Layer, ManagedRuntime } from "effect";
 import { Auth } from "../../features/auth/Auth";
 import { CommentService } from "../../features/issues/CommentService";
+import { GlobalSearchService } from "../../features/global-search/GlobalSearchService";
 import { IssueService } from "../../features/issues/IssueService";
 import { LabelService } from "../../features/issues/LabelService";
 import { TeamService } from "../../features/teams/TeamService";
+import { TimeEntryService } from "../../features/time-entries/TimeEntryService";
 import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
 
 /**
@@ -17,6 +19,8 @@ const ServicesLive = Layer.mergeAll(
   WorkspaceService.layer,
   LabelService.layer,
   CommentService.layer,
+  TimeEntryService.layer,
+  GlobalSearchService.layer,
 ).pipe(Layer.provideMerge(IssueService.layer), Layer.provideMerge(TeamService.layer));
 
 export const AppLayer = ServicesLive.pipe(

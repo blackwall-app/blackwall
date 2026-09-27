@@ -168,7 +168,7 @@ describe("issue data integrity", () => {
     });
 
     const search = (searchTerm: string) =>
-      globalSearchData.searchIssues({ searchTerm, workspaceId, teamIds: [teamId] });
+      globalSearchData.searchIssues({ searchTerm, workspaceId, userId }, testDb.db);
 
     expect((await search("expires")).map((issue) => issue.id)).toEqual([created.id]);
     expect(await search("paragraph")).toHaveLength(0);

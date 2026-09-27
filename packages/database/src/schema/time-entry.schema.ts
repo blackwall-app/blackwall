@@ -1,6 +1,5 @@
 import { randomUUIDv7 } from "bun";
 import { index, integer, text } from "drizzle-orm/sqlite-core";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { lifecycleTimestamps, sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 import { issue } from "./issue.schema";
@@ -34,7 +33,3 @@ export const timeEntry = sqliteTable(
 
 export type TimeEntry = typeof timeEntry.$inferSelect;
 export type NewTimeEntry = typeof timeEntry.$inferInsert;
-
-export const timeEntrySelectSchema = createSelectSchema(timeEntry);
-export const timeEntryInsertSchema = createInsertSchema(timeEntry);
-export const timeEntryUpdateSchema = createUpdateSchema(timeEntry);

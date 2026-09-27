@@ -60,15 +60,16 @@ export function insertWorkspaceMember(
     .run();
 }
 
-export async function addUserToWorkspace(
-  input: {
-    userId: string;
-    workspaceId: string;
-    role?: WorkspaceRole;
-  },
-  handle: DbHandle = db,
+/** Does nothing if the user already belongs to the workspace. */
+export function addUserToWorkspace(
+  input: { userId: string; workspaceId: string },
+  handle: DbHandle,
 ) {
-  insertWorkspaceMember(handle, input);
+  handle
+    .insert(dbSchema.workspaceUser)
+    .values({ userId: input.userId, workspaceId: input.workspaceId })
+    .onConflictDoNothing()
+    .run();
 }
 
 export async function isWorkspaceMember(

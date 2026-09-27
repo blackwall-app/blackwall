@@ -2,7 +2,7 @@ import { AuthCard } from "@/components/blocks/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { validateFields } from "@/lib/form.utils";
 import { slugify } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
@@ -10,24 +10,13 @@ import { A, action, redirect, useAction } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
 import { createSignal, Match, Switch } from "solid-js";
 import * as z from "zod";
-
-type SignupFormData = {
-  name: string;
-  email: string;
-  password: string;
-  workspaceDisplayName: string;
-  workspaceUrlSlug: string;
-};
+import type { SignupEmail } from "@blackwall/shared";
 
 type SignUpFormApi = ReturnType<typeof useSignupForm>;
 
-const signupAction = action(async (value: SignupFormData) => {
-  const res = await api.api.auth.signup.email.$post({
-    json: value,
-  });
-
-  const json = await res.json();
-  throw redirect(`/${json.workspace.slug}`);
+const signupAction = action(async (value: SignupEmail) => {
+  const { workspace } = await runApi((client) => client.auth.signupEmail({ payload: value }));
+  throw redirect(`/${workspace.slug}`);
 });
 
 const useSignupForm = () => {

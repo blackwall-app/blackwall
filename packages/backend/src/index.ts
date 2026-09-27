@@ -9,13 +9,7 @@ import { issueRoutes } from "./features/issues/issue.routes";
 import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
 import { issueSprintRoutes } from "./features/issue-sprints/issue-sprint.routes";
 import { settingsRoutes } from "./features/settings/settings.routes";
-import {
-  invitationRoutes,
-  publicInvitationRoutes,
-  protectedInvitationRoutes,
-} from "./features/invitations/invitation.routes";
 import type { AppEnv } from "./lib/hono-env";
-import { authRoutes } from "./features/auth/auth.routes";
 import { errorHandler } from "./lib/error-handler";
 import { csrf } from "hono/csrf";
 import { secureHeaders } from "hono/secure-headers";
@@ -42,18 +36,14 @@ const app = new Hono<AppEnv>()
 
   // Public routes
   .route("/api/better-auth", betterAuthRoutes)
-  .route("/api/auth", authRoutes)
-  .route("/api/invitations", publicInvitationRoutes)
 
   // Protected routes
-  .route("/api/invitations", protectedInvitationRoutes)
   .route("/api/issues", attachmentDownloadRoutes)
 
   // Protected per-workspace routes
   .route("/api/issues", issueRoutes)
   .route("/api/issues", attachmentRoutes)
   .route("/api/teams", issueSprintRoutes)
-  .route("/api/invitations", invitationRoutes)
   .route("/api/settings", settingsRoutes);
 
 app.get(

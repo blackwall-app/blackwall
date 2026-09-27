@@ -135,7 +135,6 @@
   "either_create_workspace_submit": "Create Workspace",
   "either_create_workspace_title": "Create Workspace",
   "either_create_workspace_url_label": "URL",
-  "either_invite_join_failed": "Failed to join workspace",
   "either_invite_join_title": "Join {workspaceName}",
   "either_invite_name_label": "Full name",
   "either_invite_name_placeholder": "Enter your full name...",

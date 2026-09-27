@@ -3,7 +3,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { TanStackTextField } from "@/components/ui/text-field";
 import { useAppForm } from "@/context/form-context";
 import { useMaybeSessionData } from "@/context/maybe-session.context";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages.js";
 import { A, createAsync, useNavigate, useParams } from "@solidjs/router";
@@ -29,35 +29,19 @@ export default function InvitePage() {
         password: z.string().min(8, m.either_invite_password_min()),
       }),
     },
-    onSubmit: async ({ value, formApi }) => {
-      const res = await api.api.invitations[":token"].register.$post({
-        param: { token: params.token! },
-        json: value,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        formApi.setErrorMap({
-          // @ts-expect-error TODO - change to some result type or error wrapper that handles this
-          onSubmit: error.error || m.either_invite_join_failed(),
-        });
-        return;
-      }
-
-      const data = await res.json();
-      navigate(`/${data.workspaceSlug}`);
+    onSubmit: async ({ value }) => {
+      const { workspaceSlug } = await runApi((client) =>
+        client.invitations.register({ params: { token: params.token! }, payload: value }),
+      );
+      navigate(`/${workspaceSlug}`);
     },
   }));
 
   const handleJoin = async () => {
-    const res = await api.api.invitations[":token"].accept.$post({
-      param: { token: params.token! },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      navigate(`/${data.workspaceSlug}`);
-    }
+    const { workspaceSlug } = await runApi((client) =>
+      client.invitations.accept({ params: { token: params.token! } }),
+    );
+    navigate(`/${workspaceSlug}`);
   };
 
   const handleSignOut = async () => {

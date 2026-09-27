@@ -29,6 +29,8 @@ export class WorkspaceService extends Context.Service<
       userId: string;
       workspaceId: string;
     }) => Effect.Effect<boolean>;
+    /** Adds the user as a member. Does nothing if they already belong to the workspace. */
+    readonly addMember: (input: { userId: string; workspaceId: string }) => Effect.Effect<void>;
     readonly listUserWorkspaces: (input: { userId: string }) => Effect.Effect<Array<WorkspaceRow>>;
     readonly updateWorkspace: (input: {
       actorId: string;
@@ -99,6 +101,13 @@ export class WorkspaceService extends Context.Service<
         workspaceId: string;
       }) {
         return yield* database.use((db) => workspaceData.isWorkspaceMember(input, db));
+      }, Effect.orDie);
+
+      const addMember = Effect.fn("WorkspaceService.addMember")(function* (input: {
+        userId: string;
+        workspaceId: string;
+      }) {
+        yield* database.use((db) => workspaceData.addUserToWorkspace(input, db));
       }, Effect.orDie);
 
       const requireMember = Effect.fn("WorkspaceService.requireMember")(function* (input: {
@@ -202,6 +211,7 @@ export class WorkspaceService extends Context.Service<
         createWorkspace,
         requireWorkspace,
         isWorkspaceMember,
+        addMember,
         listUserWorkspaces,
         updateWorkspace,
         listMembers,

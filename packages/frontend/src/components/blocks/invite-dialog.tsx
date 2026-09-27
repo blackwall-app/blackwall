@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { useDialogContext } from "@kobalte/core/dialog";
 import * as z from "zod";
@@ -26,9 +26,7 @@ export function InviteDialogContent() {
       }),
     },
     onSubmit: async ({ value }) => {
-      await api.api.invitations.$post({
-        json: { email: value.email },
-      });
+      await runApi((client) => client.invitations.create({ payload: { email: value.email } }));
 
       toast.success(m.invite_toast_success());
 

@@ -1,6 +1,8 @@
 import { HttpApi } from "effect/unstable/httpapi";
+import { AuthApi } from "./auth-api";
 import { CommentsApi } from "./comments";
 import { RequestValidation } from "./errors";
+import { InvitationsApi } from "./invitations";
 import { LabelsApi } from "./labels";
 import { SearchApi } from "./search";
 import { TeamsApi } from "./teams";
@@ -16,4 +18,6 @@ export class Api extends HttpApi.make("blackwall-api")
   .add(CommentsApi)
   .add(TimeEntriesApi)
   .add(SearchApi)
+  .add(InvitationsApi)
+  .add(AuthApi)
   .middleware(RequestValidation) {}

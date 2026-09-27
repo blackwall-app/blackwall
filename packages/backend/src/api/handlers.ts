@@ -1,6 +1,8 @@
 import { Layer } from "effect";
+import { AuthHandlers } from "./auth";
 import { AuthorizationLive } from "./authorization";
 import { CommentsHandlers } from "./comments";
+import { InvitationsHandlers } from "./invitations";
 import { LabelsHandlers } from "./labels";
 import { RequestValidationLive } from "./request-validation";
 import { SearchHandlers } from "./search";
@@ -27,4 +29,6 @@ export const HandlersLive = Layer.mergeAll(
   CommentsHandlers,
   TimeEntriesHandlers,
   SearchHandlers,
+  InvitationsHandlers,
+  AuthHandlers,
 ).pipe(Layer.provideMerge(MiddlewareLive));

@@ -6,7 +6,7 @@ import { createTestDb, cleanupTestDb, type TestDb } from "../../../../test/setup
 import { seedTestSetup } from "../../../../test/fixtures";
 import { env } from "../../../../lib/zod-env";
 
-describe("Auth Routes", () => {
+describe("better-auth routes", () => {
   let testDb: TestDb;
   let client: ReturnType<typeof testClient<typeof app>>;
 
@@ -19,118 +19,6 @@ describe("Auth Routes", () => {
     if (testDb) {
       cleanupTestDb(testDb);
     }
-  });
-
-  describe("POST /auth/signup/email", () => {
-    it("should create user, workspace, and team on signup", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "newuser@example.com",
-          password: "password123",
-          name: "New User",
-          workspaceDisplayName: "My Workspace",
-          workspaceUrlSlug: "my-workspace",
-        },
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.user).toBeDefined();
-      expect(json.user.email).toBe("newuser@example.com");
-      expect(json.user.name).toBe("New User");
-      expect(json.workspace).toBeDefined();
-      expect(json.workspace.displayName).toBe("My Workspace");
-      expect(json.workspace.slug).toBe("my-workspace");
-      expect(json.team).toBeDefined();
-      expect(json.team.name).toBe("My Workspace");
-    });
-
-    it("should set session cookie on signup", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "cookieuser@example.com",
-          password: "password123",
-          name: "Cookie User",
-          workspaceDisplayName: "Cookie Workspace",
-          workspaceUrlSlug: "cookie-workspace",
-        },
-      });
-
-      expect(res.status).toBe(200);
-      const setCookie = res.headers.get("set-cookie");
-      expect(setCookie).toBeDefined();
-      expect(setCookie).toContain("better-auth.session_token");
-    });
-
-    it("should return 400 for invalid email", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "not-an-email",
-          password: "password123",
-          name: "Test User",
-          workspaceDisplayName: "Test Workspace",
-          workspaceUrlSlug: "test-workspace",
-        },
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it("should return 400 for short password", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "test@example.com",
-          password: "short",
-          name: "Test User",
-          workspaceDisplayName: "Test Workspace",
-          workspaceUrlSlug: "test-workspace",
-        },
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it("should return 400 for short name", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "test@example.com",
-          password: "password123",
-          name: "X",
-          workspaceDisplayName: "Test Workspace",
-          workspaceUrlSlug: "test-workspace",
-        },
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it("should return 400 for invalid workspace slug format", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "test@example.com",
-          password: "password123",
-          name: "Test User",
-          workspaceDisplayName: "Test Workspace",
-          workspaceUrlSlug: "INVALID_SLUG!",
-        },
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it("should return 400 for short workspace display name", async () => {
-      const res = await client.api.auth.signup.email.$post({
-        json: {
-          email: "test@example.com",
-          password: "password123",
-          name: "Test User",
-          workspaceDisplayName: "X",
-          workspaceUrlSlug: "test-workspace",
-        },
-      });
-
-      expect(res.status).toBe(400);
-    });
   });
 
   describe("POST /api/auth/sign-in/email (better-auth)", () => {

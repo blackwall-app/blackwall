@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, dbSchema } from "@blackwall/database";
+import { dbSchema, type DbHandle } from "@blackwall/database";
 import { add } from "date-fns";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -15,14 +15,17 @@ function hashInviteToken(token: string): string {
  * Create an invitation. Only a hash of the token is stored, so the raw token is returned
  * here once for building the invite link.
  */
-async function createInvitation(input: {
-  workspaceId: string;
-  createdById: string;
-  email: string;
-}) {
+export async function createInvitation(
+  input: {
+    workspaceId: string;
+    createdById: string;
+    email: string;
+  },
+  handle: DbHandle,
+) {
   const token = generateInviteCode();
 
-  const [invitation] = await db
+  const [invitation] = await handle
     .insert(dbSchema.workspaceInvitation)
     .values({
       workspaceId: input.workspaceId,
@@ -33,22 +36,23 @@ async function createInvitation(input: {
     })
     .returning();
 
-  return invitation ? { invitation, token } : undefined;
+  return { invitation, token };
 }
 
-async function getPendingInvitationByToken(token: string) {
-  const invitation = await db.query.workspaceInvitation.findFirst({
+export async function getPendingInvitationByToken(token: string, handle: DbHandle) {
+  return handle.query.workspaceInvitation.findFirst({
     where: { tokenHash: hashInviteToken(token), acceptedAt: { isNull: true } },
     with: {
       workspace: true,
     },
   });
-
-  return invitation;
 }
 
-async function markInvitationAccepted(input: { invitationId: string; userId: string }) {
-  await db
+export async function markInvitationAccepted(
+  input: { invitationId: string; userId: string },
+  handle: DbHandle,
+) {
+  await handle
     .update(dbSchema.workspaceInvitation)
     .set({ acceptedAt: new Date(), acceptedById: input.userId })
     .where(eq(dbSchema.workspaceInvitation.id, input.invitationId));

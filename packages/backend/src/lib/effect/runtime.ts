@@ -3,6 +3,7 @@ import { Layer, ManagedRuntime } from "effect";
 import { Auth } from "../../features/auth/Auth";
 import { CommentService } from "../../features/issues/CommentService";
 import { GlobalSearchService } from "../../features/global-search/GlobalSearchService";
+import { InvitationService } from "../../features/invitations/InvitationService";
 import { IssueService } from "../../features/issues/IssueService";
 import { LabelService } from "../../features/issues/LabelService";
 import { TeamService } from "../../features/teams/TeamService";
@@ -16,12 +17,16 @@ import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
  * goes in the `provideMerge` below it.
  */
 const ServicesLive = Layer.mergeAll(
-  WorkspaceService.layer,
   LabelService.layer,
   CommentService.layer,
   TimeEntryService.layer,
   GlobalSearchService.layer,
-).pipe(Layer.provideMerge(IssueService.layer), Layer.provideMerge(TeamService.layer));
+  InvitationService.layer,
+).pipe(
+  Layer.provideMerge(IssueService.layer),
+  Layer.provideMerge(TeamService.layer),
+  Layer.provideMerge(WorkspaceService.layer),
+);
 
 export const AppLayer = ServicesLive.pipe(
   Layer.provideMerge(Layer.mergeAll(Database.layer, Auth.layer)),

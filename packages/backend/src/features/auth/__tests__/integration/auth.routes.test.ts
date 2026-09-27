@@ -275,7 +275,7 @@ describe("Auth Routes", () => {
 
   describe("Protected routes without auth", () => {
     it("should return 401 when accessing protected route without session", async () => {
-      const res = await client.api.settings.profile.$get({});
+      const res = await client.api.issues.my.$get({ query: {} });
 
       expect(res.status).toBe(401);
     });

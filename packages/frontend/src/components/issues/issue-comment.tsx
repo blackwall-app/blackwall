@@ -4,6 +4,7 @@ import { formatRelative } from "@/lib/dates";
 import { TiptapEditor } from "../tiptap/tiptap-editor";
 import { createEffect, createSignal, Show } from "solid-js";
 import { api, apiFetch } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { AlertDialog } from "@/components/ui/alert-dialog";
@@ -89,9 +90,7 @@ export type CommentMenuProps = {
 };
 
 const deleteCommentAction = action(async (issueKey: string, commentId: string) => {
-  await api.api.issues[":issueKey"].comments[":commentId"].$delete({
-    param: { issueKey, commentId },
-  });
+  await runApi((client) => client.comments.delete({ params: { issueKey, commentId } }));
   toast.success(m.issue_comment_toast_deleted());
 
   throw reload({ revalidate: ["issueShow"] });
@@ -152,10 +151,7 @@ export type IssueCommentFormProps = {
 };
 
 const createCommentAction = action(async (issueKey: string, content: JSONContent) => {
-  await api.api.issues[":issueKey"].comments.$post({
-    param: { issueKey },
-    json: { content },
-  });
+  await runApi((client) => client.comments.create({ params: { issueKey }, payload: { content } }));
 
   throw reload({ revalidate: ["issueShow"] });
 });

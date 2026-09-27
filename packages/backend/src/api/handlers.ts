@@ -1,5 +1,7 @@
 import { Layer } from "effect";
 import { AuthorizationLive } from "./authorization";
+import { CommentsHandlers } from "./comments";
+import { LabelsHandlers } from "./labels";
 import { RequestValidationLive } from "./request-validation";
 import { WorkspaceMembershipLive } from "./workspace-membership";
 import { WorkspacesHandlers } from "./workspaces";
@@ -15,6 +17,8 @@ export const MiddlewareLive = Layer.mergeAll(
  * Handlers for every group, with their middleware. Requires the app services,
  * so tests build it on `AppLayer` against the test database.
  */
-export const HandlersLive = Layer.mergeAll(WorkspacesHandlers).pipe(
-  Layer.provideMerge(MiddlewareLive),
-);
+export const HandlersLive = Layer.mergeAll(
+  WorkspacesHandlers,
+  LabelsHandlers,
+  CommentsHandlers,
+).pipe(Layer.provideMerge(MiddlewareLive));

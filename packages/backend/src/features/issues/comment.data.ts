@@ -1,26 +1,27 @@
 import { eq } from "drizzle-orm";
 import type { JSONContent } from "@tiptap/core";
-import { db, dbSchema } from "@blackwall/database";
+import { db, dbSchema, type DbHandle } from "@blackwall/database";
 import type { Issue } from "@blackwall/database/schema";
 import { buildChangeEvent } from "./change-events";
 
-export async function createComment(input: {
-  issue: Issue;
-  authorId: string;
-  content: JSONContent;
-}) {
-  const comment = await db.transaction((tx) => {
-    const [comment] = tx
-      .insert(dbSchema.issueComment)
-      .values({
-        issueId: input.issue.id,
-        authorId: input.authorId,
-        content: input.content,
-      })
-      .returning()
-      .all();
+type CommentIssue = Pick<Issue, "id" | "workspaceId">;
 
-    tx.insert(dbSchema.issueChangeEvent).values(
+export function insertComment(
+  tx: DbHandle,
+  input: { issue: CommentIssue; authorId: string; content: JSONContent },
+) {
+  const [comment] = tx
+    .insert(dbSchema.issueComment)
+    .values({
+      issueId: input.issue.id,
+      authorId: input.authorId,
+      content: input.content,
+    })
+    .returning()
+    .all();
+
+  tx.insert(dbSchema.issueChangeEvent)
+    .values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -30,16 +31,17 @@ export async function createComment(input: {
         "comment_added",
         { commentId: comment.id },
       ),
-    ).run();
-
-    return comment;
-  });
+    )
+    .run();
 
   return comment;
 }
 
-export async function getCommentById(input: { commentId: string; issueId: string }) {
-  return db.query.issueComment.findFirst({
+export async function getCommentById(
+  input: { commentId: string; issueId: string },
+  handle: DbHandle,
+) {
+  return handle.query.issueComment.findFirst({
     where: {
       id: input.commentId,
       issueId: input.issueId,
@@ -48,8 +50,8 @@ export async function getCommentById(input: { commentId: string; issueId: string
   });
 }
 
-export async function getCommentWithAuthorAndIssue(commentId: string) {
-  return db.query.issueComment.findFirst({
+export async function getCommentWithAuthorAndIssue(commentId: string, handle: DbHandle = db) {
+  return handle.query.issueComment.findFirst({
     where: {
       id: commentId,
       deletedAt: { isNull: true },
@@ -65,19 +67,17 @@ export async function getCommentWithAuthorAndIssue(commentId: string) {
   });
 }
 
-export async function softDeleteComment(input: {
-  commentId: string;
-  issue: Issue;
-  actorId: string;
-}) {
-  await db.transaction((tx) => {
-    tx
-      .update(dbSchema.issueComment)
-      .set({ deletedAt: new Date() })
-      .where(eq(dbSchema.issueComment.id, input.commentId))
-      .run();
+export function softDeleteComment(
+  tx: DbHandle,
+  input: { commentId: string; issue: CommentIssue; actorId: string },
+) {
+  tx.update(dbSchema.issueComment)
+    .set({ deletedAt: new Date() })
+    .where(eq(dbSchema.issueComment.id, input.commentId))
+    .run();
 
-    tx.insert(dbSchema.issueChangeEvent).values(
+  tx.insert(dbSchema.issueChangeEvent)
+    .values(
       buildChangeEvent(
         {
           issueId: input.issue.id,
@@ -87,12 +87,12 @@ export async function softDeleteComment(input: {
         "comment_deleted",
         { commentId: input.commentId },
       ),
-    ).run();
-  });
+    )
+    .run();
 }
 
 export const commentData = {
-  createComment,
+  insertComment,
   getCommentById,
   getCommentWithAuthorAndIssue,
   softDeleteComment,

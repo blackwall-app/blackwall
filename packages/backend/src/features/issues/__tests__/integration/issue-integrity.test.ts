@@ -102,7 +102,7 @@ describe("issue data integrity", () => {
   it("rejects a label from another workspace", async () => {
     const other = await createOtherWorkspace();
     const issue = await createIssue(testDb, { workspaceId, teamId, createdById: userId });
-    const foreignLabel = await labelData.createLabel({
+    const foreignLabel = labelData.insertLabel(testDb.db, {
       name: "Foreign",
       colorKey: "red",
       workspaceId: other.workspace.id,
@@ -111,31 +111,34 @@ describe("issue data integrity", () => {
     const insertLink = async () =>
       testDb.db
         .insert(dbSchema.labelOnIssue)
-        .values({ issueId: issue.id, labelId: foreignLabel!.id, workspaceId });
+        .values({ issueId: issue.id, labelId: foreignLabel.id, workspaceId });
 
     await expect(insertLink()).rejects.toThrow();
   });
 
   it("treats label names as case-insensitive within a workspace", async () => {
-    await labelData.createLabel({ name: "Bug", colorKey: "red", workspaceId });
+    labelData.insertLabel(testDb.db, { name: "Bug", colorKey: "red", workspaceId });
 
-    expect(await labelData.getLabelByName({ name: "BUG", workspaceId })).toBeDefined();
-    await expect(
-      labelData.createLabel({ name: "bug", colorKey: "blue", workspaceId }),
-    ).rejects.toThrow("Label with this name already exists");
+    expect(() =>
+      labelData.insertLabel(testDb.db, { name: "bug", colorKey: "blue", workspaceId }),
+    ).toThrow();
   });
 
   it("deletes a label that is attached to issues and keeps the history event", async () => {
     const issue = await createIssue(testDb, { workspaceId, teamId, createdById: userId });
-    const label = await labelData.createLabel({ name: "Temporary", colorKey: "red", workspaceId });
+    const label = labelData.insertLabel(testDb.db, {
+      name: "Temporary",
+      colorKey: "red",
+      workspaceId,
+    });
     await labelData.addLabelToIssue({
       issueId: issue.id,
-      labelId: label!.id,
+      labelId: label.id,
       workspaceId,
       actorId: userId,
     });
 
-    await labelData.deleteLabel({ labelId: label!.id, workspaceId });
+    await labelData.deleteLabel({ labelId: label.id, workspaceId }, testDb.db);
 
     const links = await testDb.db.query.labelOnIssue.findMany({ where: { issueId: issue.id } });
     const events = await testDb.db.query.issueChangeEvent.findMany({

@@ -7,9 +7,7 @@ import { betterAuthRoutes } from "./features/auth/better-auth.routes";
 import { env } from "./lib/zod-env";
 import { teamRoutes } from "./features/teams/team.routes";
 import { issueRoutes } from "./features/issues/issue.routes";
-import { commentRoutes } from "./features/issues/comment.routes";
 import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
-import { labelRoutes } from "./features/issues/label.routes";
 import { issueSprintRoutes } from "./features/issue-sprints/issue-sprint.routes";
 import { timeEntryRoutes } from "./features/time-entries/time-entry.routes";
 import { globalSearchRoutes } from "./features/global-search/global-search.routes";
@@ -57,9 +55,7 @@ const app = new Hono<AppEnv>()
   // Protected per-workspace routes
   .route("/api/teams", teamRoutes)
   .route("/api/issues", issueRoutes)
-  .route("/api/issues", commentRoutes)
   .route("/api/issues", attachmentRoutes)
-  .route("/api/labels", labelRoutes)
   .route("/api/teams", issueSprintRoutes)
   .route("/api/issues", timeEntryRoutes)
   .route("/api/search", globalSearchRoutes)

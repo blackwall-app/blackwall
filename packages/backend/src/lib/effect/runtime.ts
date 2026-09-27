@@ -1,7 +1,9 @@
 import { Database } from "@blackwall/database/effect";
 import { Layer, ManagedRuntime } from "effect";
 import { Auth } from "../../features/auth/Auth";
+import { CommentService } from "../../features/issues/CommentService";
 import { IssueService } from "../../features/issues/IssueService";
+import { LabelService } from "../../features/issues/LabelService";
 import { TeamService } from "../../features/teams/TeamService";
 import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
 
@@ -11,9 +13,11 @@ import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
  * Add new services to `ServicesLive`. A service another service depends on
  * goes in the `provideMerge` below it.
  */
-const ServicesLive = Layer.mergeAll(WorkspaceService.layer, IssueService.layer).pipe(
-  Layer.provideMerge(TeamService.layer),
-);
+const ServicesLive = Layer.mergeAll(
+  WorkspaceService.layer,
+  LabelService.layer,
+  CommentService.layer,
+).pipe(Layer.provideMerge(IssueService.layer), Layer.provideMerge(TeamService.layer));
 
 export const AppLayer = ServicesLive.pipe(
   Layer.provideMerge(Layer.mergeAll(Database.layer, Auth.layer)),

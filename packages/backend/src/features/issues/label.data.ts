@@ -1,35 +1,31 @@
-import { and, count, eq, sql } from "drizzle-orm";
-import { db, dbSchema } from "@blackwall/database";
+import { and, count, eq } from "drizzle-orm";
+import { db, dbSchema, type DbHandle } from "@blackwall/database";
 import type { ColorKey } from "@blackwall/database/schema";
 import { buildChangeEvent } from "./change-events";
-import { isSqliteUniqueConstraintError } from "../../lib/errors";
 
-export async function createLabel(input: {
-  name: string;
-  colorKey: ColorKey;
-  workspaceId: string;
-}) {
-  try {
-    const [label] = await db
-      .insert(dbSchema.label)
-      .values({
-        name: input.name,
-        colorKey: input.colorKey,
-        workspaceId: input.workspaceId,
-      })
-      .returning();
+/** Throws a unique violation when the workspace has a label with this name, ignoring case. */
+export function insertLabel(
+  handle: DbHandle,
+  input: { name: string; colorKey: ColorKey; workspaceId: string },
+) {
+  const [label] = handle
+    .insert(dbSchema.label)
+    .values({
+      name: input.name,
+      colorKey: input.colorKey,
+      workspaceId: input.workspaceId,
+    })
+    .returning()
+    .all();
 
-    return label;
-  } catch (error) {
-    if (isSqliteUniqueConstraintError(error)) {
-      throw new Error("Label with this name already exists");
-    }
-    throw error;
-  }
+  return label;
 }
 
-export async function getLabelById(input: { labelId: string; workspaceId: string }) {
-  return db.query.label.findFirst({
+export async function getLabelById(
+  input: { labelId: string; workspaceId: string },
+  handle: DbHandle,
+) {
+  return handle.query.label.findFirst({
     where: {
       id: input.labelId,
       workspaceId: input.workspaceId,
@@ -37,28 +33,25 @@ export async function getLabelById(input: { labelId: string; workspaceId: string
   });
 }
 
-/** Case-insensitive, matching the unique index on (workspace_id, name collate nocase). */
-export async function getLabelByName(input: { name: string; workspaceId: string }) {
-  return db.query.label.findFirst({
-    where: {
-      workspaceId: input.workspaceId,
-      RAW: (label) => sql`${label.name} = ${input.name} collate nocase`,
-    },
-  });
-}
-
-export async function getLabelsForWorkspace(input: { workspaceId: string }) {
-  return db.query.label.findMany({
+export async function getLabelsForWorkspace(input: { workspaceId: string }, handle: DbHandle) {
+  return handle.query.label.findMany({
     where: { workspaceId: input.workspaceId },
   });
 }
 
-export async function deleteLabel(input: { labelId: string; workspaceId: string }) {
-  await db
+/** @returns whether a label was deleted */
+export async function deleteLabel(
+  input: { labelId: string; workspaceId: string },
+  handle: DbHandle,
+) {
+  const deleted = await handle
     .delete(dbSchema.label)
     .where(
       and(eq(dbSchema.label.id, input.labelId), eq(dbSchema.label.workspaceId, input.workspaceId)),
-    );
+    )
+    .returning({ id: dbSchema.label.id });
+
+  return deleted.length > 0;
 }
 
 export async function addLabelToIssue(input: {
@@ -79,23 +72,27 @@ export async function addLabelToIssue(input: {
   }
 
   await db.transaction((tx) => {
-    tx.insert(dbSchema.labelOnIssue).values({
-      issueId: input.issueId,
-      labelId: input.labelId,
-      workspaceId: input.workspaceId,
-    }).run();
+    tx.insert(dbSchema.labelOnIssue)
+      .values({
+        issueId: input.issueId,
+        labelId: input.labelId,
+        workspaceId: input.workspaceId,
+      })
+      .run();
 
-    tx.insert(dbSchema.issueChangeEvent).values(
-      buildChangeEvent(
-        {
-          issueId: input.issueId,
-          workspaceId: input.workspaceId,
-          actorId: input.actorId,
-        },
-        "label_added",
-        { labelId: input.labelId },
-      ),
-    ).run();
+    tx.insert(dbSchema.issueChangeEvent)
+      .values(
+        buildChangeEvent(
+          {
+            issueId: input.issueId,
+            workspaceId: input.workspaceId,
+            actorId: input.actorId,
+          },
+          "label_added",
+          { labelId: input.labelId },
+        ),
+      )
+      .run();
   });
 }
 
@@ -106,8 +103,7 @@ export async function removeLabelFromIssue(input: {
   actorId: string;
 }) {
   await db.transaction((tx) => {
-    tx
-      .delete(dbSchema.labelOnIssue)
+    tx.delete(dbSchema.labelOnIssue)
       .where(
         and(
           eq(dbSchema.labelOnIssue.issueId, input.issueId),
@@ -116,24 +112,25 @@ export async function removeLabelFromIssue(input: {
       )
       .run();
 
-    tx.insert(dbSchema.issueChangeEvent).values(
-      buildChangeEvent(
-        {
-          issueId: input.issueId,
-          workspaceId: input.workspaceId,
-          actorId: input.actorId,
-        },
-        "label_removed",
-        { labelId: input.labelId },
-      ),
-    ).run();
+    tx.insert(dbSchema.issueChangeEvent)
+      .values(
+        buildChangeEvent(
+          {
+            issueId: input.issueId,
+            workspaceId: input.workspaceId,
+            actorId: input.actorId,
+          },
+          "label_removed",
+          { labelId: input.labelId },
+        ),
+      )
+      .run();
   });
 }
 
 export const labelData = {
-  createLabel,
+  insertLabel,
   getLabelById,
-  getLabelByName,
   getLabelsForWorkspace,
   deleteLabel,
   addLabelToIssue,

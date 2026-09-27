@@ -10,3 +10,5 @@ export { Api } from "./api";
 export * from "./workspaces";
 export * from "./teams";
 export * from "./issues";
+export * from "./labels";
+export * from "./comments";

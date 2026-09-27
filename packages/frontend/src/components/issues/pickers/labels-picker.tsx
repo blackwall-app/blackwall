@@ -3,6 +3,7 @@ import { type PickerOption } from "@/components/custom-ui/picker";
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { Popover } from "@kobalte/core/popover";
 import PlusIcon from "lucide-solid/icons/plus";
 import { createResource, createSignal, Index } from "solid-js";
@@ -11,10 +12,7 @@ import type { SerializedLabel } from "@blackwall/database/schema";
 import { m } from "@/paraglide/messages.js";
 
 const createAndAddLabel = action(async (name: string, issueKey: string) => {
-  const createRes = await api.api.labels.$post({
-    json: { name },
-  });
-  const { label } = await createRes.json();
+  const { label } = await runApi((client) => client.labels.create({ payload: { name } }));
   await api.api.issues[`:issueKey`].labels.$post({
     param: { issueKey },
     json: { labelId: label.id },
@@ -52,8 +50,7 @@ export function IssueLabelsPicker(props: { labels: SerializedLabel[]; issueKey: 
   const [allLabels] = createResource(
     () => addOpen() === true,
     async () => {
-      const res = await api.api.labels.$get();
-      const { labels } = await res.json();
+      const { labels } = await runApi((client) => client.labels.list());
       return labels.map(
         (label) =>
           ({

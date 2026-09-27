@@ -69,11 +69,12 @@ export async function listIssuesInSprint(
     sprintId: string;
     statusFilters?: IssueStatus[];
   } & ListIssuesPagination,
+  handle: DbHandle = db,
 ) {
   const paginate = input.pagination !== false;
   const pageSize = input.limit ?? 50;
 
-  const rows = await db.query.issue.findMany({
+  const rows = await handle.query.issue.findMany({
     columns: { description: false },
     where: {
       workspaceId: input.workspaceId,

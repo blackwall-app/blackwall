@@ -1,10 +1,10 @@
 import { Badge } from "@/components/custom-ui/badge";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
 import { cn } from "@/lib/utils";
 
 const statusStyles: Record<
-  SerializedIssueSprint["status"],
+  IssueSprint["status"],
   { label: string; color: "green" | "blue" | "normal" }
 > = {
   planned: { label: m.sprint_status_badge_planned(), color: "normal" },
@@ -12,7 +12,7 @@ const statusStyles: Record<
   completed: { label: m.sprint_status_badge_completed(), color: "blue" },
 };
 
-export function SprintStatusBadge(props: { sprint: SerializedIssueSprint; class?: string }) {
+export function SprintStatusBadge(props: { sprint: Pick<IssueSprint, "status">; class?: string }) {
   const style = () => statusStyles[props.sprint.status];
 
   return (

@@ -1,10 +1,8 @@
 import * as z from "zod";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
-import { api } from "@/lib/api";
-import type { InferDbType } from "@blackwall/database/types";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
-import type { Team } from "@blackwall/shared";
+import { runApi } from "@/lib/api-effect";
+import type { CompleteSprint, IssueSprint, Team } from "@blackwall/shared";
 import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +24,6 @@ import { Popover } from "@kobalte/core/popover";
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
 import ChevronsUpDownIcon from "lucide-solid/icons/chevrons-up-down";
-import type { CompleteIssueSprint } from "@blackwall/backend/src/features/issue-sprints/issue-sprint.zod";
 import { Show } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 
@@ -34,17 +31,17 @@ type CompleteSprintFormProps = {
   workspaceSlug: string;
   teamKey: string;
   team: Team;
-  sprint: InferDbType<"issueSprint">;
-  plannedSprints: SerializedIssueSprint[];
+  sprint: Pick<IssueSprint, "id" | "name">;
+  plannedSprints: ReadonlyArray<IssueSprint>;
   hasUndoneIssues: boolean;
 };
 
 const completeSprintAction = action(
-  async (workspaceSlug: string, teamKey: string, sprintId: string, value: CompleteIssueSprint) => {
-    await api.api.teams[":teamKey"].sprints[":sprintId"].complete.$post({
-      param: { teamKey, sprintId },
-      json: value,
-    });
+  async (workspaceSlug: string, teamKey: string, sprintId: string, value: CompleteSprint) => {
+    // The client takes one request type per union member, not the union itself.
+    await runApi((client) =>
+      client.sprints.complete({ params: { teamKey, sprintId }, payload: value as never }),
+    );
 
     toast.success(m.complete_sprint_form_toast_completed());
     throw redirect(`/${workspaceSlug}/team/${teamKey}/sprints`);
@@ -112,7 +109,7 @@ export function CompleteSprintForm(props: CompleteSprintFormProps) {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      let payload: CompleteIssueSprint;
+      let payload: CompleteSprint;
 
       if (!props.hasUndoneIssues || value.onUndoneIssues === "moveToBacklog") {
         payload = { onUndoneIssues: "moveToBacklog" };

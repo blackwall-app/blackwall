@@ -5,6 +5,7 @@ import type { RowSelectionResult } from "@/components/datatable/row-selection-fe
 import { createSelectionColumn } from "@/components/datatable/selection-column";
 import { StatusPickerPopover } from "@/components/issues/pickers/status-picker";
 import type { InferDbType } from "@blackwall/database/types";
+import type { IssueListItem, IssueSprint, Label } from "@blackwall/shared";
 import { formatDateShort } from "@/lib/dates";
 import { issueMappings } from "@/lib/mappings";
 import { m } from "@/paraglide/messages.js";
@@ -19,8 +20,16 @@ export type IssueForDataTable = Omit<
   "description"
 >;
 
+/** What the table reads from an issue, whether it came from the Hono or the Effect API. */
+export type IssueDataTableRow = Pick<IssueListItem, "id" | "key" | "status" | "summary"> & {
+  labels: ReadonlyArray<Pick<Label, "id" | "name" | "colorKey">>;
+  issueSprint: Pick<IssueSprint, "id" | "name"> | null;
+  team?: { key: string } | null;
+  createdAt: Date | string;
+};
+
 export type IssueDataTableProps = {
-  issues: IssueForDataTable[];
+  issues: IssueDataTableRow[];
   displaySprints?: boolean;
   workspaceSlug: string;
   rowSelection?: RowSelectionResult;
@@ -31,10 +40,10 @@ export type IssueDataTableProps = {
 
 export function IssueDataTable(props: IssueDataTableProps) {
   const merged = mergeProps({ displaySprints: true }, props);
-  const columnHelper = createColumnHelper<IssueForDataTable>();
+  const columnHelper = createColumnHelper<IssueDataTableRow>();
 
   const columns = [
-    ...(merged.rowSelection ? [createSelectionColumn<IssueForDataTable>()] : []),
+    ...(merged.rowSelection ? [createSelectionColumn<IssueDataTableRow>()] : []),
     columnHelper.accessor("key", {
       header: m.issue_datatable_header_key(),
       meta: { shrink: true },
@@ -82,26 +91,29 @@ export function IssueDataTable(props: IssueDataTableProps) {
         </div>
       ),
     }),
-    ...(merged.displaySprints ? [
-      columnHelper.accessor("issueSprint", {
-        header: m.issue_datatable_header_sprint(),
-        meta: { shrink: true },
-        cell: (info) => (
-          <Show when={info.getValue()}>
-            {(sprint) => (
-              <A
-                href={`/${merged.workspaceSlug}/team/${info.row.original.team?.key}/sprints/${sprint().id}`}
-                class="flex items-center gap-1 px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded-sm border whitespace-nowrap hover:bg-accent transition-colors"
-                title={sprint().name}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <LandPlotIcon class="size-3 shrink-0" />
-                <span class="truncate max-w-20">{sprint().name}</span>
-              </A>
-            )}
-          </Show>
-        ),
-      })] : []),
+    ...(merged.displaySprints
+      ? [
+          columnHelper.accessor("issueSprint", {
+            header: m.issue_datatable_header_sprint(),
+            meta: { shrink: true },
+            cell: (info) => (
+              <Show when={info.getValue()}>
+                {(sprint) => (
+                  <A
+                    href={`/${merged.workspaceSlug}/team/${info.row.original.team?.key}/sprints/${sprint().id}`}
+                    class="flex items-center gap-1 px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded-sm border whitespace-nowrap hover:bg-accent transition-colors"
+                    title={sprint().name}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <LandPlotIcon class="size-3 shrink-0" />
+                    <span class="truncate max-w-20">{sprint().name}</span>
+                  </A>
+                )}
+              </Show>
+            ),
+          }),
+        ]
+      : []),
     columnHelper.accessor("createdAt", {
       header: m.issue_datatable_header_created(),
       meta: { shrink: true },
@@ -110,7 +122,7 @@ export function IssueDataTable(props: IssueDataTableProps) {
           {formatDateShort(new Date(info.getValue()))}
         </span>
       ),
-    }) as ColumnDef<IssueForDataTable>,
+    }) as ColumnDef<IssueDataTableRow>,
   ];
 
   const datatableProps = createDataTable({

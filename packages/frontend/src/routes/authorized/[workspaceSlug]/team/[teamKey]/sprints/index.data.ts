@@ -1,16 +1,7 @@
-import { api } from "@/lib/api";
-import { m } from "@/paraglide/messages.js";
+import { runApi } from "@/lib/api-effect";
 import { query } from "@solidjs/router";
 
 export const sprintsLoader = query(async (teamKey: string) => {
-  const res = await api.api.teams[":teamKey"].sprints.$get({
-    param: { teamKey },
-  });
-
-  if (!res.ok) {
-    throw new Error(m.loader_sprints_fetch_failed());
-  }
-
-  const { sprints } = await res.json();
+  const { sprints } = await runApi((client) => client.sprints.list({ params: { teamKey } }));
   return sprints;
 }, "sprints");

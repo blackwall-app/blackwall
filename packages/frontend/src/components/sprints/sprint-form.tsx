@@ -1,8 +1,8 @@
 import * as z from "zod";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
-import { api } from "@/lib/api";
-import type { Team } from "@blackwall/shared";
+import { runApi } from "@/lib/api-effect";
+import type { SprintDetails, Team } from "@blackwall/shared";
 import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { TanStackTextArea, TanStackTextField } from "@/components/ui/text-field";
 import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
@@ -21,25 +21,8 @@ type SprintFormProps = {
 };
 
 const createSprintAction = action(
-  async (
-    workspaceSlug: string,
-    teamKey: string,
-    value: {
-      name: string;
-      goal: string | null;
-      startDate: string;
-      endDate: string;
-    },
-  ) => {
-    await api.api.teams[":teamKey"].sprints.$post({
-      param: { teamKey },
-      json: {
-        name: value.name,
-        goal: value.goal,
-        startDate: value.startDate,
-        endDate: value.endDate,
-      },
-    });
+  async (workspaceSlug: string, teamKey: string, value: SprintDetails) => {
+    await runApi((client) => client.sprints.create({ params: { teamKey }, payload: value }));
 
     toast.success(m.sprint_form_toast_created());
 

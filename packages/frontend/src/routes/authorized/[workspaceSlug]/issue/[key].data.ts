@@ -9,20 +9,15 @@ export const issueLoader = query(async (issueKey: string, workspaceSlug: string)
     throw new Error(m.loader_invalid_issue_key());
   }
 
-  const [issueRes, { members }, sprintsRes] = await Promise.all([
+  const [issueRes, { members }, { sprints }] = await Promise.all([
     api.api.issues[":issueKey"].$get({
       param: { issueKey },
     }),
     runApi((client) => client.workspaces.listMembers({ params: { slug: workspaceSlug } })),
-    teamKey
-      ? api.api.teams[":teamKey"].sprints.$get({
-          param: { teamKey },
-        })
-      : null,
+    runApi((client) => client.sprints.list({ params: { teamKey } })),
   ]);
 
   const { issue } = await issueRes.json();
-  const sprints = sprintsRes ? (await sprintsRes.json()).sprints : [];
   const openSprints = sprints.filter((sprint) => sprint.status !== "completed");
 
   return {

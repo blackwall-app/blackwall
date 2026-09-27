@@ -9,6 +9,7 @@ import { useCreateDialog } from "@/context/create-dialog.context";
 import { BoardDnDContext, createBoardDnD, useBoardDnD } from "@/lib/board-dnd";
 import { issueMappings } from "@/lib/mappings";
 import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import {
   createAsync,
   useParams,
@@ -71,9 +72,7 @@ const moveIssue = action(
 );
 
 const startSprintAction = action(async (teamKey: string, sprintId: string) => {
-  await api.api.teams[":teamKey"].sprints[":sprintId"].start.$post({
-    param: { teamKey, sprintId },
-  });
+  await runApi((client) => client.sprints.start({ params: { teamKey, sprintId } }));
   toast.success(m.common_sprint_started());
 });
 

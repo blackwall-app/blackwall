@@ -1,5 +1,5 @@
-import type { IssueForDataTable } from "./issue-datatable";
-import type { IssuePriority, IssueStatus, SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssuePriority, IssueStatus } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import type { User } from "better-auth";
 import { Button } from "../ui/button";
 import {
@@ -41,9 +41,9 @@ import { SprintPickerPopover } from "./pickers/sprint-picker";
 import { m } from "@/paraglide/messages.js";
 
 type IssueSelectionMenuProps = {
-  selectedIssues: IssueForDataTable[];
+  selectedIssues: ReadonlyArray<{ key: string }>;
   onClearSelection: () => void;
-  openSprints?: SerializedIssueSprint[];
+  openSprints?: ReadonlyArray<IssueSprint>;
   assignableUsers?: User[];
 };
 

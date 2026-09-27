@@ -8,11 +8,7 @@ import { Show } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 import { getLocale } from "@/paraglide/runtime";
 
-// Dates are strings when the sprint comes from the Hono sprint list.
-type SprintSummary = Pick<IssueSprint, "id" | "name" | "goal"> & {
-  startDate: Date | string;
-  endDate: Date | string;
-};
+type SprintSummary = Pick<IssueSprint, "id" | "name" | "goal" | "startDate" | "endDate">;
 
 export function SprintSection(props: { sprint: SprintSummary | null }) {
   const params = useParams();
@@ -36,14 +32,14 @@ export function SprintSection(props: { sprint: SprintSummary | null }) {
                 <div class="flex flex-row items-center justify-between">
                   <p class="text-xs text-muted-foreground">{m.common_start_date()}</p>
                   <p class="text-sm font-medium">
-                    {new Date(sprint().startDate).toLocaleDateString(getLocale())}
+                    {sprint().startDate.toLocaleDateString(getLocale())}
                   </p>
                 </div>
 
                 <div class="flex flex-row items-center justify-between">
                   <p class="text-xs text-muted-foreground">{m.common_end_date()}</p>
                   <p class="text-sm font-medium">
-                    {new Date(sprint().endDate).toLocaleDateString(getLocale())}
+                    {sprint().endDate.toLocaleDateString(getLocale())}
                   </p>
                 </div>
 

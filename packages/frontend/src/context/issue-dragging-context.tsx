@@ -1,4 +1,5 @@
-import type { SerializedIssueSprint, SerializedIssueWithoutDescription } from "@blackwall/database";
+import type { SerializedIssueWithoutDescription } from "@blackwall/database";
+import type { IssueSprint } from "@blackwall/shared";
 import { createIssueDnD, IssueDnDContext, useIssueDnD } from "@/lib/issue-dnd";
 import { m } from "@/paraglide/messages.js";
 import {
@@ -44,7 +45,7 @@ const DragOverlay: Component<{
   );
 };
 
-const SprintDropZone: Component<{ sprint: SerializedIssueSprint }> = (props) => {
+const SprintDropZone: Component<{ sprint: IssueSprint }> = (props) => {
   const { setDropZoneRef, removeDropZoneRef, dragState } = useIssueDnD();
 
   onCleanup(() => removeDropZoneRef(props.sprint.id));
@@ -62,8 +63,7 @@ const SprintDropZone: Component<{ sprint: SerializedIssueSprint }> = (props) => 
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarIcon class="size-3.5" />
           <span>
-            {formatDateShort(new Date(props.sprint.startDate))} –{" "}
-            {formatDateShort(new Date(props.sprint.endDate))}
+            {formatDateShort(props.sprint.startDate)} – {formatDateShort(props.sprint.endDate)}
           </span>
         </div>
         <SprintStatusBadge sprint={props.sprint} class="text-xs" />
@@ -76,9 +76,9 @@ const SprintDropZone: Component<{ sprint: SerializedIssueSprint }> = (props) => 
 };
 
 type IssueDraggingProviderProps = {
-  sprints: SerializedIssueSprint[];
+  sprints: ReadonlyArray<IssueSprint>;
   selectedIssues?: Accessor<SerializedIssueWithoutDescription[]>;
-  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: SerializedIssueSprint) => void;
+  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: IssueSprint) => void;
 };
 
 const IssueDraggingProvider: ParentComponent<IssueDraggingProviderProps> = (props) => {

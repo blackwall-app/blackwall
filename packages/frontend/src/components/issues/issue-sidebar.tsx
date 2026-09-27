@@ -1,7 +1,7 @@
 import { ScrollContainer } from "@/components/custom-ui/scroll-area";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
-import type { SerializedIssueSprint, SerializedLabel } from "@blackwall/database/schema";
-import type { UserSummary } from "@blackwall/shared";
+import type { SerializedLabel } from "@blackwall/database/schema";
+import type { IssueSprint, UserSummary } from "@blackwall/shared";
 import type { InferDbType } from "@blackwall/database/types";
 import { m } from "@/paraglide/messages.js";
 import type { JSX } from "solid-js";
@@ -40,7 +40,7 @@ export function IssueSidebar(props: {
   issue: IssueForSidebar;
   labels: SerializedLabel[];
   assignableUsers: ReadonlyArray<UserSummary>;
-  openSprints: SerializedIssueSprint[];
+  openSprints: ReadonlyArray<IssueSprint>;
   workspaceSlug: string;
   teamKey: string;
 }) {

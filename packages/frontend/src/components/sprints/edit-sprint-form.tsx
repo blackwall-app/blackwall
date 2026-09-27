@@ -1,16 +1,14 @@
 import * as z from "zod";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
-import { api } from "@/lib/api";
-import type { InferDbType } from "@blackwall/database/types";
-import type { Team } from "@blackwall/shared";
+import { runApi } from "@/lib/api-effect";
+import type { IssueSprint, SprintDetails, Team } from "@blackwall/shared";
 import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { TanStackTextArea, TanStackTextField } from "@/components/ui/text-field";
 import { parseDate } from "@internationalized/date";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/custom-ui/date-picker";
 import { Button } from "@/components/ui/button";
-import type { UpdateIssueSprint } from "@blackwall/backend/src/features/issue-sprints/issue-sprint.zod";
 import { toast } from "../custom-ui/toast";
 import { m } from "@/paraglide/messages.js";
 
@@ -18,15 +16,14 @@ type EditSprintFormProps = {
   workspaceSlug: string;
   teamKey: string;
   team: Team;
-  sprint: InferDbType<"issueSprint">;
+  sprint: Pick<IssueSprint, "id" | "name" | "goal" | "startDate" | "endDate">;
 };
 
 const updateSprintAction = action(
-  async (workspaceSlug: string, teamKey: string, sprintId: string, value: UpdateIssueSprint) => {
-    await api.api.teams[":teamKey"].sprints[":sprintId"].$patch({
-      param: { teamKey, sprintId },
-      json: value,
-    });
+  async (workspaceSlug: string, teamKey: string, sprintId: string, value: SprintDetails) => {
+    await runApi((client) =>
+      client.sprints.update({ params: { teamKey, sprintId }, payload: value }),
+    );
 
     toast.success(m.edit_sprint_form_toast_updated());
     throw redirect(`/${workspaceSlug}/team/${teamKey}/sprints/${sprintId}`);
@@ -40,8 +37,8 @@ export function EditSprintForm(props: EditSprintFormProps) {
     defaultValues: {
       name: props.sprint.name,
       goal: props.sprint.goal,
-      startDate: parseDate(props.sprint.startDate.split("T")[0]).toString(),
-      endDate: parseDate(props.sprint.endDate.split("T")[0]).toString(),
+      startDate: props.sprint.startDate.toISOString().slice(0, 10),
+      endDate: props.sprint.endDate.toISOString().slice(0, 10),
     },
     validators: {
       onSubmit: z

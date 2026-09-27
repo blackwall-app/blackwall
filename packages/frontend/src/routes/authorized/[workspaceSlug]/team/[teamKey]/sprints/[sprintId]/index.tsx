@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/empty";
 import CircleDotIcon from "lucide-solid/icons/circle-dot";
 import { createRowSelection } from "@/components/datatable/row-selection-feature";
-import { IssueDataTable, type IssueForDataTable } from "@/components/issues/issue-datatable";
+import { IssueDataTable } from "@/components/issues/issue-datatable";
+import type { IssueListItem } from "@blackwall/shared";
 import { IssueSelectionMenu } from "@/components/issues/issue-selection-menu";
 import { formatDateShort } from "@/lib/dates";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { buttonVariants, Button } from "@/components/ui/button";
 import CalendarIcon from "lucide-solid/icons/calendar";
 import TargetIcon from "lucide-solid/icons/target";
@@ -44,9 +45,7 @@ import { m } from "@/paraglide/messages.js";
 
 const archiveSprintAction = action(
   async (workspaceSlug: string, teamKey: string, sprintId: string) => {
-    await api.api.teams[":teamKey"].sprints[":sprintId"].$delete({
-      param: { teamKey, sprintId },
-    });
+    await runApi((client) => client.sprints.archive({ params: { teamKey, sprintId } }));
 
     toast.success(m.common_sprint_archived_hidden());
     throw redirect(`/${workspaceSlug}/team/${teamKey}/sprints`);
@@ -54,14 +53,14 @@ const archiveSprintAction = action(
 );
 
 const startSprintAction = action(async (teamKey: string, sprintId: string) => {
-  await api.api.teams[":teamKey"].sprints[":sprintId"].start.$post({
-    param: { teamKey, sprintId },
-  });
+  await runApi((client) => client.sprints.start({ params: { teamKey, sprintId } }));
 
   toast.success(m.common_sprint_started());
 });
 
-function calculateEstimationStats(issues: IssueForDataTable[]) {
+function calculateEstimationStats(
+  issues: ReadonlyArray<Pick<IssueListItem, "estimationPoints" | "status">>,
+) {
   let totalPoints = 0;
   let completedPoints = 0;
   let estimatedCount = 0;
@@ -108,7 +107,7 @@ export default function SprintDetailPage() {
     (sprints() ?? []).filter((item) => item.status !== "completed"),
   );
 
-  const [extraIssues, setExtraIssues] = createSignal<IssueForDataTable[]>([]);
+  const [extraIssues, setExtraIssues] = createSignal<IssueListItem[]>([]);
   const [cursor, setCursor] = createSignal<string | null | undefined>(undefined);
 
   createEffect(() => {
@@ -118,20 +117,18 @@ export default function SprintDetailPage() {
     }
   });
 
-  const allIssues = createMemo(() => [
-    ...((data()?.issues ?? []) as IssueForDataTable[]),
-    ...extraIssues(),
-  ]);
+  const allIssues = createMemo(() => [...(data()?.issues ?? []), ...extraIssues()]);
 
   const handleLoadMore = async () => {
     const cur = cursor();
     if (!cur) return;
-    const res = await api.api.teams[":teamKey"].sprints[":sprintId"].$get({
-      param: { teamKey: params.teamKey!, sprintId: params.sprintId! },
-      query: { cursor: cur },
-    });
-    const result = await res.json();
-    setExtraIssues((prev) => [...prev, ...(result.issues as IssueForDataTable[])]);
+    const result = await runApi((client) =>
+      client.sprints.get({
+        params: { teamKey: params.teamKey!, sprintId: params.sprintId! },
+        query: { cursor: cur },
+      }),
+    );
+    setExtraIssues((prev) => [...prev, ...result.issues]);
     setCursor(result.nextCursor);
   };
 
@@ -143,7 +140,7 @@ export default function SprintDetailPage() {
     const issueMap = new Map(allIssues().map((issue) => [issue.id, issue]));
     return selectedIds
       .map((id) => issueMap.get(id))
-      .filter((issue): issue is IssueForDataTable => !!issue);
+      .filter((issue): issue is IssueListItem => !!issue);
   });
 
   const startCurrentSprint = async () => {
@@ -276,8 +273,7 @@ export default function SprintDetailPage() {
                 <div class="flex items-center gap-1.5">
                   <CalendarIcon class="size-4" />
                   <span>
-                    {formatDateShort(new Date(sprint()!.startDate))} –{" "}
-                    {formatDateShort(new Date(sprint()!.endDate))}
+                    {formatDateShort(sprint()!.startDate)} – {formatDateShort(sprint()!.endDate)}
                   </span>
                 </div>
                 <Show when={sprint()!.goal}>

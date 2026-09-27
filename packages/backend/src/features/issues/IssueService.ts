@@ -5,6 +5,7 @@ import { TeamService } from "../teams/TeamService";
 import { issueData } from "./issue.data";
 
 type IssueWithDetails = NonNullable<Awaited<ReturnType<typeof issueData.getIssueByKey>>>;
+type IssuePage = Awaited<ReturnType<typeof issueData.listIssuesInSprint>>;
 
 export class IssueService extends Context.Service<
   IssueService,
@@ -23,6 +24,14 @@ export class IssueService extends Context.Service<
       issueKey: string;
       userId: string;
     }) => Effect.Effect<IssueWithDetails, IssueNotFound | TeamNotFoundOrAccessDenied>;
+    /** A page of the sprint's issues, ordered by id. Doesn't check team membership. */
+    readonly listIssuesInSprint: (input: {
+      workspaceId: string;
+      teamId: string;
+      sprintId: string;
+      cursor?: string | undefined;
+      limit?: number | undefined;
+    }) => Effect.Effect<IssuePage>;
   }
 >()("blackwall/IssueService") {
   static readonly layer = Layer.effect(
@@ -59,7 +68,17 @@ export class IssueService extends Context.Service<
         return issue;
       });
 
-      return IssueService.of({ requireIssue, requireIssueForUser });
+      const listIssuesInSprint = Effect.fn("IssueService.listIssuesInSprint")(function* (input: {
+        workspaceId: string;
+        teamId: string;
+        sprintId: string;
+        cursor?: string | undefined;
+        limit?: number | undefined;
+      }) {
+        return yield* database.use((db) => issueData.listIssuesInSprint(input, db));
+      }, Effect.orDie);
+
+      return IssueService.of({ requireIssue, requireIssueForUser, listIssuesInSprint });
     }),
   );
 }

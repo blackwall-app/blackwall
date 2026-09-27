@@ -7,6 +7,7 @@ import { LabelsHandlers } from "./labels";
 import { RequestValidationLive } from "./request-validation";
 import { SearchHandlers } from "./search";
 import { SettingsHandlers } from "./settings";
+import { SprintsHandlers } from "./sprints";
 import { TeamsHandlers } from "./teams";
 import { TimeEntriesHandlers } from "./time-entries";
 import { WorkspaceMembershipLive } from "./workspace-membership";
@@ -33,4 +34,5 @@ export const HandlersLive = Layer.mergeAll(
   InvitationsHandlers,
   AuthHandlers,
   SettingsHandlers,
+  SprintsHandlers,
 ).pipe(Layer.provideMerge(MiddlewareLive));

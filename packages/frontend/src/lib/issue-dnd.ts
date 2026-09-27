@@ -1,4 +1,5 @@
-import type { SerializedIssueSprint, SerializedIssueWithoutDescription } from "@blackwall/database";
+import type { SerializedIssueWithoutDescription } from "@blackwall/database";
+import type { IssueSprint } from "@blackwall/shared";
 import { DragGesture } from "@use-gesture/vanilla";
 import { createContext, createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { createStore, produce } from "solid-js/store";
@@ -18,9 +19,9 @@ const initialState: IssueDragState = {
 };
 
 export function createIssueDnD(options: {
-  sprints: () => SerializedIssueSprint[];
+  sprints: () => ReadonlyArray<IssueSprint>;
   getSelectedIssues?: () => SerializedIssueWithoutDescription[];
-  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: SerializedIssueSprint) => void;
+  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: IssueSprint) => void;
 }) {
   const [dragState, setDragState] = createStore<IssueDragState>(initialState);
   const dropZoneRefs = new Map<string, HTMLElement>();
@@ -57,7 +58,7 @@ export function createIssueDnD(options: {
     hoveredEl = null;
   }
 
-  function findDropTarget(x: number, y: number): SerializedIssueSprint | null {
+  function findDropTarget(x: number, y: number): IssueSprint | null {
     const result = hitTest(x, y);
     if (!result) return null;
     return options.sprints().find((s) => s.id === result.sprintId) ?? null;

@@ -24,12 +24,12 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import { createColumnHelper, type ColumnDef } from "@tanstack/solid-table";
 import { formatDateShort } from "@/lib/dates";
 import { createDataTable } from "@/components/datatable/create-datatable";
 import { DataTable } from "@/components/datatable/datatable";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { toast } from "@/components/custom-ui/toast";
 import { SprintStatusBadge } from "@/components/sprints/sprint-status-badge";
 import { ArchiveSprintDialog } from "@/components/sprints/archive-sprint-dialog";
@@ -49,9 +49,7 @@ import { m } from "@/paraglide/messages.js";
 
 const archiveSprintAction = action(
   async (workspaceSlug: string, teamKey: string, sprintId: string) => {
-    await api.api.teams[":teamKey"].sprints[":sprintId"].$delete({
-      param: { teamKey, sprintId },
-    });
+    await runApi((client) => client.sprints.archive({ params: { teamKey, sprintId } }));
 
     toast.success(m.common_sprint_archived_hidden());
     throw redirect(`/${workspaceSlug}/team/${teamKey}/sprints`);
@@ -59,9 +57,7 @@ const archiveSprintAction = action(
 );
 
 const startSprintAction = action(async (teamKey: string, sprintId: string) => {
-  await api.api.teams[":teamKey"].sprints[":sprintId"].start.$post({
-    param: { teamKey, sprintId },
-  });
+  await runApi((client) => client.sprints.start({ params: { teamKey, sprintId } }));
 
   toast.success(m.common_sprint_started());
 });
@@ -130,17 +126,17 @@ function SprintEmpty(props: { workspaceSlug: string; teamKey: string }) {
 }
 
 type SprintTableProps = {
-  sprints: SerializedIssueSprint[];
+  sprints: ReadonlyArray<IssueSprint>;
   workspaceSlug: string;
   teamKey: string;
 };
 
 function SprintTable(props: SprintTableProps) {
-  const columnHelper = createColumnHelper<SerializedIssueSprint>();
+  const columnHelper = createColumnHelper<IssueSprint>();
   const archiveAction = useAction(archiveSprintAction);
   const startAction = useAction(startSprintAction);
   const [archiveDialogOpen, setArchiveDialogOpen] = createSignal(false);
-  const [selectedSprint, setSelectedSprint] = createSignal<SerializedIssueSprint | null>(null);
+  const [selectedSprint, setSelectedSprint] = createSignal<IssueSprint | null>(null);
 
   const columns = [
     columnHelper.accessor("name", {
@@ -159,12 +155,12 @@ function SprintTable(props: SprintTableProps) {
     }),
     columnHelper.accessor("startDate", {
       header: m.team_sprints_list_table_header_start_date(),
-      cell: (info) => formatDateShort(new Date(info.getValue())),
-    }) as ColumnDef<SerializedIssueSprint, string>,
+      cell: (info) => formatDateShort(info.getValue()),
+    }) as ColumnDef<IssueSprint, Date>,
     columnHelper.accessor("endDate", {
       header: m.team_sprints_list_table_header_end_date(),
-      cell: (info) => formatDateShort(new Date(info.getValue())),
-    }) as ColumnDef<SerializedIssueSprint, string>,
+      cell: (info) => formatDateShort(info.getValue()),
+    }) as ColumnDef<IssueSprint, Date>,
     columnHelper.display({
       id: "actions",
       header: m.team_sprints_list_table_header_actions(),
@@ -265,7 +261,7 @@ function SprintTable(props: SprintTableProps) {
 
   const datatableProps = createDataTable({
     columns,
-    data: () => props.sprints,
+    data: () => [...props.sprints],
     getLinkProps(row) {
       return {
         href: `/${props.workspaceSlug}/team/${props.teamKey}/sprints/${row.original.id}`,

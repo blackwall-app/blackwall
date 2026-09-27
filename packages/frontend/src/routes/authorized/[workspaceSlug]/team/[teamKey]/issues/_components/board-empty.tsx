@@ -7,7 +7,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import { A, useParams } from "@solidjs/router";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
 import PlayIcon from "lucide-solid/icons/play";
@@ -15,7 +15,7 @@ import { Show } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 
 export function BoardEmpty(props: {
-  plannedSprint: SerializedIssueSprint | null;
+  plannedSprint: Pick<IssueSprint, "id" | "name"> | null;
   onStartPlannedSprint: (sprintId: string) => Promise<void>;
 }) {
   const params = useParams();

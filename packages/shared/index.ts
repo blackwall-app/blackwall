@@ -17,3 +17,4 @@ export * from "./search";
 export * from "./invitations";
 export * from "./auth-api";
 export * from "./settings";
+export * from "./sprints";

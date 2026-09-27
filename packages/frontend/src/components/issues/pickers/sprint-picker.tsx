@@ -18,7 +18,7 @@ import AlertCircleIcon from "lucide-solid/icons/alert-circle";
 import ChevronsUpDownIcon from "lucide-solid/icons/chevrons-up-down";
 import LandPlotIcon from "lucide-solid/icons/land-plot";
 import { createMemo, createSignal, Show, type JSX } from "solid-js";
-import type { SerializedIssueSprint } from "@blackwall/database/schema";
+import type { IssueSprint } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
 
 const updateSprint = action(async (issueKey: string, sprintId: string | null) => {
@@ -32,7 +32,7 @@ const updateSprint = action(async (issueKey: string, sprintId: string | null) =>
 
 type SprintPickerPopoverProps = {
   sprintId?: string | null;
-  openSprints: SerializedIssueSprint[];
+  openSprints: ReadonlyArray<IssueSprint>;
   issueKey?: string;
   onChange?: (id: string | null) => Promise<void> | void;
   trigger?: JSX.Element;

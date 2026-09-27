@@ -1,11 +1,11 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { db, dbSchema } from "@blackwall/database";
+import { dbSchema, type DbHandle } from "@blackwall/database";
 import type { IssueStatus, IssueSprintStatus } from "@blackwall/database/schema";
 
 const ACTIVE_ISSUE_STATUSES = ["to_do", "in_progress"] as IssueStatus[];
 
-export async function listSprintsForTeam(input: { teamId: string }) {
-  return db.query.issueSprint.findMany({
+export async function listSprintsForTeam(input: { teamId: string }, handle: DbHandle) {
+  return handle.query.issueSprint.findMany({
     where: {
       teamId: input.teamId,
       archivedAt: { isNull: true },
@@ -14,19 +14,8 @@ export async function listSprintsForTeam(input: { teamId: string }) {
   });
 }
 
-export async function listOpenSprintsForTeam(input: { teamId: string }) {
-  return db.query.issueSprint.findMany({
-    where: {
-      teamId: input.teamId,
-      status: { in: ["planned", "active"] },
-      archivedAt: { isNull: true },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-export async function listPlannedSprintsForTeam(input: { teamId: string }) {
-  return db.query.issueSprint.findMany({
+export async function listPlannedSprintsForTeam(input: { teamId: string }, handle: DbHandle) {
+  return handle.query.issueSprint.findMany({
     where: {
       teamId: input.teamId,
       status: "planned",
@@ -36,8 +25,8 @@ export async function listPlannedSprintsForTeam(input: { teamId: string }) {
   });
 }
 
-export async function getSprintById(input: { sprintId: string; teamId: string }) {
-  return db.query.issueSprint.findFirst({
+export async function getSprintById(input: { sprintId: string; teamId: string }, handle: DbHandle) {
+  return handle.query.issueSprint.findFirst({
     where: {
       id: input.sprintId,
       teamId: input.teamId,
@@ -45,38 +34,37 @@ export async function getSprintById(input: { sprintId: string; teamId: string })
   });
 }
 
-export async function createSprint(input: {
-  name: string;
-  goal: string | null;
-  startDate: Date;
-  endDate: Date;
-  createdById: string;
-  teamId: string;
-}) {
-  const [result] = await db
+export function insertSprint(
+  tx: DbHandle,
+  input: {
+    name: string;
+    goal: string | null;
+    startDate: Date;
+    endDate: Date;
+    createdById: string;
+    teamId: string;
+  },
+) {
+  const [sprint] = tx
     .insert(dbSchema.issueSprint)
-    .values({
-      name: input.name,
-      goal: input.goal,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      createdById: input.createdById,
-      teamId: input.teamId,
-      status: "planned",
-    })
-    .returning();
+    .values({ ...input, status: "planned" })
+    .returning()
+    .all();
 
-  return result;
+  return sprint;
 }
 
-export async function updateSprint(input: {
-  sprintId: string;
-  name: string;
-  goal: string | null;
-  startDate: Date;
-  endDate: Date;
-}) {
-  const [result] = await db
+export function updateSprint(
+  tx: DbHandle,
+  input: {
+    sprintId: string;
+    name: string;
+    goal: string | null;
+    startDate: Date;
+    endDate: Date;
+  },
+) {
+  const [sprint] = tx
     .update(dbSchema.issueSprint)
     .set({
       name: input.name,
@@ -85,90 +73,58 @@ export async function updateSprint(input: {
       endDate: input.endDate,
     })
     .where(eq(dbSchema.issueSprint.id, input.sprintId))
-    .returning();
+    .returning()
+    .all();
 
-  return result;
+  return sprint;
 }
 
-export async function completeSprint(input: { sprintId: string }) {
-  await db
+export function setSprintStatus(
+  tx: DbHandle,
+  input: { sprintId: string; status: IssueSprintStatus },
+) {
+  const [sprint] = tx
     .update(dbSchema.issueSprint)
-    .set({
-      status: "completed",
-      finishedAt: new Date(),
-    })
-    .where(eq(dbSchema.issueSprint.id, input.sprintId));
+    .set({ status: input.status })
+    .where(eq(dbSchema.issueSprint.id, input.sprintId))
+    .returning()
+    .all();
+
+  return sprint;
 }
 
-export async function setSprintStatus(input: { sprintId: string; status: IssueSprintStatus }) {
-  await db
-    .update(dbSchema.issueSprint)
-    .set({
-      status: input.status,
-    })
-    .where(eq(dbSchema.issueSprint.id, input.sprintId));
+export function completeSprint(tx: DbHandle, input: { sprintId: string }) {
+  tx.update(dbSchema.issueSprint)
+    .set({ status: "completed", finishedAt: new Date() })
+    .where(eq(dbSchema.issueSprint.id, input.sprintId))
+    .run();
 }
 
-export async function moveActiveIssuesToBacklog(input: { teamId: string; sprintId?: string }) {
-  const whereConditions = input.sprintId
-    ? and(
-        eq(dbSchema.issue.sprintId, input.sprintId),
-        inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      )
-    : and(
-        eq(dbSchema.issue.teamId, input.teamId),
-        inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      );
-
-  await db
-    .update(dbSchema.issue)
-    .set({
-      sprintId: null,
-    })
-    .where(whereConditions);
+export function archiveSprint(tx: DbHandle, input: { sprintId: string }) {
+  tx.update(dbSchema.issueSprint)
+    .set({ archivedAt: sql`(unixepoch() * 1000)` })
+    .where(eq(dbSchema.issueSprint.id, input.sprintId))
+    .run();
 }
 
-export async function moveActiveIssuesToSprint(input: {
-  teamId: string;
-  fromSprintId?: string;
-  toSprintId: string;
-}) {
-  const whereConditions = input.fromSprintId
-    ? and(
+/** Moves the sprint's unfinished issues to `toSprintId`, or to the backlog when it's `null`. */
+export function moveUndoneIssues(
+  tx: DbHandle,
+  input: { fromSprintId: string; toSprintId: string | null },
+) {
+  tx.update(dbSchema.issue)
+    .set({ sprintId: input.toSprintId })
+    .where(
+      and(
         eq(dbSchema.issue.sprintId, input.fromSprintId),
         inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      )
-    : and(
-        eq(dbSchema.issue.teamId, input.teamId),
-        inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      );
-
-  await db.update(dbSchema.issue).set({ sprintId: input.toSprintId }).where(whereConditions);
+      ),
+    )
+    .run();
 }
 
-export async function moveActiveIssuesToUnsprinted(input: { teamId: string; sprintId?: string }) {
-  const whereConditions = input.sprintId
-    ? and(
-        eq(dbSchema.issue.sprintId, input.sprintId),
-        inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      )
-    : and(
-        eq(dbSchema.issue.teamId, input.teamId),
-        inArray(dbSchema.issue.status, ACTIVE_ISSUE_STATUSES),
-      );
-
-  await db.update(dbSchema.issue).set({ sprintId: null }).where(whereConditions);
-}
-
-export async function clearSprintFromIssues(input: { sprintId: string }) {
-  await db
-    .update(dbSchema.issue)
-    .set({ sprintId: null })
-    .where(eq(dbSchema.issue.sprintId, input.sprintId));
-}
-
-export async function countUndoneIssuesInSprint(input: { sprintId: string }) {
-  const [result] = await db
+export async function countUndoneIssuesInSprint(input: { sprintId: string }, handle: DbHandle) {
+  const [result] = await handle
     .select({ count: sql<number>`count(*)` })
     .from(dbSchema.issue)
     .where(
@@ -181,28 +137,15 @@ export async function countUndoneIssuesInSprint(input: { sprintId: string }) {
   return Number(result?.count ?? 0);
 }
 
-export async function archiveSprint(input: { sprintId: string }) {
-  await db
-    .update(dbSchema.issueSprint)
-    .set({
-      archivedAt: sql`(unixepoch() * 1000)`,
-    })
-    .where(eq(dbSchema.issueSprint.id, input.sprintId));
-}
-
 export const issueSprintData = {
   listSprintsForTeam,
-  listOpenSprintsForTeam,
   listPlannedSprintsForTeam,
   getSprintById,
-  createSprint,
+  insertSprint,
   updateSprint,
-  completeSprint,
   setSprintStatus,
-  moveActiveIssuesToBacklog,
-  moveActiveIssuesToSprint,
-  moveActiveIssuesToUnsprinted,
-  clearSprintFromIssues,
-  countUndoneIssuesInSprint,
+  completeSprint,
   archiveSprint,
+  moveUndoneIssues,
+  countUndoneIssuesInSprint,
 };

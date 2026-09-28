@@ -1,4 +1,4 @@
-import type { InferDbType } from "@blackwall/database/types";
+import type { IssueCommentWithAuthor } from "@blackwall/shared";
 import { UserAvatar } from "../custom-ui/avatar";
 import { formatRelative } from "@/lib/dates";
 import { TiptapEditor } from "../tiptap/tiptap-editor";
@@ -28,28 +28,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/core";
 import { m } from "@/paraglide/messages.js";
 
-type IssueWithCommentsAndEvents = InferDbType<
-  "issue",
-  {
-    comments: {
-      with: {
-        author: true;
-      };
-    };
-    changeEvents: {
-      with: {
-        actor: true;
-      };
-    };
-  }
->;
-
-type CommentWithAuthor = InferDbType<
-  "issueComment",
-  {
-    author: true;
-  }
->;
+type CommentWithAuthor = IssueCommentWithAuthor;
 
 export type IssueCommentProps = {
   comment: CommentWithAuthor;
@@ -146,7 +125,7 @@ export function CommentMenu(props: CommentMenuProps) {
 }
 
 export type IssueCommentFormProps = {
-  issue: IssueWithCommentsAndEvents;
+  issue: { key: string };
   workspaceSlug: string;
 };
 

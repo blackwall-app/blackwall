@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { action, reload, useAction } from "@solidjs/router";
 import { Popover } from "@kobalte/core/popover";
 import AlertCircleIcon from "lucide-solid/icons/alert-circle";
@@ -22,10 +22,7 @@ import type { IssueSprint } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
 
 const updateSprint = action(async (issueKey: string, sprintId: string | null) => {
-  await api.api.issues[`:issueKey`].$patch({
-    param: { issueKey },
-    json: { sprintId },
-  });
+  await runApi((client) => client.issues.update({ params: { issueKey }, payload: { sprintId } }));
 
   throw reload({ revalidate: ["issueShow", "board"] });
 });

@@ -2,43 +2,36 @@ import { Badge } from "@/components/custom-ui/badge";
 import { type PickerOption } from "@/components/custom-ui/picker";
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import { Popover } from "@kobalte/core/popover";
 import PlusIcon from "lucide-solid/icons/plus";
 import { createResource, createSignal, Index } from "solid-js";
 import { action, reload, useAction } from "@solidjs/router";
-import type { SerializedLabel } from "@blackwall/database/schema";
+import type { Label } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
 
 const createAndAddLabel = action(async (name: string, issueKey: string) => {
   const { label } = await runApi((client) => client.labels.create({ payload: { name } }));
-  await api.api.issues[`:issueKey`].labels.$post({
-    param: { issueKey },
-    json: { labelId: label.id },
-  });
+  await runApi((client) =>
+    client.issues.addLabel({ params: { issueKey }, payload: { labelId: label.id } }),
+  );
 
   throw reload({ revalidate: ["issueShow"] });
 });
 
 const addLabel = action(async (labelId: string, issueKey: string) => {
-  await api.api.issues[`:issueKey`].labels.$post({
-    param: { issueKey },
-    json: { labelId },
-  });
+  await runApi((client) => client.issues.addLabel({ params: { issueKey }, payload: { labelId } }));
 
   throw reload({ revalidate: ["issueShow"] });
 });
 
 const removeLabel = action(async (labelId: string, issueKey: string) => {
-  await api.api.issues[`:issueKey`].labels[`:labelId`].$delete({
-    param: { issueKey, labelId },
-  });
+  await runApi((client) => client.issues.removeLabel({ params: { issueKey, labelId } }));
 
   throw reload({ revalidate: ["issueShow"] });
 });
 
-export function IssueLabelsPicker(props: { labels: SerializedLabel[]; issueKey: string }) {
+export function IssueLabelsPicker(props: { labels: ReadonlyArray<Label>; issueKey: string }) {
   const [addOpen, setAddOpen] = createSignal(false);
 
   const labelIds = () => props.labels.map((label) => label.id);

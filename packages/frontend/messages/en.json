@@ -551,6 +551,7 @@
   "error_invalid_email_or_password": "Invalid email or password",
   "error_invalid_token": "This link is invalid or has expired.",
   "error_invitation_not_found_or_expired": "Invitation not found or expired",
+  "error_issue_label_limit_reached": "This issue already has the maximum number of labels",
   "error_issue_not_found": "Issue not found",
   "error_issue_sprint_not_found": "Sprint not found",
   "error_issues_not_accessible": "Some issues are not accessible to you",

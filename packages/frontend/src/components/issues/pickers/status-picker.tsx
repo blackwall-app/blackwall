@@ -1,18 +1,15 @@
 import { PickerPopover } from "@/components/custom-ui/picker-popover";
-import type { IssueStatus } from "@blackwall/database/schema";
+import type { IssueStatus } from "@blackwall/shared";
 import { issueMappings, mappingToOptionArray } from "@/lib/mappings";
 import { Popover } from "@kobalte/core/popover";
 import { action, reload, useAction } from "@solidjs/router";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { IssueStatusBadge } from "../issue-badges";
 import type { JSX } from "solid-js";
 import { m } from "@/paraglide/messages.js";
 
 const updateStatus = action(async (issueKey: string, status: IssueStatus) => {
-  await api.api.issues[":issueKey"].$patch({
-    param: { issueKey },
-    json: { status },
-  });
+  await runApi((client) => client.issues.update({ params: { issueKey }, payload: { status } }));
 
   throw reload({ revalidate: ["issueShow", "issues", "backlogIssues"] });
 });

@@ -4,7 +4,6 @@ import { BaseIssueDataTable } from "@/components/datatable/datatable";
 import type { RowSelectionResult } from "@/components/datatable/row-selection-feature";
 import { createSelectionColumn } from "@/components/datatable/selection-column";
 import { StatusPickerPopover } from "@/components/issues/pickers/status-picker";
-import type { InferDbType } from "@blackwall/database/types";
 import type { IssueListItem, IssueSprint, Label } from "@blackwall/shared";
 import { formatDateShort } from "@/lib/dates";
 import { issueMappings } from "@/lib/mappings";
@@ -15,21 +14,18 @@ import { A } from "@solidjs/router";
 import { Index, mergeProps, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
-export type IssueForDataTable = Omit<
-  InferDbType<"issue", { assignedTo: true; labels: true; issueSprint: true; team: true }>,
-  "description"
->;
-
-/** What the table reads from an issue, whether it came from the Hono or the Effect API. */
-export type IssueDataTableRow = Pick<IssueListItem, "id" | "key" | "status" | "summary"> & {
+/** What the table reads from an issue. */
+export type IssueDataTableRow = Pick<
+  IssueListItem,
+  "id" | "key" | "status" | "summary" | "createdAt"
+> & {
   labels: ReadonlyArray<Pick<Label, "id" | "name" | "colorKey">>;
   issueSprint: Pick<IssueSprint, "id" | "name"> | null;
   team?: { key: string } | null;
-  createdAt: Date | string;
 };
 
 export type IssueDataTableProps = {
-  issues: IssueDataTableRow[];
+  issues: ReadonlyArray<IssueDataTableRow>;
   displaySprints?: boolean;
   workspaceSlug: string;
   rowSelection?: RowSelectionResult;
@@ -119,7 +115,7 @@ export function IssueDataTable(props: IssueDataTableProps) {
       meta: { shrink: true },
       cell: (info) => (
         <span class="text-muted-foreground ml-auto hidden sm:block">
-          {formatDateShort(new Date(info.getValue()))}
+          {formatDateShort(info.getValue())}
         </span>
       ),
     }) as ColumnDef<IssueDataTableRow>,
@@ -127,7 +123,7 @@ export function IssueDataTable(props: IssueDataTableProps) {
 
   const datatableProps = createDataTable({
     columns,
-    data: () => merged.issues,
+    data: () => [...merged.issues],
     getLinkProps: (row) => ({
       href: `/${merged.workspaceSlug}/issue/${row.original.key}`,
     }),

@@ -1,13 +1,15 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { query } from "@solidjs/router";
 
-export const issuesLoader = query(async (teamKey: string, includeDone: boolean) => {
-  const res = await api.api.issues.$get({
-    query: {
-      teamKey,
-      ...(includeDone ? {} : { statusFilters: ["to_do", "in_progress"] }),
-    },
-  });
-
-  return res.json();
-}, "issues");
+export const issuesLoader = query(
+  (teamKey: string, includeDone: boolean) =>
+    runApi((client) =>
+      client.issues.list({
+        query: {
+          teamKey,
+          ...(includeDone ? {} : { statusFilters: ["to_do", "in_progress"] }),
+        },
+      }),
+    ),
+  "issues",
+);

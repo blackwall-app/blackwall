@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach } from "bun:test";
 import { rmSync } from "node:fs";
 import { useTestContext } from "../../../../test/context";
 import { env } from "../../../../lib/zod-env";
+import { createIssue as createIssueFixture } from "../../../../test/fixtures";
 
 describe("Attachment Routes", () => {
   const getCtx = useTestContext();
@@ -17,26 +18,14 @@ describe("Attachment Routes", () => {
   });
 
   const createIssue = async () => {
-    const { client, headers, team } = getCtx();
-    const res = await client.api.issues.$post(
-      {
-        json: {
-          teamKey: team.key,
-          issue: {
-            summary: "Test Issue",
-            description: { type: "doc", content: [] },
-            status: "to_do",
-            assignedToId: null,
-            sprintId: null,
-          },
-        },
-      },
-      {
-        headers: headers(),
-      },
-    );
-    const json = await res.json();
-    return json.issue;
+    const { testDb, workspace, team, user } = getCtx();
+    return createIssueFixture(testDb, {
+      workspaceId: workspace.id,
+      teamId: team.id,
+      createdById: user.id,
+      key: `${team.key}-1`,
+      keyNumber: 1,
+    });
   };
 
   const createTestFile = (name = "test.png", type = "image/png") => {

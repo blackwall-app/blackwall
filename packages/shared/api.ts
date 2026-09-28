@@ -3,6 +3,7 @@ import { AuthApi } from "./auth-api";
 import { CommentsApi } from "./comments";
 import { RequestValidation } from "./errors";
 import { InvitationsApi } from "./invitations";
+import { IssuesApi } from "./issues";
 import { LabelsApi } from "./labels";
 import { SearchApi } from "./search";
 import { SettingsApi } from "./settings";
@@ -24,4 +25,5 @@ export class Api extends HttpApi.make("blackwall-api")
   .add(AuthApi)
   .add(SettingsApi)
   .add(SprintsApi)
+  .add(IssuesApi)
   .middleware(RequestValidation) {}

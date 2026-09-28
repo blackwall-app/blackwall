@@ -1,7 +1,8 @@
 import { TiptapEditor } from "@/components/tiptap/tiptap-editor";
 import { useWorkspaceData } from "@/context/workspace-context";
-import type { SerializedIssue } from "@blackwall/database/schema";
+import type { Issue } from "@blackwall/shared";
 import { api, apiFetch } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { createEffect, createSignal } from "solid-js";
 import { IssueEditButtons } from "./issue-edit-buttons";
@@ -9,15 +10,14 @@ import { action, reload, useAction } from "@solidjs/router";
 import { m } from "@/paraglide/messages";
 
 const changeDescriptionAction = action(async (issueKey: string, description: JSONContent) => {
-  await api.api.issues[":issueKey"].$patch({
-    param: { issueKey },
-    json: { description },
-  });
+  await runApi((client) =>
+    client.issues.update({ params: { issueKey }, payload: { description } }),
+  );
 
   throw reload({ revalidate: [] });
 });
 
-export function IssueDescription(props: { issue: SerializedIssue }) {
+export function IssueDescription(props: { issue: Pick<Issue, "key" | "description"> }) {
   const workspaceData = useWorkspaceData();
   const _changeDescriptionAction = useAction(changeDescriptionAction);
   const [editor, setEditor] = createSignal<Editor | null>(null);

@@ -10,7 +10,6 @@ import { IssueSummary } from "@/components/issues/issue-summary";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useWorkspaceData } from "@/context/workspace-context";
-import type { SerializedTeam } from "@blackwall/database/schema";
 import { createAsync, useParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
@@ -60,7 +59,7 @@ export default function IssueDetailPage() {
           >
             <div class="flex flex-row items-center gap-1">
               <Show when={issueData()?.issue.team}>
-                {(team) => <TeamAvatar team={team() as unknown as SerializedTeam} size="5" />}
+                {(team) => <TeamAvatar team={team()} size="5" />}
               </Show>
               <span>{issueData()?.issue.team?.name}</span>
             </div>

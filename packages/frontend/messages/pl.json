@@ -565,6 +565,7 @@
   "error_invalid_email_or_password": "Nieprawidłowy e-mail lub hasło",
   "error_invalid_token": "Ten link jest nieprawidłowy lub wygasł.",
   "error_invitation_not_found_or_expired": "Zaproszenie nie zostało znalezione lub wygasło",
+  "error_issue_label_limit_reached": "To zgłoszenie ma już maksymalną liczbę etykiet",
   "error_issue_not_found": "Nie znaleziono zgłoszenia",
   "error_issue_sprint_not_found": "Nie znaleziono sprintu",
   "error_issues_not_accessible": "Nie masz dostępu do niektórych zgłoszeń",

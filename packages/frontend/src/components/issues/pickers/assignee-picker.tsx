@@ -7,14 +7,13 @@ import { Popover } from "@kobalte/core/popover";
 import ChevronsUpDownIcon from "lucide-solid/icons/chevrons-up-down";
 import { createMemo, createSignal, Show } from "solid-js";
 import { action, reload, useAction } from "@solidjs/router";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 
 const updateAssignee = action(async (issueKey: string, assignedToId: string | null) => {
-  await api.api.issues[":issueKey"].$patch({
-    param: { issueKey: issueKey },
-    json: { assignedToId: assignedToId },
-  });
+  await runApi((client) =>
+    client.issues.update({ params: { issueKey }, payload: { assignedToId } }),
+  );
 
   throw reload({ revalidate: ["issueShow"] });
 });

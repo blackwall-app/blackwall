@@ -1,7 +1,7 @@
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { query } from "@solidjs/router";
 
-export const myIssuesLoader = query(async (_args: { workspaceSlug: string }) => {
-  const res = await api.api.issues.my.$get({ query: {} });
-  return res.json();
-}, "myIssues");
+export const myIssuesLoader = query(
+  (_args: { workspaceSlug: string }) => runApi((client) => client.issues.my({ query: {} })),
+  "myIssues",
+);

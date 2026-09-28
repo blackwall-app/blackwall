@@ -1,5 +1,5 @@
-import type { SerializedIssue } from "@blackwall/database/schema";
-import { api } from "@/lib/api";
+import type { Issue } from "@blackwall/shared";
+import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { useNavigate } from "@solidjs/router";
 import EllipsisIcon from "lucide-solid/icons/ellipsis";
@@ -25,7 +25,7 @@ import {
 } from "../ui/dropdown-menu";
 
 type IssueMenuProps = {
-  issue: SerializedIssue;
+  issue: Pick<Issue, "key">;
   workspaceSlug: string;
   teamKey: string;
 };
@@ -35,9 +35,7 @@ export function IssueMenu(props: IssueMenuProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = createSignal(false);
 
   const handleDelete = async () => {
-    await api.api.issues[":issueKey"].$delete({
-      param: { issueKey: props.issue.key },
-    });
+    await runApi((client) => client.issues.delete({ params: { issueKey: props.issue.key } }));
 
     navigate(`/${props.workspaceSlug}/team/${props.teamKey}/issues`);
   };

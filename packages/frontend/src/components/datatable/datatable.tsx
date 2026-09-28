@@ -11,8 +11,7 @@ import {
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { ScrollContainer } from "../custom-ui/scroll-area";
 import type { createDataTable } from "./create-datatable";
-import { useIssueDnD } from "@/lib/issue-dnd";
-import type { SerializedIssue } from "@blackwall/database";
+import { useIssueDnD, type DraggedIssue } from "@/lib/issue-dnd";
 
 interface DataTableProps<TData> extends ReturnType<typeof createDataTable<TData>> {
   issueDrag?: boolean;
@@ -161,7 +160,7 @@ function DataRow<TData>(props: DataRowProps<TData>) {
 
 function DraggableIssueDataRow<TData>(props: DataRowProps<TData>) {
   const { useDraggable } = useIssueDnD();
-  const setRef = useDraggable(props.row.original as SerializedIssue);
+  const setRef = useDraggable(props.row.original as DraggedIssue);
 
   return <DataRow {...props} ref={(el) => setRef(el)} />;
 }

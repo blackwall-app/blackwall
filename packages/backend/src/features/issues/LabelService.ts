@@ -1,8 +1,15 @@
 import { Database } from "@blackwall/database/effect";
 import type { Label } from "@blackwall/database/schema";
-import { createColorFromString, LabelNameAlreadyExists, LabelNotFound } from "@blackwall/shared";
+import {
+  createColorFromString,
+  IssueLabelLimitReached,
+  LabelNameAlreadyExists,
+  LabelNotFound,
+} from "@blackwall/shared";
 import { Context, Effect, Layer } from "effect";
 import { labelData } from "./label.data";
+
+const MAX_LABELS_PER_ISSUE = 100;
 
 export class LabelService extends Context.Service<
   LabelService,
@@ -20,6 +27,24 @@ export class LabelService extends Context.Service<
     readonly deleteLabel: (input: {
       workspaceId: string;
       labelId: string;
+    }) => Effect.Effect<void, LabelNotFound>;
+    /**
+     * Attaches a workspace label to an issue, up to `MAX_LABELS_PER_ISSUE`.
+     * Attaching a label the issue already has does nothing. Doesn't check the
+     * issue's team membership.
+     */
+    readonly addLabelToIssue: (input: {
+      workspaceId: string;
+      issueId: string;
+      labelId: string;
+      actorId: string;
+    }) => Effect.Effect<void, LabelNotFound | IssueLabelLimitReached>;
+    /** Detaching a label the issue doesn't have does nothing. Doesn't check team membership. */
+    readonly removeLabelFromIssue: (input: {
+      workspaceId: string;
+      issueId: string;
+      labelId: string;
+      actorId: string;
     }) => Effect.Effect<void, LabelNotFound>;
   }
 >()("blackwall/LabelService") {
@@ -76,7 +101,47 @@ export class LabelService extends Context.Service<
         Effect.catchTag("DatabaseError", Effect.die),
       );
 
-      return LabelService.of({ listLabels, requireLabel, createLabel, deleteLabel });
+      const addLabelToIssue = Effect.fn("LabelService.addLabelToIssue")(
+        function* (input: {
+          workspaceId: string;
+          issueId: string;
+          labelId: string;
+          actorId: string;
+        }) {
+          yield* requireLabel(input);
+          const limitReached = yield* database.transaction((tx) => {
+            if (labelData.countLabelsOnIssue(tx, input) >= MAX_LABELS_PER_ISSUE) return true;
+            labelData.attachLabel(tx, input);
+            return false;
+          });
+          if (limitReached) {
+            return yield* new IssueLabelLimitReached();
+          }
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      const removeLabelFromIssue = Effect.fn("LabelService.removeLabelFromIssue")(
+        function* (input: {
+          workspaceId: string;
+          issueId: string;
+          labelId: string;
+          actorId: string;
+        }) {
+          yield* requireLabel(input);
+          yield* database.transaction((tx) => labelData.detachLabel(tx, input));
+        },
+        Effect.catchTag("DatabaseError", Effect.die),
+      );
+
+      return LabelService.of({
+        listLabels,
+        requireLabel,
+        createLabel,
+        deleteLabel,
+        addLabelToIssue,
+        removeLabelFromIssue,
+      });
     }),
   );
 }

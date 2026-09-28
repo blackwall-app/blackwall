@@ -1,7 +1,7 @@
 import { AssigneePickerPopover, StatusPickerPopover } from "@/components/issues/pickers";
 import { useAppForm } from "@/context/form-context";
 import type { IssueStatus, SerializedIssueAttachment } from "@blackwall/database/schema";
-import type { Team } from "@blackwall/shared";
+import type { CreateIssue, Team } from "@blackwall/shared";
 import { useDialogContext } from "@kobalte/core/dialog";
 import { Popover } from "@kobalte/core/popover";
 import type { Editor, JSONContent } from "@tiptap/core";
@@ -33,7 +33,6 @@ import {
 } from "@solidjs/router";
 import { api, apiFetch } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
-import type { CreateIssue } from "@blackwall/backend/src/features/issues/issue.zod";
 import type { CreateDialogDefaults } from "@/context/create-dialog.context";
 import { m } from "@/paraglide/messages.js";
 
@@ -49,14 +48,9 @@ const getTeamUsers = query(async (teamKey: string) => {
 
 const createIssueAction = action(
   async (issue: CreateIssue["issue"], workspaceSlug: string, teamKey: string) => {
-    const res = await api.api.issues.$post({
-      json: {
-        issue,
-        teamKey,
-      },
-    });
-
-    const { issue: createdIssue } = await res.json();
+    const { issue: createdIssue } = await runApi((client) =>
+      client.issues.create({ payload: { issue, teamKey } }),
+    );
 
     throw redirect(`/${workspaceSlug}/issue/${createdIssue.key}`, {
       revalidate: [],

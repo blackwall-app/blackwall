@@ -1,8 +1,6 @@
 import { ScrollContainer } from "@/components/custom-ui/scroll-area";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
-import type { SerializedLabel } from "@blackwall/database/schema";
-import type { IssueSprint, UserSummary } from "@blackwall/shared";
-import type { InferDbType } from "@blackwall/database/types";
+import type { Issue, IssueSprint, Label, UserSummary } from "@blackwall/shared";
 import { m } from "@/paraglide/messages.js";
 import type { JSX } from "solid-js";
 import {
@@ -15,7 +13,10 @@ import {
   TimeEntryPickerPopover,
 } from "./pickers";
 
-type IssueForSidebar = InferDbType<"issue", { assignedTo: true }>;
+type IssueForSidebar = Pick<
+  Issue,
+  "key" | "status" | "priority" | "estimationPoints" | "assignedToId" | "sprintId"
+>;
 
 function IssueSidebarItem(props: {
   children: JSX.Element;
@@ -38,7 +39,7 @@ function IssueSidebarItem(props: {
 
 export function IssueSidebar(props: {
   issue: IssueForSidebar;
-  labels: SerializedLabel[];
+  labels: ReadonlyArray<Label>;
   assignableUsers: ReadonlyArray<UserSummary>;
   openSprints: ReadonlyArray<IssueSprint>;
   workspaceSlug: string;

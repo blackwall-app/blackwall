@@ -5,29 +5,29 @@ import { TeamAvatar } from "@/components/custom-ui/avatar";
 import { Breadcrumbs, BreadcrumbsItem } from "@/components/custom-ui/breadcrumbs";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { createRowSelection } from "@/components/datatable/row-selection-feature";
-import { IssueDataTable, type IssueForDataTable } from "@/components/issues/issue-datatable";
+import { IssueDataTable } from "@/components/issues/issue-datatable";
 import { IssueSelectionMenu } from "@/components/issues/issue-selection-menu";
 import { IssueDraggingProvider } from "@/context/issue-dragging-context";
 import { HideWhileDragging } from "@/components/issues/hide-while-dragging";
 import { useTeamData } from "../../../[teamKey]";
 import { sprintsLoader } from "../../sprints/index.data";
-import { api } from "@/lib/api";
-import type { BulkUpdateIssues } from "@blackwall/backend/src/features/issues/issue.zod";
+import { runApi } from "@/lib/api-effect";
+import type { BulkUpdateIssues, IssueListItemWithTeam } from "@blackwall/shared";
 import { toast } from "@/components/custom-ui/toast";
 import { m } from "@/paraglide/messages.js";
 
 const moveToSprintAction = action(async (input: BulkUpdateIssues) => {
-  await api.api.issues.bulk.$patch({ json: input });
+  await runApi((client) => client.issues.bulkUpdate({ payload: input }));
   const count = input.issueKeys.length;
   toast.success(m.issues_bulk_move_to_sprint({ count: String(count) }));
 });
 
 type Props = {
-  issues: IssueForDataTable[] | undefined;
+  issues: ReadonlyArray<IssueListItemWithTeam> | undefined;
   nextCursor?: string | null;
   onLoadMore?: (
     cursor: string,
-  ) => Promise<{ issues: IssueForDataTable[]; nextCursor: string | null }>;
+  ) => Promise<{ issues: ReadonlyArray<IssueListItemWithTeam>; nextCursor: string | null }>;
   breadcrumbLabel: string;
   segmentOptions: { label: string; href: string }[];
   emptyState: JSXElement;
@@ -42,7 +42,7 @@ export function IssueListPage(props: Props) {
     (sprints() ?? []).filter((sprint) => sprint.status !== "completed"),
   );
 
-  const [extraIssues, setExtraIssues] = createSignal<IssueForDataTable[]>([]);
+  const [extraIssues, setExtraIssues] = createSignal<ReadonlyArray<IssueListItemWithTeam>>([]);
   const [cursor, setCursor] = createSignal<string | null | undefined>(undefined);
 
   createEffect(() => {
@@ -69,7 +69,7 @@ export function IssueListPage(props: Props) {
     const issueMap = new Map(allIssues().map((issue) => [issue.id, issue]));
     return selectedIds
       .map((id) => issueMap.get(id))
-      .filter((issue): issue is IssueForDataTable => !!issue);
+      .filter((issue): issue is IssueListItemWithTeam => !!issue);
   });
 
   return (

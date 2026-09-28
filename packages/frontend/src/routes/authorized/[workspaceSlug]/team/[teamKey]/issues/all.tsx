@@ -15,7 +15,7 @@ import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { issuesLoader } from "./issues.data";
 import { IssueListPage } from "./_components/issue-list-page";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 
 export default function AllIssuesPage() {
   const params = useParams();
@@ -23,12 +23,8 @@ export default function AllIssuesPage() {
 
   const baseHref = () => `/${params.workspaceSlug}/team/${params.teamKey}/issues`;
 
-  const loadMore = async (cursor: string) => {
-    const res = await api.api.issues.$get({
-      query: { teamKey: params.teamKey!, cursor },
-    });
-    return res.json();
-  };
+  const loadMore = (cursor: string) =>
+    runApi((client) => client.issues.list({ query: { teamKey: params.teamKey!, cursor } }));
 
   return (
     <>

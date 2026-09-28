@@ -1,18 +1,23 @@
 import { EmptyFilter, and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
-import { db, dbSchema, type DbHandle } from "@blackwall/database";
+import { db, dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
+import {
+  NextIssueNotInTargetColumn,
+  PreviousIssueNotInTargetColumn,
+  TargetColumnRequiresAdjacentIssue,
+  UnableToDetermineIssueSortOrder,
+  tiptapToPlainText,
+} from "@blackwall/shared";
 import { getNextSequenceNumber } from "./key-sequences";
 import { buildChangeEvent, buildIssueUpdatedEvent } from "./change-events";
-import { ErrorCode, tiptapToPlainText } from "@blackwall/shared";
-import { BadRequestError } from "../../lib/errors";
 import { ORDER_GAP, calculateMovedIssueOrder } from "./issue-order";
 
 type PaginatedResult<T> = { issues: T[]; nextCursor: string | null };
 
 export type ListIssuesPagination = {
-  cursor?: string;
-  limit?: number;
-  pagination?: boolean;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  pagination?: boolean | undefined;
 };
 
 function applyPagination<T extends { id: string }>(
@@ -37,20 +42,21 @@ export async function listIssuesInTeam(
   input: {
     workspaceId: string;
     teamId: string;
-    statusFilters?: IssueStatus[];
-    withoutSprint?: boolean;
+    statusFilters?: ReadonlyArray<IssueStatus> | undefined;
+    withoutSprint?: boolean | undefined;
   } & ListIssuesPagination,
+  handle: DbHandle,
 ) {
   const paginate = input.pagination !== false;
   const pageSize = input.limit ?? 50;
 
-  const rows = await db.query.issue.findMany({
+  const rows = await handle.query.issue.findMany({
     columns: { description: false },
     where: {
       workspaceId: input.workspaceId,
       teamId: input.teamId,
       deletedAt: { isNull: true },
-      status: input.statusFilters ? { in: input.statusFilters } : EmptyFilter,
+      status: input.statusFilters ? { in: [...input.statusFilters] } : EmptyFilter,
       sprintId: input.withoutSprint ? { isNull: true } : EmptyFilter,
       id: input.cursor ? { gt: input.cursor } : EmptyFilter,
     },
@@ -67,9 +73,9 @@ export async function listIssuesInSprint(
     workspaceId: string;
     teamId: string;
     sprintId: string;
-    statusFilters?: IssueStatus[];
+    statusFilters?: ReadonlyArray<IssueStatus> | undefined;
   } & ListIssuesPagination,
-  handle: DbHandle = db,
+  handle: DbHandle,
 ) {
   const paginate = input.pagination !== false;
   const pageSize = input.limit ?? 50;
@@ -81,7 +87,7 @@ export async function listIssuesInSprint(
       teamId: input.teamId,
       sprintId: input.sprintId,
       deletedAt: { isNull: true },
-      status: input.statusFilters ? { in: input.statusFilters } : EmptyFilter,
+      status: input.statusFilters ? { in: [...input.statusFilters] } : EmptyFilter,
       id: input.cursor ? { gt: input.cursor } : EmptyFilter,
     },
     orderBy: { id: "asc" },
@@ -94,11 +100,12 @@ export async function listIssuesInSprint(
 
 export async function listIssuesAssignedToUser(
   input: { workspaceId: string; userId: string } & ListIssuesPagination,
+  handle: DbHandle,
 ) {
   const paginate = input.pagination !== false;
   const pageSize = input.limit ?? 50;
 
-  const rows = await db.query.issue.findMany({
+  const rows = await handle.query.issue.findMany({
     columns: { description: false },
     where: {
       workspaceId: input.workspaceId,
@@ -119,55 +126,48 @@ export type CreateIssueInput = Pick<
   "summary" | "description" | "status" | "assignedToId" | "sprintId"
 >;
 
-export async function createIssue(input: {
-  workspaceId: string;
-  teamId: string;
-  teamKey: string;
-  createdById: string;
-  issue: CreateIssueInput;
-}) {
-  const result = await db.transaction((tx) => {
-    const keyNumber = getNextSequenceNumber({
+/** Takes the team's next key number and records an `issue_created` event. */
+export function insertIssue(
+  tx: DbTransaction,
+  input: {
+    workspaceId: string;
+    teamId: string;
+    teamKey: string;
+    createdById: string;
+    issue: CreateIssueInput;
+  },
+) {
+  const keyNumber = getNextSequenceNumber({ teamId: input.teamId, tx });
+
+  const [issue] = tx
+    .insert(dbSchema.issue)
+    .values({
+      ...input.issue,
+      descriptionText: tiptapToPlainText(input.issue.description),
+      createdById: input.createdById,
+      assignedToId: input.issue.assignedToId ?? undefined,
+      keyNumber,
+      key: `${input.teamKey}-${keyNumber}`,
       teamId: input.teamId,
-      tx,
-    });
+      workspaceId: input.workspaceId,
+    })
+    .returning()
+    .all();
 
-    const [issue] = tx
-      .insert(dbSchema.issue)
-      .values({
-        ...input.issue,
-        descriptionText: tiptapToPlainText(input.issue.description),
-        createdById: input.createdById,
-        assignedToId: input.issue.assignedToId ?? undefined,
-        keyNumber,
-        key: `${input.teamKey}-${keyNumber}`,
-        teamId: input.teamId,
-        workspaceId: input.workspaceId,
-      })
-      .returning()
-      .all();
-
-    tx.insert(dbSchema.issueChangeEvent)
-      .values(
-        buildChangeEvent(
-          {
-            issueId: issue.id,
-            workspaceId: input.workspaceId,
-            actorId: input.createdById,
-          },
-          "issue_created",
-        ),
-      )
-      .run();
-
-    return issue;
-  });
-
-  if (!result) {
+  if (!issue) {
     throw new Error("Issue couldn't be created.");
   }
 
-  return result;
+  tx.insert(dbSchema.issueChangeEvent)
+    .values(
+      buildChangeEvent(
+        { issueId: issue.id, workspaceId: input.workspaceId, actorId: input.createdById },
+        "issue_created",
+      ),
+    )
+    .run();
+
+  return issue;
 }
 
 const issueDetailsWith = {
@@ -193,16 +193,6 @@ const issueDetailsWith = {
     },
   },
 } as const;
-
-export async function getIssueById(input: { issueId: string }) {
-  return db.query.issue.findFirst({
-    where: {
-      id: input.issueId,
-      deletedAt: { isNull: true },
-    },
-    with: issueDetailsWith,
-  });
-}
 
 /**
  * Maps a key that uses a team's old key (e.g. `OLD-12` after the team was renamed to `NEW`)
@@ -256,10 +246,13 @@ export async function getIssueByKey(
   });
 }
 
-export async function getIssuesByKeys(input: { issueKeys: string[]; workspaceId: string }) {
-  return db.query.issue.findMany({
+export async function getIssuesByKeys(
+  input: { issueKeys: ReadonlyArray<string>; workspaceId: string },
+  handle: DbHandle,
+) {
+  return handle.query.issue.findMany({
     where: {
-      key: { in: input.issueKeys },
+      key: { in: [...input.issueKeys] },
       workspaceId: input.workspaceId,
       deletedAt: { isNull: true },
     },
@@ -285,116 +278,103 @@ function withDescriptionText(updates: UpdateIssueInput) {
   return { ...updates, descriptionText: tiptapToPlainText(updates.description) };
 }
 
-export async function updateIssue(input: {
-  issueId: string;
-  workspaceId: string;
-  actorId: string;
-  updates: UpdateIssueInput;
-  originalIssue: Issue;
-}) {
-  const result = await db.transaction((tx) => {
-    const [updated] = tx
-      .update(dbSchema.issue)
-      .set(withDescriptionText(input.updates))
-      .where(eq(dbSchema.issue.id, input.issueId))
-      .returning()
-      .all();
+/** Records the change as an event when a field actually changed. */
+export function updateIssue(
+  tx: DbTransaction,
+  input: {
+    workspaceId: string;
+    actorId: string;
+    updates: UpdateIssueInput;
+    originalIssue: Issue;
+  },
+) {
+  const [updated] = tx
+    .update(dbSchema.issue)
+    .set(withDescriptionText(input.updates))
+    .where(eq(dbSchema.issue.id, input.originalIssue.id))
+    .returning()
+    .all();
 
-    const event = buildIssueUpdatedEvent(
-      {
-        issueId: input.issueId,
-        workspaceId: input.workspaceId,
-        actorId: input.actorId,
-      },
-      input.updates,
-      input.originalIssue,
-    );
+  const event = buildIssueUpdatedEvent(
+    { issueId: input.originalIssue.id, workspaceId: input.workspaceId, actorId: input.actorId },
+    input.updates,
+    input.originalIssue,
+  );
 
-    if (event) {
-      tx.insert(dbSchema.issueChangeEvent).values(event).run();
-    }
+  if (event) {
+    tx.insert(dbSchema.issueChangeEvent).values(event).run();
+  }
 
-    return updated;
-  });
+  if (!updated) {
+    throw new Error("Issue couldn't be updated.");
+  }
 
-  return result;
+  return updated;
 }
 
-export async function updateIssuesBulk(input: {
-  issues: Issue[];
-  workspaceId: string;
-  actorId: string;
-  updates: UpdateIssueInput;
-}) {
-  const result = await db.transaction((tx) => {
-    const [updated] = tx
-      .update(dbSchema.issue)
-      .set(withDescriptionText(input.updates))
-      .where(
-        and(
-          eq(dbSchema.issue.workspaceId, input.workspaceId),
-          inArray(
-            dbSchema.issue.id,
-            input.issues.map((issue) => issue.id),
-          ),
+export function updateIssuesBulk(
+  tx: DbTransaction,
+  input: {
+    issues: Issue[];
+    workspaceId: string;
+    actorId: string;
+    updates: UpdateIssueInput;
+  },
+) {
+  const updated = tx
+    .update(dbSchema.issue)
+    .set(withDescriptionText(input.updates))
+    .where(
+      and(
+        eq(dbSchema.issue.workspaceId, input.workspaceId),
+        inArray(
+          dbSchema.issue.id,
+          input.issues.map((issue) => issue.id),
         ),
-      )
-      .returning()
-      .all();
+      ),
+    )
+    .returning()
+    .all();
 
-    const events = input.issues
-      .map((issue) => {
-        return buildIssueUpdatedEvent(
-          {
-            issueId: issue.id,
-            workspaceId: input.workspaceId,
-            actorId: input.actorId,
-          },
-          input.updates,
-          issue,
-        );
-      })
-      .filter((event) => event !== null);
+  const events = input.issues
+    .map((issue) =>
+      buildIssueUpdatedEvent(
+        { issueId: issue.id, workspaceId: input.workspaceId, actorId: input.actorId },
+        input.updates,
+        issue,
+      ),
+    )
+    .filter((event) => event !== null);
 
-    if (events.length > 0) {
-      tx.insert(dbSchema.issueChangeEvent).values(events).run();
-    }
+  if (events.length > 0) {
+    tx.insert(dbSchema.issueChangeEvent).values(events).run();
+  }
 
-    return updated;
-  });
-
-  return result;
+  return updated;
 }
 
-export async function softDeleteIssuesBulk(input: {
-  issues: Issue[];
-  workspaceId: string;
-  actorId: string;
-}) {
-  const result = await db.transaction((tx) => {
-    const updated = tx
-      .update(dbSchema.issue)
-      .set({ deletedAt: new Date() })
-      .where(
-        and(
-          eq(dbSchema.issue.workspaceId, input.workspaceId),
-          inArray(
-            dbSchema.issue.id,
-            input.issues.map((issue) => issue.id),
-          ),
+export function softDeleteIssuesBulk(
+  tx: DbTransaction,
+  input: { issues: Issue[]; workspaceId: string },
+) {
+  return tx
+    .update(dbSchema.issue)
+    .set({ deletedAt: new Date() })
+    .where(
+      and(
+        eq(dbSchema.issue.workspaceId, input.workspaceId),
+        inArray(
+          dbSchema.issue.id,
+          input.issues.map((issue) => issue.id),
         ),
-      )
-      .returning()
-      .all();
-
-    return updated;
-  });
-
-  return result;
+      ),
+    )
+    .returning()
+    .all();
 }
 
 function listIssuesInLane(
-  client: any,
+  tx: DbTransaction,
   input: {
     workspaceId: string;
     teamId: string;
@@ -402,8 +382,8 @@ function listIssuesInLane(
     status: IssueStatus;
     excludeIssueId?: string;
   },
-) {
-  return client
+): LaneIssue[] {
+  return tx
     .select({
       id: dbSchema.issue.id,
       key: dbSchema.issue.key,
@@ -423,11 +403,11 @@ function listIssuesInLane(
       ),
     )
     .orderBy(asc(dbSchema.issue.sortOrder), asc(dbSchema.issue.keyNumber))
-    .all() as LaneIssue[];
+    .all();
 }
 
 function rebalanceIssueOrders(
-  tx: any,
+  tx: DbTransaction,
   input: {
     workspaceId: string;
     teamId: string;
@@ -452,17 +432,59 @@ function rebalanceIssueOrders(
   return laneIssues;
 }
 
-export async function moveIssue(input: {
-  workspaceId: string;
-  issueId: string;
-  teamId: string;
-  sprintId: string | null;
-  status: IssueStatus;
-  previousIssueId: string | null;
-  nextIssueId: string | null;
-}) {
-  await db.transaction((tx) => {
-    let laneIssues = listIssuesInLane(tx, {
+/**
+ * Places the issue between its neighbors in the target lane, rebalancing the
+ * lane when there's no gap left. Throws the move's domain errors, which roll
+ * the transaction back.
+ */
+export function moveIssue(
+  tx: DbTransaction,
+  input: {
+    workspaceId: string;
+    issueId: string;
+    teamId: string;
+    sprintId: string | null;
+    status: IssueStatus;
+    previousIssueId: string | null;
+    nextIssueId: string | null;
+  },
+) {
+  let laneIssues = listIssuesInLane(tx, {
+    workspaceId: input.workspaceId,
+    teamId: input.teamId,
+    sprintId: input.sprintId,
+    status: input.status,
+    excludeIssueId: input.issueId,
+  });
+
+  const previousIssue = input.previousIssueId
+    ? (laneIssues.find((issue) => issue.id === input.previousIssueId) ?? null)
+    : null;
+  const nextIssue = input.nextIssueId
+    ? (laneIssues.find((issue) => issue.id === input.nextIssueId) ?? null)
+    : null;
+
+  if (input.previousIssueId && !previousIssue) {
+    throw new PreviousIssueNotInTargetColumn();
+  }
+
+  if (input.nextIssueId && !nextIssue) {
+    throw new NextIssueNotInTargetColumn();
+  }
+
+  if ((input.previousIssueId === null || input.nextIssueId === null) && laneIssues.length === 0) {
+    // empty target lane is valid
+  } else if (input.previousIssueId === null && input.nextIssueId === null) {
+    throw new TargetColumnRequiresAdjacentIssue();
+  }
+
+  let sortOrder = calculateMovedIssueOrder({
+    previousOrder: previousIssue?.sortOrder ?? null,
+    nextOrder: nextIssue?.sortOrder ?? null,
+  });
+
+  if (sortOrder === null) {
+    laneIssues = rebalanceIssueOrders(tx, {
       workspaceId: input.workspaceId,
       teamId: input.teamId,
       sprintId: input.sprintId,
@@ -470,79 +492,31 @@ export async function moveIssue(input: {
       excludeIssueId: input.issueId,
     });
 
-    const previousIssue = input.previousIssueId
+    const rebalancedPreviousIssue = input.previousIssueId
       ? (laneIssues.find((issue) => issue.id === input.previousIssueId) ?? null)
       : null;
-    const nextIssue = input.nextIssueId
+    const rebalancedNextIssue = input.nextIssueId
       ? (laneIssues.find((issue) => issue.id === input.nextIssueId) ?? null)
       : null;
 
-    if (input.previousIssueId && !previousIssue) {
-      throw new BadRequestError(
-        "Previous issue is not in the target column",
-        ErrorCode.PREVIOUS_ISSUE_NOT_IN_TARGET_COLUMN,
-      );
-    }
-
-    if (input.nextIssueId && !nextIssue) {
-      throw new BadRequestError(
-        "Next issue is not in the target column",
-        ErrorCode.NEXT_ISSUE_NOT_IN_TARGET_COLUMN,
-      );
-    }
-
-    if ((input.previousIssueId === null || input.nextIssueId === null) && laneIssues.length === 0) {
-      // empty target lane is valid
-    } else if (input.previousIssueId === null && input.nextIssueId === null) {
-      throw new BadRequestError(
-        "A non-empty target column requires a previous or next issue",
-        ErrorCode.TARGET_COLUMN_REQUIRES_ADJACENT_ISSUE,
-      );
-    }
-
-    let sortOrder = calculateMovedIssueOrder({
-      previousOrder: previousIssue?.sortOrder ?? null,
-      nextOrder: nextIssue?.sortOrder ?? null,
+    sortOrder = calculateMovedIssueOrder({
+      previousOrder: rebalancedPreviousIssue?.sortOrder ?? null,
+      nextOrder: rebalancedNextIssue?.sortOrder ?? null,
     });
+  }
 
-    if (sortOrder === null) {
-      laneIssues = rebalanceIssueOrders(tx, {
-        workspaceId: input.workspaceId,
-        teamId: input.teamId,
-        sprintId: input.sprintId,
-        status: input.status,
-        excludeIssueId: input.issueId,
-      });
+  if (sortOrder === null) {
+    throw new UnableToDetermineIssueSortOrder();
+  }
 
-      const rebalancedPreviousIssue = input.previousIssueId
-        ? (laneIssues.find((issue) => issue.id === input.previousIssueId) ?? null)
-        : null;
-      const rebalancedNextIssue = input.nextIssueId
-        ? (laneIssues.find((issue) => issue.id === input.nextIssueId) ?? null)
-        : null;
-
-      sortOrder = calculateMovedIssueOrder({
-        previousOrder: rebalancedPreviousIssue?.sortOrder ?? null,
-        nextOrder: rebalancedNextIssue?.sortOrder ?? null,
-      });
-    }
-
-    if (sortOrder === null) {
-      throw new BadRequestError(
-        "Unable to determine issue sort order for this move",
-        ErrorCode.UNABLE_TO_DETERMINE_ISSUE_SORT_ORDER,
-      );
-    }
-
-    tx.update(dbSchema.issue)
-      .set({ sortOrder, status: input.status })
-      .where(eq(dbSchema.issue.id, input.issueId))
-      .run();
-  });
+  tx.update(dbSchema.issue)
+    .set({ sortOrder, status: input.status })
+    .where(eq(dbSchema.issue.id, input.issueId))
+    .run();
 }
 
-export async function softDeleteIssue(input: { issueId: string }) {
-  await db
+export async function softDeleteIssue(input: { issueId: string }, handle: DbHandle) {
+  await handle
     .update(dbSchema.issue)
     .set({ deletedAt: new Date() })
     .where(eq(dbSchema.issue.id, input.issueId));
@@ -552,8 +526,7 @@ export const issueData = {
   listIssuesInTeam,
   listIssuesInSprint,
   listIssuesAssignedToUser,
-  createIssue,
-  getIssueById,
+  insertIssue,
   getIssueByKey,
   updateIssue,
   softDeleteIssue,

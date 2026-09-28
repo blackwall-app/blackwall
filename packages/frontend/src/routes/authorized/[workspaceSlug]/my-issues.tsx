@@ -1,7 +1,8 @@
 import { PageHeader } from "@/components/blocks/page-header";
 import { Breadcrumbs, BreadcrumbsItem } from "@/components/custom-ui/breadcrumbs";
 import { createRowSelection } from "@/components/datatable/row-selection-feature";
-import { IssueDataTable, type IssueForDataTable } from "@/components/issues/issue-datatable";
+import { IssueDataTable } from "@/components/issues/issue-datatable";
+import type { IssueListItemWithTeam } from "@blackwall/shared";
 import { IssueSelectionMenu } from "@/components/issues/issue-selection-menu";
 import {
   Empty,
@@ -21,7 +22,7 @@ import CircleDotIcon from "lucide-solid/icons/circle-dot";
 import PlusIcon from "lucide-solid/icons/plus";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { myIssuesLoader } from "./my-issues.data";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 
 export default function MyIssuesPage() {
   const params = useParams();
@@ -32,7 +33,7 @@ export default function MyIssuesPage() {
     }),
   );
 
-  const [extraIssues, setExtraIssues] = createSignal<IssueForDataTable[]>([]);
+  const [extraIssues, setExtraIssues] = createSignal<ReadonlyArray<IssueListItemWithTeam>>([]);
   const [cursor, setCursor] = createSignal<string | null | undefined>(undefined);
 
   createEffect(() => {
@@ -47,8 +48,7 @@ export default function MyIssuesPage() {
   const loadMore = async () => {
     const cur = cursor();
     if (!cur) return;
-    const res = await api.api.issues.my.$get({ query: { cursor: cur } });
-    const result = await res.json();
+    const result = await runApi((client) => client.issues.my({ query: { cursor: cur } }));
     setExtraIssues((prev) => [...prev, ...result.issues]);
     setCursor(result.nextCursor);
   };
@@ -60,7 +60,7 @@ export default function MyIssuesPage() {
     const issueMap = new Map(allIssues().map((issue) => [issue.id, issue]));
     return selectedIds
       .map((id) => issueMap.get(id))
-      .filter((issue): issue is IssueForDataTable => !!issue);
+      .filter((issue): issue is IssueListItemWithTeam => !!issue);
   });
 
   return (

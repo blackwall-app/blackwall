@@ -1,5 +1,10 @@
-import type { IssuePriority, IssueStatus } from "@blackwall/database/schema";
-import type { IssueSprint } from "@blackwall/shared";
+import type {
+  BulkDeleteIssues,
+  BulkUpdateIssues,
+  IssuePriority,
+  IssueSprint,
+  IssueStatus,
+} from "@blackwall/shared";
 import type { User } from "better-auth";
 import { Button } from "../ui/button";
 import {
@@ -31,11 +36,7 @@ import { PickerPopover } from "../custom-ui/picker-popover";
 import { issueMappings, mappingToOptionArray } from "@/lib/mappings";
 import { UserAvatar } from "@/components/custom-ui/avatar";
 import { action, useAction } from "@solidjs/router";
-import type {
-  BulkDeleteIssues,
-  BulkUpdateIssues,
-} from "@blackwall/backend/src/features/issues/issue.zod";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { toast } from "../custom-ui/toast";
 import { SprintPickerPopover } from "./pickers/sprint-picker";
 import { m } from "@/paraglide/messages.js";
@@ -48,22 +49,14 @@ type IssueSelectionMenuProps = {
 };
 
 const updateIssuesBulkAction = action(async (input: BulkUpdateIssues) => {
-  const res = await api.api.issues.bulk.$patch({
-    json: input,
-  });
-
-  const json = await res.json();
+  const { issues } = await runApi((client) => client.issues.bulkUpdate({ payload: input }));
 
   toast.success(m.issue_selection_toast_updated());
-  return json.issues;
+  return issues;
 });
 
 const deleteIssuesBulkAction = action(async (input: BulkDeleteIssues) => {
-  const res = await api.api.issues.bulk.$delete({
-    json: input,
-  });
-
-  await res.json();
+  await runApi((client) => client.issues.bulkDelete({ payload: input }));
 
   toast.success(m.issue_selection_toast_deleted());
 });

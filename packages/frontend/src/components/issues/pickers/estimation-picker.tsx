@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { runApi } from "@/lib/api-effect";
 import { action, reload, useAction } from "@solidjs/router";
 import { Popover } from "@kobalte/core/popover";
 import { createSignal, For } from "solid-js";
@@ -8,10 +8,9 @@ import { m } from "@/paraglide/messages.js";
 const ESTIMATION_OPTIONS = [1, 2, 3, 5, 8, 13] as const;
 
 const updateEstimation = action(async (issueKey: string, points: number | null) => {
-  await api.api.issues[`:issueKey`].$patch({
-    param: { issueKey },
-    json: { estimationPoints: points },
-  });
+  await runApi((client) =>
+    client.issues.update({ params: { issueKey }, payload: { estimationPoints: points } }),
+  );
 
   throw reload({ revalidate: ["issueShow"] });
 });

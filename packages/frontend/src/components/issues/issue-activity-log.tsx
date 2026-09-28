@@ -1,7 +1,11 @@
 import { UserAvatar } from "@/components/custom-ui/avatar";
-import type { IssueChangeEventType } from "@blackwall/database/schema";
-import type { UserSummary } from "@blackwall/shared";
-import type { InferDbType } from "@blackwall/database/types";
+import type {
+  IssueChangeEventType,
+  IssueChangeEventWithActor,
+  IssueCommentWithAuthor,
+  IssueDetails,
+  UserSummary,
+} from "@blackwall/shared";
 import { issueMappings } from "@/lib/mappings";
 import { formatRelative } from "@/lib/dates";
 import { m } from "@/paraglide/messages.js";
@@ -15,34 +19,18 @@ const IMPORTANT_EVENT_TYPES: IssueChangeEventType[] = [
   "time_logged",
 ] as const;
 
-type IssueWithCommentsAndEvents = InferDbType<
-  "issue",
-  {
-    comments: {
-      with: {
-        author: true;
-      };
-    };
-    changeEvents: {
-      with: {
-        actor: true;
-      };
-    };
-  }
->;
-
-type Comment = IssueWithCommentsAndEvents["comments"][number];
-type Event = IssueWithCommentsAndEvents["changeEvents"][number];
+type Comment = IssueCommentWithAuthor;
+type Event = IssueChangeEventWithActor;
 
 type CommentTimelineItem = {
   type: "comment";
-  date: string;
+  date: Date;
   data: Comment;
 };
 
 type EventTimelineItem = {
   type: "event";
-  date: string;
+  date: Date;
   data: Event;
   assignedTo: UserSummary | null;
 };
@@ -50,7 +38,7 @@ type EventTimelineItem = {
 export type TimelineItem = CommentTimelineItem | EventTimelineItem;
 
 export type IssueActivityLogProps = {
-  issue: IssueWithCommentsAndEvents;
+  issue: Pick<IssueDetails, "key" | "comments" | "changeEvents">;
   assignableUsers: ReadonlyArray<UserSummary>;
   workspaceSlug: string;
 };
@@ -61,8 +49,8 @@ export type IssueEventItemProps = {
 };
 
 function buildTimelineItems(
-  comments: Comment[],
-  events: Event[],
+  comments: ReadonlyArray<Comment>,
+  events: ReadonlyArray<Event>,
   assignableUsers: ReadonlyArray<UserSummary>,
 ): TimelineItem[] {
   const items: TimelineItem[] = [];
@@ -91,7 +79,7 @@ function buildTimelineItems(
     }
   }
 
-  return items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return items.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 function formatEventTypeText(eventType: IssueChangeEventType): string {

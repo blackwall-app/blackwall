@@ -11,8 +11,8 @@ import {
   createWorkspace,
   seedTestSetup,
 } from "../../../../test/fixtures";
+import { runApi } from "../../../../test/api";
 import { issueData } from "../../issue.data";
-import { issueService } from "../../issue.service";
 import { labelData } from "../../label.data";
 import { globalSearchData } from "../../../global-search/global-search.data";
 
@@ -21,14 +21,16 @@ describe("issue data integrity", () => {
   let workspaceId: string;
   let teamId: string;
   let userId: string;
+  let authed: { cookie: string; workspaceSlug: string };
 
   beforeEach(async () => {
     testDb = await createTestDb();
 
-    const { workspace, team, user } = await seedTestSetup(testDb);
+    const { workspace, team, user, cookie } = await seedTestSetup(testDb);
     workspaceId = workspace.id;
     teamId = team.id;
     userId = user.id;
+    authed = { cookie, workspaceSlug: workspace.slug };
   });
 
   afterEach(() => {
@@ -60,13 +62,12 @@ describe("issue data integrity", () => {
       keyNumber: 1,
     });
 
-    await issueService.updateIssuesBulk({
-      workspaceId,
-      issueKeys: ["TES-1"],
-      userId,
-      updates: { status: "done" },
-    });
-    await issueService.softDeleteIssuesBulk({ workspaceId, issueKeys: ["TES-1"], userId });
+    await runApi(authed, (client) =>
+      client.issues.bulkUpdate({ payload: { issueKeys: ["TES-1"], updates: { status: "done" } } }),
+    );
+    await runApi(authed, (client) =>
+      client.issues.bulkDelete({ payload: { issueKeys: ["TES-1"] } }),
+    );
 
     const [own, foreign] = await Promise.all([
       testDb.db.query.issue.findFirst({ where: { id: ownIssue.id } }),
@@ -131,12 +132,14 @@ describe("issue data integrity", () => {
       colorKey: "red",
       workspaceId,
     });
-    await labelData.addLabelToIssue({
-      issueId: issue.id,
-      labelId: label.id,
-      workspaceId,
-      actorId: userId,
-    });
+    testDb.db.transaction((tx) =>
+      labelData.attachLabel(tx, {
+        issueId: issue.id,
+        labelId: label.id,
+        workspaceId,
+        actorId: userId,
+      }),
+    );
 
     await labelData.deleteLabel({ labelId: label.id, workspaceId }, testDb.db);
 
@@ -151,21 +154,23 @@ describe("issue data integrity", () => {
   });
 
   it("searches description text, not the document markup, and skips deleted issues", async () => {
-    const created = await issueData.createIssue({
-      workspaceId,
-      teamId,
-      teamKey: "TES",
-      createdById: userId,
-      issue: {
-        summary: "Login bug",
-        description: {
-          type: "doc",
-          content: [
-            { type: "paragraph", content: [{ type: "text", text: "Session expires early" }] },
-          ],
+    const created = testDb.db.transaction((tx) =>
+      issueData.insertIssue(tx, {
+        workspaceId,
+        teamId,
+        teamKey: "TES",
+        createdById: userId,
+        issue: {
+          summary: "Login bug",
+          description: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Session expires early" }] },
+            ],
+          },
         },
-      },
-    });
+      }),
+    );
 
     const search = (searchTerm: string) =>
       globalSearchData.searchIssues({ searchTerm, workspaceId, userId }, testDb.db);
@@ -173,25 +178,26 @@ describe("issue data integrity", () => {
     expect((await search("expires")).map((issue) => issue.id)).toEqual([created.id]);
     expect(await search("paragraph")).toHaveLength(0);
 
-    await issueData.updateIssue({
-      issueId: created.id,
-      workspaceId,
-      actorId: userId,
-      originalIssue: created,
-      updates: {
-        description: {
-          type: "doc",
-          content: [
-            { type: "paragraph", content: [{ type: "text", text: "Token refresh fails" }] },
-          ],
+    testDb.db.transaction((tx) =>
+      issueData.updateIssue(tx, {
+        workspaceId,
+        actorId: userId,
+        originalIssue: created,
+        updates: {
+          description: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Token refresh fails" }] },
+            ],
+          },
         },
-      },
-    });
+      }),
+    );
 
     expect(await search("expires")).toHaveLength(0);
     expect(await search("refresh")).toHaveLength(1);
 
-    await issueData.softDeleteIssue({ issueId: created.id });
+    await issueData.softDeleteIssue({ issueId: created.id }, testDb.db);
 
     expect(await search("refresh")).toHaveLength(0);
   });

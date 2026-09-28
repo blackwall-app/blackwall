@@ -1,5 +1,5 @@
-import type { SerializedIssue } from "@blackwall/database/schema";
-import { api } from "@/lib/api";
+import type { Issue } from "@blackwall/shared";
+import { runApi } from "@/lib/api-effect";
 import { createSignal } from "solid-js";
 import { action, reload, useAction } from "@solidjs/router";
 import { toast } from "../custom-ui/toast";
@@ -7,15 +7,12 @@ import { IssueEditButtons } from "./issue-edit-buttons";
 import { m } from "@/paraglide/messages.js";
 
 const changeSummaryAction = action(async (issueKey: string, summary: string) => {
-  await api.api.issues[":issueKey"].$patch({
-    param: { issueKey },
-    json: { summary },
-  });
+  await runApi((client) => client.issues.update({ params: { issueKey }, payload: { summary } }));
 
   throw reload({ revalidate: [] });
 });
 
-export function IssueSummary(props: { issue: SerializedIssue }) {
+export function IssueSummary(props: { issue: Pick<Issue, "key" | "summary"> }) {
   // oxlint-disable-next-line no-unassigned-vars
   let h1Ref!: HTMLHeadingElement;
   const _changeSummaryAction = useAction(changeSummaryAction);

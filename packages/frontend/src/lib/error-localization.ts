@@ -22,6 +22,7 @@ const errorMessageMap: Record<string, () => string> = {
   [ErrorCode.NOT_MEMBER_OF_THIS_TEAM]: () => m.error_not_member_of_this_team(),
   [ErrorCode.TEAM_KEY_ALREADY_EXISTS]: () => m.error_team_key_already_exists(),
   [ErrorCode.ISSUE_NOT_FOUND]: () => m.error_issue_not_found(),
+  [ErrorCode.ISSUE_LABEL_LIMIT_REACHED]: () => m.error_issue_label_limit_reached(),
   [ErrorCode.ISSUES_NOT_ACCESSIBLE]: () => m.error_issues_not_accessible(),
   [ErrorCode.PREVIOUS_AND_NEXT_ISSUES_MUST_BE_DIFFERENT]: () =>
     m.error_previous_and_next_issues_must_be_different(),

@@ -4,11 +4,10 @@ import { Badge } from "@/components/custom-ui/badge";
 import { Breadcrumbs, BreadcrumbsItem } from "@/components/custom-ui/breadcrumbs";
 import { ScrollArea, ScrollContainer } from "@/components/custom-ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import type { IssueStatus } from "@blackwall/database/schema";
+import type { IssueListItem, IssueStatus } from "@blackwall/shared";
 import { useCreateDialog } from "@/context/create-dialog.context";
 import { BoardDnDContext, createBoardDnD, useBoardDnD } from "@/lib/board-dnd";
 import { issueMappings } from "@/lib/mappings";
-import { api } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import {
   createAsync,
@@ -27,7 +26,6 @@ import { createMemo, For, Index, Show, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { boardLoader } from "./board.data";
 import { useTeamData } from "../../[teamKey]";
-import type { InferDbType } from "@blackwall/database/types";
 import { sprintsLoader } from "../sprints/index.data";
 import { toast } from "@/components/custom-ui/toast";
 import { SprintSection } from "./_components/sprint-section";
@@ -37,16 +35,7 @@ import { m } from "@/paraglide/messages.js";
 import { animateDropReturn, createBoardAnimation } from "@/lib/board-animation";
 import { ORDER_GAP, buildMoveIssueRequest } from "@/lib/board-order";
 
-type IssueForBoard = Omit<
-  InferDbType<
-    "issue",
-    {
-      assignedTo: true;
-      labels: true;
-    }
-  >,
-  "description"
->;
+type IssueForBoard = IssueListItem;
 
 const columns = [
   { id: "to_do", icon: CircleIcon },
@@ -63,9 +52,7 @@ const moveIssue = action(
     optimisticIssueKeys: string[];
   }) => {
     const { optimisticIssueKeys: _optimisticIssueKeys, ...request } = input;
-    await api.api.issues.move.$patch({
-      json: request,
-    });
+    await runApi((client) => client.issues.move({ payload: request }));
 
     throw reload({ revalidate: ["boardIssues", "issueShow"] });
   },
@@ -264,7 +251,10 @@ function BoardCard(props: { issue: IssueForBoard }) {
   );
 }
 
-function DragOverlay(props: { issues: IssueForBoard[]; ref?: (el: HTMLElement) => void }) {
+function DragOverlay(props: {
+  issues: ReadonlyArray<IssueForBoard>;
+  ref?: (el: HTMLElement) => void;
+}) {
   const { dragState } = useBoardDnD();
   const draggedIssue = createMemo(() =>
     props.issues.find((i) => i.key === dragState.draggedIssueKey),

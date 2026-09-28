@@ -33,13 +33,15 @@ describe("team key renames", () => {
     run(TeamService.use((teams) => teams.updateTeam({ workspaceId, teamKey, key })));
 
   async function createIssue(summary: string) {
-    return issueData.createIssue({
-      workspaceId,
-      teamId,
-      teamKey: "TES",
-      createdById: userId,
-      issue: { summary, description: { type: "doc", content: [] } },
-    });
+    return testDb.db.transaction((tx) =>
+      issueData.insertIssue(tx, {
+        workspaceId,
+        teamId,
+        teamKey: "TES",
+        createdById: userId,
+        issue: { summary, description: { type: "doc", content: [] } },
+      }),
+    );
   }
 
   it("moves existing issues to the new key and keeps the old key resolvable", async () => {
@@ -63,13 +65,15 @@ describe("team key renames", () => {
     const newTeam = await run(
       TeamService.use((teams) => teams.createTeam({ workspaceId, name: "Reuses key", key: "TES" })),
     );
-    const newIssue = await issueData.createIssue({
-      workspaceId,
-      teamId: newTeam.id,
-      teamKey: "TES",
-      createdById: userId,
-      issue: { summary: "New team issue", description: { type: "doc", content: [] } },
-    });
+    const newIssue = testDb.db.transaction((tx) =>
+      issueData.insertIssue(tx, {
+        workspaceId,
+        teamId: newTeam.id,
+        teamKey: "TES",
+        createdById: userId,
+        issue: { summary: "New team issue", description: { type: "doc", content: [] } },
+      }),
+    );
 
     const resolved = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" });
 

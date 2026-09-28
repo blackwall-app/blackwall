@@ -1,6 +1,5 @@
-import type { SerializedIssueWithoutDescription } from "@blackwall/database";
 import type { IssueSprint } from "@blackwall/shared";
-import { createIssueDnD, IssueDnDContext, useIssueDnD } from "@/lib/issue-dnd";
+import { createIssueDnD, IssueDnDContext, useIssueDnD, type DraggedIssue } from "@/lib/issue-dnd";
 import { m } from "@/paraglide/messages.js";
 import {
   For,
@@ -16,7 +15,7 @@ import { formatDateShort } from "@/lib/dates";
 import CalendarIcon from "lucide-solid/icons/calendar";
 
 const DragOverlay: Component<{
-  issues: SerializedIssueWithoutDescription[];
+  issues: DraggedIssue[];
   x: number;
   y: number;
 }> = (props) => {
@@ -77,8 +76,8 @@ const SprintDropZone: Component<{ sprint: IssueSprint }> = (props) => {
 
 type IssueDraggingProviderProps = {
   sprints: ReadonlyArray<IssueSprint>;
-  selectedIssues?: Accessor<SerializedIssueWithoutDescription[]>;
-  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: IssueSprint) => void;
+  selectedIssues?: Accessor<DraggedIssue[]>;
+  onDrop?: (issues: DraggedIssue[], sprint: IssueSprint) => void;
 };
 
 const IssueDraggingProvider: ParentComponent<IssueDraggingProviderProps> = (props) => {

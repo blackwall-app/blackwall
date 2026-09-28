@@ -3,6 +3,7 @@ import { AuthHandlers } from "./auth";
 import { AuthorizationLive } from "./authorization";
 import { CommentsHandlers } from "./comments";
 import { InvitationsHandlers } from "./invitations";
+import { IssuesHandlers } from "./issues";
 import { LabelsHandlers } from "./labels";
 import { RequestValidationLive } from "./request-validation";
 import { SearchHandlers } from "./search";
@@ -35,4 +36,5 @@ export const HandlersLive = Layer.mergeAll(
   AuthHandlers,
   SettingsHandlers,
   SprintsHandlers,
+  IssuesHandlers,
 ).pipe(Layer.provideMerge(MiddlewareLive));

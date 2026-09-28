@@ -1,12 +1,13 @@
-import type { SerializedIssueWithoutDescription } from "@blackwall/database";
-import type { IssueSprint } from "@blackwall/shared";
+import type { IssueListItem, IssueSprint } from "@blackwall/shared";
 import { DragGesture } from "@use-gesture/vanilla";
 import { createContext, createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 
+export type DraggedIssue = Pick<IssueListItem, "id" | "key" | "summary">;
+
 export type IssueDragState = {
   isDragging: boolean;
-  draggedIssues: SerializedIssueWithoutDescription[];
+  draggedIssues: DraggedIssue[];
   cursorX: number;
   cursorY: number;
 };
@@ -20,8 +21,8 @@ const initialState: IssueDragState = {
 
 export function createIssueDnD(options: {
   sprints: () => ReadonlyArray<IssueSprint>;
-  getSelectedIssues?: () => SerializedIssueWithoutDescription[];
-  onDrop?: (issues: SerializedIssueWithoutDescription[], sprint: IssueSprint) => void;
+  getSelectedIssues?: () => DraggedIssue[];
+  onDrop?: (issues: DraggedIssue[], sprint: IssueSprint) => void;
 }) {
   const [dragState, setDragState] = createStore<IssueDragState>(initialState);
   const dropZoneRefs = new Map<string, HTMLElement>();
@@ -76,7 +77,7 @@ export function createIssueDnD(options: {
     );
   }
 
-  function useDraggable(issue: SerializedIssueWithoutDescription) {
+  function useDraggable(issue: DraggedIssue) {
     const [ref, setRef] = createSignal<HTMLElement>();
 
     createEffect(() => {

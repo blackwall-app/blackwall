@@ -17,7 +17,7 @@ import {
   HttpApiTest,
 } from "effect/unstable/httpapi";
 import { MiddlewareLive } from "../handlers";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { AppLayer } from "../../lib/effect/runtime";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
@@ -115,7 +115,7 @@ describe("RequestValidation", () => {
 
   // The typed client validates payloads before sending, so post raw JSON.
   test("turns a bad payload into a coded 400", async () => {
-    const response = await handleApiRequest(
+    const response = await handleRequest(
       new Request(`${env.APP_BASE_URL}/api/workspaces`, {
         method: "POST",
         headers: { "content-type": "application/json", cookie: seed.cookie },

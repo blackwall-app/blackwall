@@ -1,10 +1,9 @@
 import { Effect, Fiber } from "effect";
-import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
-import { app as apiApp, disposeApi } from "@blackwall/backend/src/index";
+import { makeAppHandler } from "@blackwall/backend/src/app";
 import { migrateDatabase } from "@blackwall/database/migrate";
 import { jobService } from "@blackwall/queue";
 import "@blackwall/backend/src/jobs/register";
+import { staticFiles } from "../static-files";
 
 interface StartOptions {
   port: string;
@@ -24,12 +23,8 @@ export async function start(options: StartOptions) {
     process.exit(1);
   }
 
-  const app = new Hono();
-  app.route("/", apiApp);
-  app.use("/*", serveStatic({ root: options.publicDir }));
-  app.get("/*", serveStatic({ path: `${options.publicDir}/index.html` }));
-
-  const server = Bun.serve({ port, fetch: app.fetch });
+  const { handleRequest, dispose } = makeAppHandler(staticFiles(options.publicDir));
+  const server = Bun.serve({ port, fetch: handleRequest });
   console.log(`Server listening on port ${port}`);
   console.log(`Serving static files from ${options.publicDir}`);
 
@@ -47,5 +42,5 @@ export async function start(options: StartOptions) {
   process.on("SIGTERM", shutdown);
 
   await Effect.runPromise(Fiber.await(workerFiber));
-  await disposeApi();
+  await dispose();
 }

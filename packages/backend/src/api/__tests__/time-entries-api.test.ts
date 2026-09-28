@@ -4,7 +4,7 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
@@ -46,7 +46,7 @@ describe("time entries api", () => {
     );
 
   const postRaw = (issueKey: string, body: unknown) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api/issues/${issueKey}/time-entries`, {
         method: "POST",
         headers: {

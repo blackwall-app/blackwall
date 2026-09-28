@@ -1,6 +1,6 @@
 import "../../../../test/env.test";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { app } from "../../../../index";
+import { handleRequest } from "../../../../index";
 import { createTestDb, cleanupTestDb, type TestDb } from "../../../../test/setup";
 import { seedTestSetup } from "../../../../test/fixtures";
 import { env } from "../../../../lib/env";
@@ -17,7 +17,7 @@ const request = (
     headers.set("Content-Type", "application/json");
     init.body = JSON.stringify(options.json);
   }
-  return app.fetch(new Request(`${env.APP_BASE_URL}/api/better-auth${path}`, init));
+  return handleRequest(new Request(`${env.APP_BASE_URL}/api/better-auth${path}`, init));
 };
 
 describe("better-auth routes", () => {

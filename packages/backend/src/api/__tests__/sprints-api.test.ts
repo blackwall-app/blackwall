@@ -4,7 +4,7 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER, type CompleteSprint, type SprintDetails } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { SprintService } from "../../features/issue-sprints/SprintService";
 import { AppLayer } from "../../lib/effect/runtime";
 import { env } from "../../lib/env";
@@ -77,7 +77,7 @@ describe("sprints api", () => {
   };
 
   const sendRaw = (method: string, path: string, body: unknown) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api/teams/${teamKey()}/sprints${path}`, {
         method,
         headers: {

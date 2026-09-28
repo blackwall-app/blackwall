@@ -7,17 +7,17 @@ import { runApi } from "../../test/api";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
 import { env } from "../../lib/env";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 
 // The typed client validates payloads, hides headers, and only sends the cookie
 // to endpoints behind `Authorization`, so some cases use raw requests.
 const invitationsUrl = `${env.APP_BASE_URL}/api/invitations`;
 
 const getWithCookie = (token: string, cookie: string) =>
-  handleApiRequest(new Request(`${invitationsUrl}/${token}`, { headers: { cookie } }));
+  handleRequest(new Request(`${invitationsUrl}/${token}`, { headers: { cookie } }));
 
 const postRegister = (token: string, body: unknown) =>
-  handleApiRequest(
+  handleRequest(
     new Request(`${invitationsUrl}/${token}/register`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -41,7 +41,7 @@ describe("invitations api", () => {
 
   /** Signs up a user with a workspace of their own and returns their session cookie. */
   const signUp = async (email: string) => {
-    const response = await handleApiRequest(
+    const response = await handleRequest(
       new Request(`${env.APP_BASE_URL}/api/auth/signup/email`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -113,7 +113,7 @@ describe("invitations api", () => {
     });
 
     test("rejects an invalid email with a coded 400", async () => {
-      const response = await handleApiRequest(
+      const response = await handleRequest(
         new Request(invitationsUrl, {
           method: "POST",
           headers: {

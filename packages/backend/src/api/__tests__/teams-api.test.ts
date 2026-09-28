@@ -4,7 +4,7 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
@@ -32,7 +32,7 @@ describe("teams api", () => {
   // The typed client validates payloads before sending and decodes responses,
   // so wire-level checks go through the raw handler.
   const rawRequest = (path: string, init: { method?: string; body?: unknown } = {}) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api${path}`, {
         method: init.method ?? "GET",
         headers: {

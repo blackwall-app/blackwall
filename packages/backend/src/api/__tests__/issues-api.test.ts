@@ -9,7 +9,7 @@ import {
 } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { labelData } from "../../features/issues/label.data";
 import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
@@ -106,7 +106,7 @@ describe("issues api", () => {
     labelData.insertLabel(testDb.db, { name, colorKey: "red", workspaceId })!;
 
   const sendRaw = (method: string, path: string, body?: unknown) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api/issues${path}`, {
         method,
         headers: {

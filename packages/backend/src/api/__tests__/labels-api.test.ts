@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { dbSchema } from "@blackwall/database";
 import { createColorFromString, WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
@@ -29,7 +29,7 @@ describe("labels api", () => {
   };
 
   const postLabel = (body: unknown) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api/labels`, {
         method: "POST",
         headers: {

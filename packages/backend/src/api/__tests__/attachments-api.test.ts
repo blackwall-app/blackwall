@@ -5,8 +5,7 @@ import { join, resolve } from "node:path";
 import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { Effect } from "effect";
-import { app } from "../../index";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { AttachmentService } from "../../features/issues/AttachmentService";
 import { runtime } from "../../lib/effect/runtime";
 import { env } from "../../lib/env";
@@ -67,10 +66,10 @@ describe("attachments api", () => {
       [WORKSPACE_SLUG_HEADER]: seed.workspace.slug,
     },
   ) => {
-    const response = await handleApiRequest(
+    const response = await handleRequest(
       new Request(`${env.APP_BASE_URL}/api/issues${path}`, {
         method: "POST",
-        headers,
+        headers: { origin: env.APP_BASE_URL, ...headers },
         body: form,
       }),
     );
@@ -90,7 +89,7 @@ describe("attachments api", () => {
   };
 
   const download = (attachmentId: string, cookie: string | null = seed.cookie) =>
-    handleApiRequest(
+    handleRequest(
       new Request(`${env.APP_BASE_URL}/api/issues/attachments/${attachmentId}/download`, {
         headers: cookie === null ? {} : { cookie },
       }),
@@ -392,7 +391,7 @@ describe("attachments api", () => {
     test("serves downloads through the app shell", async () => {
       const uploaded = await uploadOrphan();
 
-      const response = await app.fetch(
+      const response = await handleRequest(
         new Request(`${env.APP_BASE_URL}/api/issues/attachments/${uploaded.id}/download`, {
           headers: { cookie: seed.cookie },
         }),

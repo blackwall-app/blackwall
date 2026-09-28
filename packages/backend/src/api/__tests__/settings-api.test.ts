@@ -4,7 +4,7 @@ import { dbSchema } from "@blackwall/database";
 import { AVATAR_MAX_BYTES, WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleApiRequest } from "../index";
+import { handleRequest } from "../../index";
 import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
@@ -28,20 +28,26 @@ describe("settings api", () => {
     seed = await seedTestSetup(testDb);
   });
 
-  const authed = () => ({ cookie: seed.cookie, workspaceSlug: seed.workspace.slug });
+  const authed = () => ({
+    cookie: seed.cookie,
+    workspaceSlug: seed.workspace.slug,
+  });
 
   const storedUser = () => testDb.db.query.user.findFirst({ where: { id: seed.user.id } });
 
   const createWorkspaceMember = async (email: string) => {
     const user = await createUser(testDb, buildUser({ email, name: email }));
-    await addUserToWorkspace(testDb, { userId: user.id, workspaceId: seed.workspace.id });
+    await addUserToWorkspace(testDb, {
+      userId: user.id,
+      workspaceId: seed.workspace.id,
+    });
     return user;
   };
 
   // The typed client validates payloads before sending, so server-side
   // validation checks go through the raw handler.
   const rawJson = async (method: string, path: string, body: unknown) => {
-    const response = await handleApiRequest(
+    const response = await handleRequest(
       new Request(`${env.APP_BASE_URL}/api/settings${path}`, {
         method,
         headers: {
@@ -52,20 +58,30 @@ describe("settings api", () => {
         body: JSON.stringify(body),
       }),
     );
-    return { status: response.status, body: (await response.json()) as Record<string, any> };
+    return {
+      status: response.status,
+      body: (await response.json()) as Record<string, any>,
+    };
   };
 
   // The in-memory client sends FormData without a multipart content type, so
   // avatar uploads go through the real web handler.
   const uploadAvatar = async (form: FormData) => {
-    const response = await handleApiRequest(
+    const response = await handleRequest(
       new Request(`${env.APP_BASE_URL}/api/settings/profile/avatar`, {
         method: "PATCH",
-        headers: { cookie: seed.cookie, [WORKSPACE_SLUG_HEADER]: seed.workspace.slug },
+        headers: {
+          origin: env.APP_BASE_URL,
+          cookie: seed.cookie,
+          [WORKSPACE_SLUG_HEADER]: seed.workspace.slug,
+        },
         body: form,
       }),
     );
-    return { status: response.status, body: (await response.json()) as Record<string, any> };
+    return {
+      status: response.status,
+      body: (await response.json()) as Record<string, any>,
+    };
   };
 
   describe("access", () => {
@@ -73,17 +89,26 @@ describe("settings api", () => {
       const error = await runApi({ workspaceSlug: seed.workspace.slug }, (client) =>
         Effect.flip(client.settings.getProfile()),
       );
-      expect(error).toMatchObject({ _tag: "Unauthorized", code: "UNAUTHORIZED" });
+      expect(error).toMatchObject({
+        _tag: "Unauthorized",
+        code: "UNAUTHORIZED",
+      });
     });
 
     test("rejects workspaces the user doesn't belong to", async () => {
-      await createWorkspace(testDb, { slug: "private", displayName: "Private" });
+      await createWorkspace(testDb, {
+        slug: "private",
+        displayName: "Private",
+      });
 
       const error = await runApi({ cookie: seed.cookie, workspaceSlug: "private" }, (client) =>
         Effect.flip(client.settings.listTeams()),
       );
 
-      expect(error).toMatchObject({ _tag: "NotWorkspaceMember", code: "NOT_WORKSPACE_MEMBER" });
+      expect(error).toMatchObject({
+        _tag: "NotWorkspaceMember",
+        code: "NOT_WORKSPACE_MEMBER",
+      });
     });
   });
 
@@ -102,7 +127,9 @@ describe("settings api", () => {
 
     test("PATCH /profile trims and stores the name", async () => {
       const { profile } = await runApi(authed(), (client) =>
-        client.settings.updateProfile({ payload: { name: "  Updated Name  " } }),
+        client.settings.updateProfile({
+          payload: { name: "  Updated Name  " },
+        }),
       );
 
       expect(profile.name).toBe("Updated Name");
@@ -114,7 +141,10 @@ describe("settings api", () => {
         Effect.flip(client.settings.updateProfile({ payload: { name: " A " } })),
       );
 
-      expect(error).toMatchObject({ _tag: "ValidationError", code: "VALIDATION_ERROR" });
+      expect(error).toMatchObject({
+        _tag: "ValidationError",
+        code: "VALIDATION_ERROR",
+      });
     });
 
     test("PATCH /profile/theme and /profile/locale store the preferences", async () => {
@@ -127,7 +157,10 @@ describe("settings api", () => {
 
       expect(theme).toBe("dark");
       expect(locale).toBe("pl");
-      expect(await storedUser()).toMatchObject({ preferredTheme: "dark", preferredLocale: "pl" });
+      expect(await storedUser()).toMatchObject({
+        preferredTheme: "dark",
+        preferredLocale: "pl",
+      });
 
       await runApi(authed(), (client) =>
         client.settings.updateLocale({ payload: { locale: null } }),
@@ -171,7 +204,10 @@ describe("settings api", () => {
       const { status, body } = await uploadAvatar(form);
 
       expect(status).toBe(400);
-      expect(body).toMatchObject({ _tag: "AvatarFileMissing", code: "NO_AVATAR_FILE_PROVIDED" });
+      expect(body).toMatchObject({
+        _tag: "AvatarFileMissing",
+        code: "NO_AVATAR_FILE_PROVIDED",
+      });
     });
 
     test("rejects files that aren't images", async () => {
@@ -185,7 +221,10 @@ describe("settings api", () => {
       const { status, body } = await uploadAvatar(imageForm("image/png", AVATAR_MAX_BYTES + 1));
 
       expect(status).toBe(400);
-      expect(body).toMatchObject({ _tag: "AvatarTooLarge", code: "IMAGE_TOO_LARGE" });
+      expect(body).toMatchObject({
+        _tag: "AvatarTooLarge",
+        code: "IMAGE_TOO_LARGE",
+      });
       expect((await storedUser())?.image).toBeNull();
     });
   });
@@ -207,14 +246,19 @@ describe("settings api", () => {
 
       const { success } = await runApi(authed(), (client) =>
         client.settings.changePassword({
-          payload: { currentPassword: seed.password, newPassword: "new-password-123" },
+          payload: {
+            currentPassword: seed.password,
+            newPassword: "new-password-123",
+          },
         }),
       );
 
       expect(success).toBe(true);
       const password = (await account())!.password!;
       expect(await Bun.password.verify("new-password-123", password)).toBe(true);
-      const sessions = await testDb.db.query.session.findMany({ where: { userId: seed.user.id } });
+      const sessions = await testDb.db.query.session.findMany({
+        where: { userId: seed.user.id },
+      });
       expect(sessions).toHaveLength(2);
     });
 
@@ -222,7 +266,10 @@ describe("settings api", () => {
       const error = await runApi(authed(), (client) =>
         Effect.flip(
           client.settings.changePassword({
-            payload: { currentPassword: "wrong-password", newPassword: "new-password-123" },
+            payload: {
+              currentPassword: "wrong-password",
+              newPassword: "new-password-123",
+            },
           }),
         ),
       );
@@ -241,7 +288,10 @@ describe("settings api", () => {
       });
 
       expect(status).toBe(400);
-      expect(body).toMatchObject({ _tag: "ValidationError", code: "VALIDATION_ERROR" });
+      expect(body).toMatchObject({
+        _tag: "ValidationError",
+        code: "VALIDATION_ERROR",
+      });
     });
   });
 
@@ -249,12 +299,17 @@ describe("settings api", () => {
     test("GET /workspace returns the header's workspace", async () => {
       const { workspace } = await runApi(authed(), (client) => client.settings.getWorkspace());
 
-      expect(workspace).toMatchObject({ id: seed.workspace.id, slug: seed.workspace.slug });
+      expect(workspace).toMatchObject({
+        id: seed.workspace.id,
+        slug: seed.workspace.slug,
+      });
     });
 
     test("PATCH /workspace updates the display name", async () => {
       const { workspace } = await runApi(authed(), (client) =>
-        client.settings.updateWorkspace({ payload: { displayName: "Updated Workspace" } }),
+        client.settings.updateWorkspace({
+          payload: { displayName: "Updated Workspace" },
+        }),
       );
 
       expect(workspace.displayName).toBe("Updated Workspace");
@@ -269,22 +324,34 @@ describe("settings api", () => {
     });
 
     test("PATCH /workspace rejects a display name that is too short", async () => {
-      const { status, body } = await rawJson("PATCH", "/workspace", { displayName: "A" });
+      const { status, body } = await rawJson("PATCH", "/workspace", {
+        displayName: "A",
+      });
 
       expect(status).toBe(400);
-      expect(body).toMatchObject({ _tag: "ValidationError", code: "VALIDATION_ERROR" });
+      expect(body).toMatchObject({
+        _tag: "ValidationError",
+        code: "VALIDATION_ERROR",
+      });
     });
   });
 
   describe("teams", () => {
     test("GET /teams lists every workspace team with counts", async () => {
-      await createTeam(testDb, { key: "OTH", name: "Other", workspaceId: seed.workspace.id });
+      await createTeam(testDb, {
+        key: "OTH",
+        name: "Other",
+        workspaceId: seed.workspace.id,
+      });
       await createIssue(testDb, {
         workspaceId: seed.workspace.id,
         teamId: seed.team.id,
         createdById: seed.user.id,
       });
-      const elsewhere = await createWorkspace(testDb, { slug: "else", displayName: "Else" });
+      const elsewhere = await createWorkspace(testDb, {
+        slug: "else",
+        displayName: "Else",
+      });
       await createTeam(testDb, { key: "ELS", workspaceId: elsewhere.id });
 
       const { teams } = await runApi(authed(), (client) => client.settings.listTeams());
@@ -299,7 +366,9 @@ describe("settings api", () => {
 
     test("POST /teams uppercases the key and adds the creator", async () => {
       const { team } = await runApi(authed(), (client) =>
-        client.settings.createTeam({ payload: { name: "Platform", key: "plat" } }),
+        client.settings.createTeam({
+          payload: { name: "Platform", key: "plat" },
+        }),
       );
 
       expect(team.key).toBe("PLAT");
@@ -330,14 +399,20 @@ describe("settings api", () => {
     });
 
     test("GET /teams/:teamKey doesn't see other workspaces' teams", async () => {
-      const elsewhere = await createWorkspace(testDb, { slug: "else", displayName: "Else" });
+      const elsewhere = await createWorkspace(testDb, {
+        slug: "else",
+        displayName: "Else",
+      });
       await createTeam(testDb, { key: "ELS", workspaceId: elsewhere.id });
 
       const error = await runApi(authed(), (client) =>
         Effect.flip(client.settings.getTeam({ params: { teamKey: "ELS" } })),
       );
 
-      expect(error).toMatchObject({ _tag: "TeamNotFound", code: "TEAM_NOT_FOUND" });
+      expect(error).toMatchObject({
+        _tag: "TeamNotFound",
+        code: "TEAM_NOT_FOUND",
+      });
     });
 
     test("PATCH /teams/:teamKey renames the team and moves issue keys", async () => {
@@ -357,7 +432,9 @@ describe("settings api", () => {
       );
 
       expect(team).toMatchObject({ name: "Renamed", key: "NEW" });
-      const stored = await testDb.db.query.issue.findFirst({ where: { id: issue.id } });
+      const stored = await testDb.db.query.issue.findFirst({
+        where: { id: issue.id },
+      });
       expect(stored?.key).toBe("NEW-1");
       const aliases = await testDb.db.query.teamKeyAlias.findMany({
         where: { teamId: seed.team.id },
@@ -370,7 +447,10 @@ describe("settings api", () => {
 
       const error = await runApi(authed(), (client) =>
         Effect.flip(
-          client.settings.updateTeam({ params: { teamKey: "TES" }, payload: { key: "OTH" } }),
+          client.settings.updateTeam({
+            params: { teamKey: "TES" },
+            payload: { key: "OTH" },
+          }),
         ),
       );
 
@@ -380,7 +460,10 @@ describe("settings api", () => {
     test("PATCH /teams/:teamKey fails for a missing team", async () => {
       const error = await runApi(authed(), (client) =>
         Effect.flip(
-          client.settings.updateTeam({ params: { teamKey: "NOPE" }, payload: { name: "X" } }),
+          client.settings.updateTeam({
+            params: { teamKey: "NOPE" },
+            payload: { name: "X" },
+          }),
         ),
       );
 
@@ -415,7 +498,9 @@ describe("settings api", () => {
       );
 
       const { success } = await runApi(authed(), (client) =>
-        client.settings.removeTeamMember({ params: { teamKey: "TES", userId: member.id } }),
+        client.settings.removeTeamMember({
+          params: { teamKey: "TES", userId: member.id },
+        }),
       );
       expect(success).toBe(true);
       const afterRemove = await runApi(authed(), (client) =>
@@ -425,7 +510,10 @@ describe("settings api", () => {
     });
 
     test("only team members can add or remove members", async () => {
-      const other = await createTeam(testDb, { key: "OTH", workspaceId: seed.workspace.id });
+      const other = await createTeam(testDb, {
+        key: "OTH",
+        workspaceId: seed.workspace.id,
+      });
       const member = await createWorkspaceMember("member@example.com");
       await addUserToTeam(testDb, { teamId: other.id, userId: member.id });
 
@@ -439,12 +527,20 @@ describe("settings api", () => {
       );
       const removeError = await runApi(authed(), (client) =>
         Effect.flip(
-          client.settings.removeTeamMember({ params: { teamKey: "OTH", userId: member.id } }),
+          client.settings.removeTeamMember({
+            params: { teamKey: "OTH", userId: member.id },
+          }),
         ),
       );
 
-      expect(addError).toMatchObject({ _tag: "NotTeamMember", code: "NOT_TEAM_MEMBER" });
-      expect(removeError).toMatchObject({ _tag: "NotTeamMember", code: "NOT_TEAM_MEMBER" });
+      expect(addError).toMatchObject({
+        _tag: "NotTeamMember",
+        code: "NOT_TEAM_MEMBER",
+      });
+      expect(removeError).toMatchObject({
+        _tag: "NotTeamMember",
+        code: "NOT_TEAM_MEMBER",
+      });
       const memberships = await testDb.db
         .select()
         .from(dbSchema.userTeam)
@@ -464,7 +560,10 @@ describe("settings api", () => {
         ),
       );
 
-      expect(error).toMatchObject({ _tag: "MemberNotFound", code: "MEMBER_NOT_FOUND" });
+      expect(error).toMatchObject({
+        _tag: "MemberNotFound",
+        code: "MEMBER_NOT_FOUND",
+      });
     });
   });
 });

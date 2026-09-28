@@ -1,4 +1,4 @@
-import * as z from "zod";
+import { sprintFormSchema } from "@/lib/form-schemas";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
 import { runApi } from "@/lib/api-effect";
@@ -41,17 +41,7 @@ export function EditSprintForm(props: EditSprintFormProps) {
       endDate: props.sprint.endDate.toISOString().slice(0, 10),
     },
     validators: {
-      onSubmit: z
-        .object({
-          name: z.string().min(1, m.common_name_required()),
-          goal: z.string().nullable(),
-          startDate: z.iso.date(),
-          endDate: z.iso.date(),
-        })
-        .refine((data) => data.endDate >= data.startDate, {
-          message: m.common_end_date_on_or_after_start_date(),
-          path: ["endDate"],
-        }),
+      onSubmit: sprintFormSchema(),
     },
     onSubmit: async ({ value }) => {
       await _action(props.workspaceSlug, props.teamKey, props.sprint.id, value);

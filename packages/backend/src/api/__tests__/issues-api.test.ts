@@ -9,9 +9,9 @@ import {
 } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
+import { handleApiRequest } from "../index";
 import { labelData } from "../../features/issues/label.data";
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
   addUserToTeam,
@@ -103,8 +103,8 @@ describe("issues api", () => {
     labelData.insertLabel(testDb.db, { name, colorKey: "red", workspaceId })!;
 
   const sendRaw = (method: string, path: string, body?: unknown) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/issues${path}`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/issues${path}`, {
         method,
         headers: {
           "content-type": "application/json",

@@ -56,7 +56,7 @@ describe("runApi", () => {
 
     const { workspaces } = await runApi((client) => client.workspaces.list());
 
-    expect(url).toBe("http://app.local/api/effect/workspaces");
+    expect(url).toBe("http://app.local/api/workspaces");
     expect(lastInit?.credentials).toBe("include");
     expect(workspaces.map((workspace) => workspace.slug)).toEqual(["acme"]);
     expect(toastCalls.error).toEqual([]);

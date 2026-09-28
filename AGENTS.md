@@ -18,12 +18,9 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
   `ManagedRuntime`). Server, client, and RPC modules live under
   `"effect/unstable/*"` (`http`, `httpapi`, `rpc`, `sql`, `schema`) and may
   still change between rc releases.
-- All validation and domain modeling uses `Schema`. Do not add new `zod`
-  schemas.
-- Hono routes stay on `*.zod.ts` until their group moves to the HttpApi.
-  `hono-openapi` `validator()` calls `resolver()` eagerly, and
-  `@standard-community/standard-json` still targets effect v3, so Effect v4
-  schemas break `/api/docs/openapi`.
+- All validation and domain modeling uses `Schema`, including frontend form
+  validators (`frontend/src/lib/form-schemas.ts`, via
+  `Schema.toStandardSchemaV1`). Do not add `zod`.
 - API contracts live in `@blackwall/shared`, one file per group, with
   `workspaces.ts` as the reference. Each file holds the request and response
   schemas, the group's errors, and its `HttpApiGroup`. Register the group in `api.ts` above `RequestValidation` and
@@ -51,19 +48,23 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 - Services are `Context.Service` classes with a static `layer` that takes
   `Database` and any other services from context. Add each one to `ServicesLive`
   in backend `lib/effect/runtime.ts`. That one graph backs the HttpApi handler
-  and `runtime`, which Hono routes use to call services while they still exist.
+  and `runtime`, which code outside the HttpApi (the better-auth route, jobs) uses
+  to call services.
 - better-auth stays as the auth implementation, wrapped by the `Auth`
   `Context.Service` in backend `features/auth/Auth.ts`. Read sessions through
   it, never through `auth.api` directly in new code.
 - Handlers are `HttpApiBuilder.group` layers in backend `api/`, registered in
-  `api/handlers.ts`. The Hono app mounts the Effect handler at `/api/effect/*`.
+  `api/handlers.ts`. The HttpApi is served at `/api/*`, with OpenAPI at
+  `/api/openapi.json` and Scalar at `/api/docs`. Hono is only a thin shell in
+  backend `index.ts`: security headers, CSRF, CORS, better-auth at
+  `/api/better-auth/*`, and the HttpApi handler.
 - Test a group through `runApi` in backend `test/api.ts`: it runs the real
   handlers, middleware, and services against the in-memory test database, with
   the session cookie from `seedTestSetup`. Don't test handlers with fakes alone.
 - The frontend calls the API through `runApi((client) => ...)` from
   `lib/api-effect.ts`. It shows the localized toast and redirects to `/signin`
-  on 401, like `apiFetch`. Keep Effect inside loaders and actions; Solid
-  components don't import it.
+  on 401. Keep Effect inside loaders and actions; Solid components don't
+  import it.
 - Follow `node_modules/effect/AGENTS.md`: `Effect.gen` inline, `Effect.fn`
   for reusable functions, `Context.Service` for services with `Service.of` and
   a static `layer`, `Schema.TaggedError` for typed errors, `Predicate` module

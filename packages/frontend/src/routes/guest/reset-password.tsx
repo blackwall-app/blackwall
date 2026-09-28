@@ -9,7 +9,7 @@ import { m } from "@/paraglide/messages.js";
 import { A, useSearchParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
 import { createSignal } from "solid-js";
-import * as z from "zod";
+import { resetPasswordFormSchema } from "@/lib/form-schemas";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -20,9 +20,7 @@ export default function ResetPasswordPage() {
       newPassword: "",
     },
     validators: {
-      onSubmit: z.object({
-        newPassword: z.string().min(8, m.auth_validation_password_min()),
-      }),
+      onSubmit: resetPasswordFormSchema(),
     },
     onSubmit: async ({ value }) => {
       const token = searchParams.token as string | undefined;

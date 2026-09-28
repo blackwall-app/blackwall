@@ -4,8 +4,8 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
-import { env } from "../../lib/zod-env";
+import { handleApiRequest } from "../index";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
   addUserToTeam,
@@ -46,8 +46,8 @@ describe("time entries api", () => {
     );
 
   const postRaw = (issueKey: string, body: unknown) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/issues/${issueKey}/time-entries`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/issues/${issueKey}/time-entries`, {
         method: "POST",
         headers: {
           "content-type": "application/json",

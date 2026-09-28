@@ -1,4 +1,4 @@
-import * as z from "zod";
+import { completeSprintFormSchema } from "@/lib/form-schemas";
 import { useAppForm } from "@/context/form-context";
 import { action, redirect, useAction } from "@solidjs/router";
 import { runApi } from "@/lib/api-effect";
@@ -48,42 +48,6 @@ const completeSprintAction = action(
   },
 );
 
-const formSchema = z
-  .object({
-    onUndoneIssues: z.enum(["moveToBacklog", "moveToPlannedSprint", "moveToNewSprint"]),
-    targetSprintId: z.string().nullable(),
-    newSprintName: z.string(),
-    newSprintStartDate: z.iso.date(),
-    newSprintEndDate: z.iso.date(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.onUndoneIssues === "moveToPlannedSprint" && !value.targetSprintId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["targetSprintId"],
-        message: m.complete_sprint_form_validation_choose_planned(),
-      });
-    }
-
-    if (value.onUndoneIssues === "moveToNewSprint") {
-      if (!value.newSprintName.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["newSprintName"],
-          message: m.complete_sprint_form_validation_name_required(),
-        });
-      }
-
-      if (value.newSprintEndDate < value.newSprintStartDate) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["newSprintEndDate"],
-          message: m.common_end_date_on_or_after_start_date(),
-        });
-      }
-    }
-  });
-
 export function CompleteSprintForm(props: CompleteSprintFormProps) {
   const _action = useAction(completeSprintAction);
 
@@ -106,7 +70,7 @@ export function CompleteSprintForm(props: CompleteSprintFormProps) {
       newSprintEndDate: today(getLocalTimeZone()).add({ weeks: 2 }).toString(),
     },
     validators: {
-      onSubmit: formSchema,
+      onSubmit: completeSprintFormSchema(),
     },
     onSubmit: async ({ value }) => {
       let payload: CompleteSprint;

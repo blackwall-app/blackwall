@@ -17,11 +17,11 @@ import {
   HttpApiTest,
 } from "effect/unstable/httpapi";
 import { MiddlewareLive } from "../handlers";
-import { handleEffectRequest } from "../index";
+import { handleApiRequest } from "../index";
 import { AppLayer } from "../../lib/effect/runtime";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 
 // A one-endpoint API that echoes the workspace `WorkspaceMembership` resolved.
 class ProbeApi extends HttpApi.make("probe").add(
@@ -115,8 +115,8 @@ describe("RequestValidation", () => {
 
   // The typed client validates payloads before sending, so post raw JSON.
   test("turns a bad payload into a coded 400", async () => {
-    const response = await handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/workspaces`, {
+    const response = await handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/workspaces`, {
         method: "POST",
         headers: { "content-type": "application/json", cookie: seed.cookie },
         body: JSON.stringify({ displayName: "Api", slug: "api" }),

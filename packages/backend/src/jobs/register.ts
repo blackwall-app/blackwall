@@ -6,7 +6,7 @@ import { sendEmail } from "../lib/emails";
 import { commentData } from "../features/issues/comment.data";
 import { AttachmentService } from "../features/issues/AttachmentService";
 import { userData } from "../features/users/user.data";
-import { env } from "../lib/zod-env";
+import { env } from "../lib/env";
 import { runtime } from "../lib/effect/runtime";
 
 type InviteEmailPayload = {

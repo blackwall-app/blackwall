@@ -6,13 +6,11 @@ import { Team, User } from "./models";
 import { Workspace, WorkspaceSlug, WorkspaceSlugTaken } from "./workspaces";
 
 /** The pattern of zod's `email()`, which better-auth applies on sign-up. */
+export const AUTH_EMAIL_PATTERN =
+  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
+
 export const AuthEmail = Schema.String.pipe(
-  Schema.check(
-    Schema.isPattern(
-      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/,
-      { expected: "an email address" },
-    ),
-  ),
+  Schema.check(Schema.isPattern(AUTH_EMAIL_PATTERN, { expected: "an email address" })),
 );
 
 /** better-auth's default password length limits. */

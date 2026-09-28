@@ -6,18 +6,18 @@ import { Effect } from "effect";
 import { runApi } from "../../test/api";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
-import { env } from "../../lib/zod-env";
-import { handleEffectRequest } from "../index";
+import { env } from "../../lib/env";
+import { handleApiRequest } from "../index";
 
 // The typed client validates payloads, hides headers, and only sends the cookie
 // to endpoints behind `Authorization`, so some cases use raw requests.
-const invitationsUrl = `${env.APP_BASE_URL}/api/effect/invitations`;
+const invitationsUrl = `${env.APP_BASE_URL}/api/invitations`;
 
 const getWithCookie = (token: string, cookie: string) =>
-  handleEffectRequest(new Request(`${invitationsUrl}/${token}`, { headers: { cookie } }));
+  handleApiRequest(new Request(`${invitationsUrl}/${token}`, { headers: { cookie } }));
 
 const postRegister = (token: string, body: unknown) =>
-  handleEffectRequest(
+  handleApiRequest(
     new Request(`${invitationsUrl}/${token}/register`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -41,8 +41,8 @@ describe("invitations api", () => {
 
   /** Signs up a user with a workspace of their own and returns their session cookie. */
   const signUp = async (email: string) => {
-    const response = await handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/auth/signup/email`, {
+    const response = await handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/auth/signup/email`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -113,7 +113,7 @@ describe("invitations api", () => {
     });
 
     test("rejects an invalid email with a coded 400", async () => {
-      const response = await handleEffectRequest(
+      const response = await handleApiRequest(
         new Request(invitationsUrl, {
           method: "POST",
           headers: {

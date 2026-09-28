@@ -1,18 +1,30 @@
 import "../../../../test/env.test";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { testClient } from "hono/testing";
 import { app } from "../../../../index";
 import { createTestDb, cleanupTestDb, type TestDb } from "../../../../test/setup";
 import { seedTestSetup } from "../../../../test/fixtures";
-import { env } from "../../../../lib/zod-env";
+import { env } from "../../../../lib/env";
+
+const request = (
+  method: "GET" | "POST",
+  path: string,
+  options: { cookie?: string; json?: unknown } = {},
+) => {
+  const headers = new Headers({ Origin: env.APP_BASE_URL });
+  if (options.cookie) headers.set("Cookie", options.cookie);
+  const init: RequestInit = { method, headers };
+  if (options.json !== undefined) {
+    headers.set("Content-Type", "application/json");
+    init.body = JSON.stringify(options.json);
+  }
+  return app.fetch(new Request(`${env.APP_BASE_URL}/api/better-auth${path}`, init));
+};
 
 describe("better-auth routes", () => {
   let testDb: TestDb;
-  let client: ReturnType<typeof testClient<typeof app>>;
 
   beforeEach(async () => {
     testDb = await createTestDb();
-    client = testClient(app);
   });
 
   afterEach(() => {
@@ -21,16 +33,12 @@ describe("better-auth routes", () => {
     }
   });
 
-  describe("POST /api/auth/sign-in/email (better-auth)", () => {
+  describe("POST /api/better-auth/sign-in/email", () => {
     it("should sign in with valid credentials", async () => {
       const { password } = await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["sign-in"].email.$post({
-        json: {
-          email: "test@example.com",
-          password: password,
-        },
+      const res = await request("POST", "/sign-in/email", {
+        json: { email: "test@example.com", password },
       });
 
       expect(res.status).toBe(200);
@@ -41,92 +49,58 @@ describe("better-auth routes", () => {
     it("should set session cookie on sign in", async () => {
       const { password } = await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["sign-in"].email.$post({
-        json: {
-          email: "test@example.com",
-          password: password,
-        },
+      const res = await request("POST", "/sign-in/email", {
+        json: { email: "test@example.com", password },
       });
 
       expect(res.status).toBe(200);
-      const setCookie = res.headers.get("set-cookie");
-      expect(setCookie).toBeDefined();
-      expect(setCookie).toContain("better-auth.session_token");
+      expect(res.headers.get("set-cookie")).toContain("better-auth.session_token");
     });
 
     it("should return 401 for invalid password", async () => {
       await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["sign-in"].email.$post({
-        json: {
-          email: "test@example.com",
-          password: "wrongpassword",
-        },
+      const res = await request("POST", "/sign-in/email", {
+        json: { email: "test@example.com", password: "wrongpassword" },
       });
 
       expect(res.status).toBe(401);
     });
 
     it("should return 401 for non-existent user", async () => {
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["sign-in"].email.$post({
-        json: {
-          email: "nonexistent@example.com",
-          password: "password123",
-        },
+      const res = await request("POST", "/sign-in/email", {
+        json: { email: "nonexistent@example.com", password: "password123" },
       });
 
       expect(res.status).toBe(401);
     });
   });
 
-  describe("GET /api/auth/get-session (better-auth)", () => {
+  describe("GET /api/better-auth/get-session", () => {
     it("should return session for authenticated user", async () => {
       const { cookie } = await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["get-session"].$get(
-        {},
-        {
-          headers: {
-            Cookie: cookie,
-          },
-        },
-      );
+      const res = await request("GET", "/get-session", { cookie });
 
       expect(res.status).toBe(200);
       const json = (await res.json()) as { user: { email: string }; session: { id: string } };
-      expect(json.user).toBeDefined();
       expect(json.user.email).toBe("test@example.com");
       expect(json.session).toBeDefined();
     });
 
     it("should return null for unauthenticated request", async () => {
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["get-session"].$get({});
+      const res = await request("GET", "/get-session");
 
       expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json).toBeNull();
+      expect(await res.json()).toBeNull();
     });
   });
 
-  describe("POST /api/auth/sign-out (better-auth)", () => {
+  describe("POST /api/better-auth/sign-out", () => {
     it("should sign out authenticated user", async () => {
       const { cookie } = await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const res = await client.api["better-auth"]["sign-out"].$post(
-        {},
-        {
-          headers: {
-            Cookie: cookie,
-            Origin: env.APP_BASE_URL,
-          },
-        },
-      );
+      const res = await request("POST", "/sign-out", { cookie });
 
       expect(res.status).toBe(200);
     });
@@ -134,30 +108,11 @@ describe("better-auth routes", () => {
     it("should invalidate session after sign out", async () => {
       const { cookie } = await seedTestSetup(testDb);
 
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      await client.api["better-auth"]["sign-out"].$post(
-        {},
-        {
-          headers: {
-            Cookie: cookie,
-            Origin: env.APP_BASE_URL,
-          },
-        },
-      );
-
-      // @ts-expect-error - better-auth wildcard route has no type inference
-      const sessionRes = await client.api["better-auth"]["get-session"].$get(
-        {},
-        {
-          headers: {
-            Cookie: cookie,
-          },
-        },
-      );
+      await request("POST", "/sign-out", { cookie });
+      const sessionRes = await request("GET", "/get-session", { cookie });
 
       expect(sessionRes.status).toBe(200);
-      const json = await sessionRes.json();
-      expect(json).toBeNull();
+      expect(await sessionRes.json()).toBeNull();
     });
   });
 });

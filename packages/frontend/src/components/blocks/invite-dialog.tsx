@@ -8,7 +8,7 @@ import {
 import { runApi } from "@/lib/api-effect";
 import { m } from "@/paraglide/messages.js";
 import { useDialogContext } from "@kobalte/core/dialog";
-import * as z from "zod";
+import { inviteFormSchema } from "@/lib/form-schemas";
 import { useAppForm } from "../../context/form-context";
 import { Button } from "../ui/button";
 import { TanStackTextField } from "../ui/text-field";
@@ -21,9 +21,7 @@ export function InviteDialogContent() {
       email: "",
     },
     validators: {
-      onSubmit: z.object({
-        email: z.email().min(1, m.invite_dialog_email_required()),
-      }),
+      onSubmit: inviteFormSchema(),
     },
     onSubmit: async ({ value }) => {
       await runApi((client) => client.invitations.create({ payload: { email: value.email } }));

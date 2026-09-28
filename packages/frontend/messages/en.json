@@ -260,15 +260,7 @@
       }
     }
   ],
-  "loader_available_users_fetch_failed": "Failed to fetch available users",
   "loader_invalid_issue_key": "Invalid issue key",
-  "loader_member_detail_fetch_failed": "Failed to fetch member details",
-  "loader_members_fetch_failed": "Failed to fetch members",
-  "loader_sprint_not_found": "Sprint not found",
-  "loader_sprints_fetch_failed": "Failed to load sprints",
-  "loader_team_fetch_failed": "Failed to fetch team",
-  "loader_teams_fetch_failed": "Failed to fetch teams",
-  "loader_workspace_members_fetch_failed": "Failed to fetch workspace members",
   "members_detail_badge_you": "You",
   "members_detail_breadcrumb_member_fallback": "Member",
   "members_detail_breadcrumb_members": "Members",

@@ -4,10 +4,10 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER, type CompleteSprint, type SprintDetails } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
+import { handleApiRequest } from "../index";
 import { SprintService } from "../../features/issue-sprints/SprintService";
 import { AppLayer } from "../../lib/effect/runtime";
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import { createIssue, createIssueSprint, createTeam, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
@@ -77,8 +77,8 @@ describe("sprints api", () => {
   };
 
   const sendRaw = (method: string, path: string, body: unknown) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/teams/${teamKey()}/sprints${path}`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/teams/${teamKey()}/sprints${path}`, {
         method,
         headers: {
           "content-type": "application/json",

@@ -1,7 +1,7 @@
 import "../../../test/env.test";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { rmSync } from "node:fs";
-import { env } from "../../zod-env";
+import { env } from "../../env";
 import { deleteFile, getFile, saveFile } from "../../file-upload";
 
 describe("file-upload", () => {

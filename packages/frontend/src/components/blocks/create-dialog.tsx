@@ -8,7 +8,7 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import XIcon from "lucide-solid/icons/x";
 import Users2Icon from "lucide-solid/icons/users-2";
 import { createEffect, createSignal, mergeProps, on, onCleanup, Show } from "solid-js";
-import * as z from "zod";
+import { createIssueFormSchema } from "@/lib/form-schemas";
 import { useWorkspaceData } from "../../context/workspace-context";
 import { TeamAvatar } from "../custom-ui/avatar";
 import { PickerPopover } from "../custom-ui/picker-popover";
@@ -127,18 +127,7 @@ function CreateDialogContent(props: CreateDialogContentProps) {
       form.reset();
     },
     validators: {
-      onSubmit: z.object({
-        teamKey: z.string().min(1, m.create_dialog_team_key_required()),
-        summary: z.string().min(1, m.create_dialog_summary_required()),
-        status: z.enum(["to_do", "in_progress", "done"], {
-          error: m.create_dialog_status_required(),
-        }),
-        description: z.any().refine((val) => val !== null && val !== undefined, {
-          message: m.create_dialog_description_required(),
-        }),
-        assignedToId: z.string().nullable(),
-        sprintId: z.string().nullable(),
-      }),
+      onSubmit: createIssueFormSchema(),
     },
   }));
   const assignableUsers = createAsync(() => {

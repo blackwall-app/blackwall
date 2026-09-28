@@ -1,4 +1,4 @@
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";

@@ -1,14 +1,6 @@
 import { randomUUIDv7 } from "bun";
 import { sql } from "drizzle-orm";
-import {
-  check,
-  index,
-  integer,
-  text,
-  unique,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
-import type { JSONParsed } from "hono/utils/types";
+import { check, index, integer, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { lifecycleTimestamps, sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 import { team } from "./team.schema";
@@ -67,4 +59,3 @@ export const issueSprint = sqliteTable(
 
 export type IssueSprint = typeof issueSprint.$inferSelect;
 export type NewIssueSprint = typeof issueSprint.$inferInsert;
-export type SerializedIssueSprint = JSONParsed<IssueSprint>;

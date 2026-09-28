@@ -1,6 +1,6 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import nodemailer from "nodemailer";
-import { env } from "./zod-env";
+import { env } from "./env";
 
 export type SendableEmail = {
   to: string;

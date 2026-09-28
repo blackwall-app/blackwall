@@ -4,8 +4,8 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
-import { env } from "../../lib/zod-env";
+import { handleApiRequest } from "../index";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
   addUserToTeam,
@@ -33,8 +33,8 @@ describe("search api", () => {
     runApi(authed(), (client) => client.search.search({ query: { q } }));
 
   const getRaw = (query: string) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/search${query}`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/search${query}`, {
         headers: { cookie: seed.cookie, [WORKSPACE_SLUG_HEADER]: seed.workspace.slug },
       }),
     );

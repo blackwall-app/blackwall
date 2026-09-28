@@ -18,7 +18,7 @@ import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { createAsync, useParams } from "@solidjs/router";
 import { Index, Show } from "solid-js";
-import * as z from "zod";
+import { workspaceNameFormSchema } from "@/lib/form-schemas";
 import { workspaceMembersLoader } from "./workspace.data";
 
 export default function WorkspaceSettingsPage() {
@@ -74,12 +74,7 @@ function WorkspaceNameForm(props: WorkspaceNameFormProps) {
       name: props.defaultName,
     },
     validators: {
-      onSubmit: z.object({
-        name: z
-          .string()
-          .min(1, m.settings_workspace_name_required())
-          .max(100, m.settings_workspace_name_too_long()),
-      }),
+      onSubmit: workspaceNameFormSchema(),
     },
     onSubmit: async ({ value }) => {
       try {

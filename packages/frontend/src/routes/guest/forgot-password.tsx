@@ -7,7 +7,7 @@ import { m } from "@/paraglide/messages.js";
 import { A } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
 import { createSignal } from "solid-js";
-import * as z from "zod";
+import { forgotPasswordFormSchema } from "@/lib/form-schemas";
 
 export default function ForgotPasswordPage() {
   const [sent, setSent] = createSignal(false);
@@ -17,9 +17,7 @@ export default function ForgotPasswordPage() {
       email: "",
     },
     validators: {
-      onSubmit: z.object({
-        email: z.email(m.auth_validation_email_invalid()),
-      }),
+      onSubmit: forgotPasswordFormSchema(),
     },
     onSubmit: async ({ value }) => {
       await authClient.requestPasswordReset({

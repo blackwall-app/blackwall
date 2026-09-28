@@ -9,7 +9,7 @@ import { m } from "@/paraglide/messages.js";
 import { A, createAsync, useNavigate, useParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
 import { Show } from "solid-js";
-import * as z from "zod";
+import { acceptInviteFormSchema } from "@/lib/form-schemas";
 import { invitationLoader } from "./[token].data";
 
 export default function InvitePage() {
@@ -24,10 +24,7 @@ export default function InvitePage() {
       password: "",
     },
     validators: {
-      onSubmit: z.object({
-        name: z.string().min(2, m.either_invite_name_required()),
-        password: z.string().min(8, m.either_invite_password_min()),
-      }),
+      onSubmit: acceptInviteFormSchema(),
     },
     onSubmit: async ({ value }) => {
       const { workspaceSlug } = await runApi((client) =>

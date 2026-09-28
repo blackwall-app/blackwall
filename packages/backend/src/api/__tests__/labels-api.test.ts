@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { dbSchema } from "@blackwall/database";
 import { createColorFromString, WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
-import { env } from "../../lib/zod-env";
+import { handleApiRequest } from "../index";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import { createWorkspace, seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
@@ -29,8 +29,8 @@ describe("labels api", () => {
   };
 
   const postLabel = (body: unknown) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/labels`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/labels`, {
         method: "POST",
         headers: {
           "content-type": "application/json",

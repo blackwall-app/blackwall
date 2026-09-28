@@ -22,7 +22,7 @@ import { createAsync, revalidate, useNavigate, useParams } from "@solidjs/router
 import PlusIcon from "lucide-solid/icons/plus";
 import XIcon from "lucide-solid/icons/x";
 import { createMemo, createSignal, Index, Show } from "solid-js";
-import * as z from "zod";
+import { teamKeyFormSchema, teamNameFormSchema } from "@/lib/form-schemas";
 import { teamSettingsLoader, availableUsersLoader } from "./[teamKey].data";
 
 export default function TeamDetailPage() {
@@ -69,9 +69,7 @@ function NameForm(props: NameFormProps) {
       name: props.defaultName,
     },
     validators: {
-      onSubmit: z.object({
-        name: z.string().min(1, m.common_name_required()),
-      }),
+      onSubmit: teamNameFormSchema(),
     },
     onSubmit: async ({ value }) => {
       try {
@@ -139,9 +137,7 @@ function KeyForm(props: KeyFormProps) {
       key: props.defaultKey,
     },
     validators: {
-      onSubmit: z.object({
-        key: z.string().min(1, m.settings_teams_key_required()).max(5, m.settings_teams_key_max()),
-      }),
+      onSubmit: teamKeyFormSchema(),
     },
     onSubmit: async ({ value }) => {
       try {

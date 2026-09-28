@@ -1,14 +1,6 @@
 import { randomUUIDv7 } from "bun";
 import { sql } from "drizzle-orm";
-import {
-  foreignKey,
-  index,
-  primaryKey,
-  text,
-  unique,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
-import type { JSONParsed } from "hono/utils/types";
+import { foreignKey, index, primaryKey, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sqliteTable, timestamps } from "../utils";
 import { colorKey } from "./color.enum.schema";
 import { issue } from "./issue.schema";
@@ -68,4 +60,3 @@ export type Label = typeof label.$inferSelect;
 export type NewLabel = typeof label.$inferInsert;
 export type LabelOnIssue = typeof labelOnIssue.$inferSelect;
 export type NewLabelOnIssue = typeof labelOnIssue.$inferInsert;
-export type SerializedLabel = JSONParsed<Label>;

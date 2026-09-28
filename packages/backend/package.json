@@ -18,7 +18,6 @@
     "@blackwall/email": "workspace:*",
     "@blackwall/queue": "workspace:*",
     "@blackwall/shared": "workspace:*",
-    "@scalar/hono-api-reference": "^0.9.39",
     "@tiptap/core": "^3.19.0",
     "@tiptap/starter-kit": "^3.18.0",
     "@tiptap/static-renderer": "^3.18.0",
@@ -27,9 +26,7 @@
     "drizzle-orm": "1.0.0-rc.5-5935859",
     "effect": "4.0.0-rc.117",
     "hono": "^4.11.5",
-    "hono-openapi": "^1.2.0",
-    "nodemailer": "^6.9.16",
-    "zod": "^4.3.6"
+    "nodemailer": "^6.9.16"
   },
   "devDependencies": {
     "@types/bun": "latest",

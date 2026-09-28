@@ -12,7 +12,7 @@ import { runApi } from "@/lib/api-effect";
 import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import { action, redirect, useAction, useParams } from "@solidjs/router";
-import * as z from "zod";
+import { createTeamFormSchema } from "@/lib/form-schemas";
 import { slugify } from "@/lib/utils";
 
 const createTeamAction = action(
@@ -42,10 +42,7 @@ export default function CreateTeamPage() {
       key: "",
     },
     validators: {
-      onSubmit: z.object({
-        name: z.string().min(1, m.common_name_required()),
-        key: z.string().min(1, m.settings_teams_key_required()).max(5, m.settings_teams_key_max()),
-      }),
+      onSubmit: createTeamFormSchema(),
     },
     onSubmit: async ({ value }) => {
       if (params.workspaceSlug) {

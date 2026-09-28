@@ -27,9 +27,7 @@ export class ApiClient extends Context.Service<ApiClient, HttpApiClient.ForApi<t
   static readonly layer = Layer.effect(
     ApiClient,
     HttpApiClient.make(Api, {
-      transformClient: HttpClient.mapRequest(
-        HttpClientRequest.prependUrl(`${backendUrl}/api/effect`),
-      ),
+      transformClient: HttpClient.mapRequest(HttpClientRequest.prependUrl(`${backendUrl}/api`)),
     }),
   ).pipe(
     Layer.provide([AuthorizationClient, WorkspaceMembershipClient]),
@@ -41,7 +39,7 @@ export class ApiClient extends Context.Service<ApiClient, HttpApiClient.ForApi<t
 const runtime = ManagedRuntime.make(ApiClient.layer);
 
 /**
- * Handles a failed call the way `apiFetch` does: a 401 sends the user to
+ * Handles a failed call: a 401 sends the user to
  * `/signin`, anything else shows a localized toast and rejects with the
  * message. API errors carry a `code`; transport and decoding failures fall
  * back to the generic message.

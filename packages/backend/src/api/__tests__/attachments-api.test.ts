@@ -6,10 +6,10 @@ import { dbSchema } from "@blackwall/database";
 import { WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { Effect } from "effect";
 import { app } from "../../index";
-import { handleEffectRequest } from "../index";
+import { handleApiRequest } from "../index";
 import { AttachmentService } from "../../features/issues/AttachmentService";
 import { runtime } from "../../lib/effect/runtime";
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
   addUserToWorkspace,
@@ -67,8 +67,8 @@ describe("attachments api", () => {
       [WORKSPACE_SLUG_HEADER]: seed.workspace.slug,
     },
   ) => {
-    const response = await handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/issues${path}`, {
+    const response = await handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/issues${path}`, {
         method: "POST",
         headers,
         body: form,
@@ -90,8 +90,8 @@ describe("attachments api", () => {
   };
 
   const download = (attachmentId: string, cookie: string | null = seed.cookie) =>
-    handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/issues/attachments/${attachmentId}/download`, {
+    handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/issues/attachments/${attachmentId}/download`, {
         headers: cookie === null ? {} : { cookie },
       }),
     );
@@ -389,7 +389,7 @@ describe("attachments api", () => {
       expect(new Uint8Array(await response.arrayBuffer())).toEqual(png);
     });
 
-    test("serves the old /api/issues path through the Hono app", async () => {
+    test("serves downloads through the app shell", async () => {
       const uploaded = await uploadOrphan();
 
       const response = await app.fetch(

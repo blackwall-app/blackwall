@@ -15,7 +15,7 @@ import { WorkspaceService } from "../../features/workspaces/WorkspaceService";
 
 /**
  * Every Effect service the backend runs, built once. The HttpApi handler and
- * the Hono routes that still call services share this graph through `memoMap`.
+ * code outside it (the better-auth route, jobs) share this graph through `memoMap`.
  * Add new services to `ServicesLive`. A service another service depends on
  * goes in the `provideMerge` below it.
  */
@@ -42,5 +42,5 @@ export type AppServices = Layer.Success<typeof AppLayer>;
 
 export const memoMap = Layer.makeMemoMapUnsafe();
 
-/** Runs Effect services from Hono routes. */
+/** Runs Effect services outside the HttpApi, such as the better-auth route and jobs. */
 export const runtime = ManagedRuntime.make(AppLayer, { memoMap });

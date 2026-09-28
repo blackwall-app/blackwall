@@ -9,7 +9,6 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import type { JSONParsed } from "hono/utils/types";
 import { lifecycleTimestamps, sqliteTable } from "../utils";
 import { user } from "./auth.schema";
 import { workspace } from "./workspace.schema";
@@ -82,4 +81,3 @@ export const userTeam = sqliteTable(
 export type Team = typeof team.$inferSelect;
 export type NewTeam = typeof team.$inferInsert;
 export type TeamKeyAlias = typeof teamKeyAlias.$inferSelect;
-export type SerializedTeam = JSONParsed<Team>;

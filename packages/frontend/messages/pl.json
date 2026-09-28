@@ -270,15 +270,7 @@
       }
     }
   ],
-  "loader_available_users_fetch_failed": "Nie udało się pobrać dostępnych użytkowników",
   "loader_invalid_issue_key": "Nieprawidłowy klucz zgłoszenia",
-  "loader_member_detail_fetch_failed": "Nie udało się pobrać szczegółów członka",
-  "loader_members_fetch_failed": "Nie udało się pobrać członków",
-  "loader_sprint_not_found": "Nie znaleziono sprintu",
-  "loader_sprints_fetch_failed": "Nie udało się wczytać sprintów",
-  "loader_team_fetch_failed": "Nie udało się pobrać zespołu",
-  "loader_teams_fetch_failed": "Nie udało się pobrać zespołów",
-  "loader_workspace_members_fetch_failed": "Nie udało się pobrać członków przestrzeni roboczej",
   "members_detail_badge_you": "Ty",
   "members_detail_breadcrumb_member_fallback": "Członek",
   "members_detail_breadcrumb_members": "Członkowie",

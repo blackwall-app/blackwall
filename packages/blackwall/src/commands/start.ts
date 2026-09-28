@@ -1,7 +1,7 @@
 import { Effect, Fiber } from "effect";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
-import { app as apiApp, disposeEffectApi } from "@blackwall/backend/src/index";
+import { app as apiApp, disposeApi } from "@blackwall/backend/src/index";
 import { migrateDatabase } from "@blackwall/database/migrate";
 import { jobService } from "@blackwall/queue";
 import "@blackwall/backend/src/jobs/register";
@@ -47,5 +47,5 @@ export async function start(options: StartOptions) {
   process.on("SIGTERM", shutdown);
 
   await Effect.runPromise(Fiber.await(workerFiber));
-  await disposeEffectApi();
+  await disposeApi();
 }

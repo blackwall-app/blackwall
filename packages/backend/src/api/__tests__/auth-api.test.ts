@@ -5,8 +5,8 @@ import { Effect } from "effect";
 import { runApi } from "../../test/api";
 import { seedTestSetup } from "../../test/fixtures";
 import { createTestDb, type TestDb } from "../../test/setup";
-import { env } from "../../lib/zod-env";
-import { handleEffectRequest } from "../index";
+import { env } from "../../lib/env";
+import { handleApiRequest } from "../index";
 
 const signup = (overrides: Partial<SignupEmail> = {}): SignupEmail => ({
   email: "newuser@example.com",
@@ -19,8 +19,8 @@ const signup = (overrides: Partial<SignupEmail> = {}): SignupEmail => ({
 
 // The typed client validates payloads and hides headers, so these go through raw requests.
 const postSignup = (body: unknown) =>
-  handleEffectRequest(
-    new Request(`${env.APP_BASE_URL}/api/effect/auth/signup/email`, {
+  handleApiRequest(
+    new Request(`${env.APP_BASE_URL}/api/auth/signup/email`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
-import { env } from "./zod-env";
+import { env } from "./env";
 
 const SAVE_PATH = env.FILES_DIR;
 

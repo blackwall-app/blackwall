@@ -4,8 +4,8 @@ import { dbSchema } from "@blackwall/database";
 import { AVATAR_MAX_BYTES, WORKSPACE_SLUG_HEADER } from "@blackwall/shared";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { handleEffectRequest } from "../index";
-import { env } from "../../lib/zod-env";
+import { handleApiRequest } from "../index";
+import { env } from "../../lib/env";
 import { runApi } from "../../test/api";
 import {
   addUserToTeam,
@@ -41,8 +41,8 @@ describe("settings api", () => {
   // The typed client validates payloads before sending, so server-side
   // validation checks go through the raw handler.
   const rawJson = async (method: string, path: string, body: unknown) => {
-    const response = await handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/settings${path}`, {
+    const response = await handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/settings${path}`, {
         method,
         headers: {
           "content-type": "application/json",
@@ -58,8 +58,8 @@ describe("settings api", () => {
   // The in-memory client sends FormData without a multipart content type, so
   // avatar uploads go through the real web handler.
   const uploadAvatar = async (form: FormData) => {
-    const response = await handleEffectRequest(
-      new Request(`${env.APP_BASE_URL}/api/effect/settings/profile/avatar`, {
+    const response = await handleApiRequest(
+      new Request(`${env.APP_BASE_URL}/api/settings/profile/avatar`, {
         method: "PATCH",
         headers: { cookie: seed.cookie, [WORKSPACE_SLUG_HEADER]: seed.workspace.slug },
         body: form,

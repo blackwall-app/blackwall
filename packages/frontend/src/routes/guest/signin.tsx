@@ -8,7 +8,7 @@ import { localizeErrorCode } from "@/lib/error-localization";
 import { m } from "@/paraglide/messages.js";
 import { A, action, redirect, useAction, useSearchParams } from "@solidjs/router";
 import { Title, Meta } from "@solidjs/meta";
-import * as z from "zod";
+import { signinFormSchema } from "@/lib/form-schemas";
 
 const signinAction = action(async (email: string, password: string, back?: string) => {
   const result = await authClient.signIn.email({
@@ -35,10 +35,7 @@ export default function SignInPage() {
       password: "",
     },
     validators: {
-      onSubmit: z.object({
-        email: z.email(m.auth_validation_email_invalid()),
-        password: z.string().min(8, m.auth_validation_password_min()),
-      }),
+      onSubmit: signinFormSchema(),
     },
     onSubmit: async ({ value }) => {
       _action(value.email, value.password, searchParams.back as string | undefined);

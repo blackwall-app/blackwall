@@ -8,7 +8,7 @@ import {
   type UserAlreadyExists,
 } from "@blackwall/shared";
 import { Context, Effect, Layer } from "effect";
-import { env } from "../../lib/zod-env";
+import { env } from "../../lib/env";
 import { Auth, type RequestHeaders } from "../auth/Auth";
 import { WorkspaceService } from "../workspaces/WorkspaceService";
 import { invitationData } from "./invitation.data";

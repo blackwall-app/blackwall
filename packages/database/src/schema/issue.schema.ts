@@ -1,15 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { randomUUIDv7 } from "bun";
-import {
-  foreignKey,
-  index,
-  integer,
-  text,
-  unique,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
-import type { JSONParsed } from "hono/utils/types";
+import { foreignKey, index, integer, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { lifecycleTimestamps, sqliteTable, timestamps } from "../utils";
 import { user } from "./auth.schema";
 import { issueSprint } from "./issue-sprint.schema";
@@ -212,17 +203,3 @@ export type IssueComment = typeof issueComment.$inferSelect;
 export type NewIssueComment = typeof issueComment.$inferInsert;
 export type IssueAttachment = typeof issueAttachment.$inferSelect;
 export type NewIssueAttachment = typeof issueAttachment.$inferInsert;
-
-export type SerializedIssue = JSONParsed<typeof issue.$inferSelect>;
-export type SerializedIssueWithoutDescription = Omit<SerializedIssue, "description">;
-export type NewSerializedIssue = JSONParsed<typeof issue.$inferInsert>;
-export type SerializedIssueChangeEvent = JSONParsed<typeof issueChangeEvent.$inferSelect>;
-export type NewSerializedIssueChangeEvent = JSONParsed<typeof issueChangeEvent.$inferInsert>;
-export type SerializedIssueComment = JSONParsed<typeof issueComment.$inferSelect>;
-export type NewSerializedIssueComment = JSONParsed<typeof issueComment.$inferInsert>;
-export type SerializedIssueAttachment = JSONParsed<typeof issueAttachment.$inferSelect>;
-export type NewSerializedIssueAttachment = JSONParsed<typeof issueAttachment.$inferInsert>;
-
-export const issueSelectSchema = createSelectSchema(issue);
-export const issueInsertSchema = createInsertSchema(issue);
-export const issueUpdateSchema = createUpdateSchema(issue);

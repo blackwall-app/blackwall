@@ -25,7 +25,7 @@ import { Title, Meta } from "@solidjs/meta";
 import { m } from "@/paraglide/messages.js";
 import Trash2 from "lucide-solid/icons/trash-2";
 import { createSignal, Show } from "solid-js";
-import * as z from "zod";
+import { changePasswordFormSchema, displayNameFormSchema } from "@/lib/form-schemas";
 import { AVATAR_MAX_BYTES } from "@blackwall/shared";
 
 export default function ProfileSettingsPage() {
@@ -93,12 +93,7 @@ function DisplayNameForm(props: DisplayNameFormProps) {
       name: props.defaultName,
     },
     validators: {
-      onSubmit: z.object({
-        name: z
-          .string()
-          .min(2, m.settings_profile_name_min())
-          .max(100, m.settings_profile_name_max()),
-      }),
+      onSubmit: displayNameFormSchema(),
     },
     onSubmit: async ({ value }) => {
       try {
@@ -254,16 +249,7 @@ function PasswordChangeDialog() {
       confirmPassword: "",
     },
     validators: {
-      onSubmit: z
-        .object({
-          currentPassword: z.string().min(8, m.settings_profile_password_validation_current()),
-          newPassword: z.string().min(8, m.settings_profile_password_validation_new()),
-          confirmPassword: z.string().min(8, m.settings_profile_password_validation_confirm()),
-        })
-        .refine((values) => values.newPassword === values.confirmPassword, {
-          message: m.settings_profile_password_validation_mismatch(),
-          path: ["confirmPassword"],
-        }),
+      onSubmit: changePasswordFormSchema(),
     },
     onSubmit: async ({ value }) => {
       try {

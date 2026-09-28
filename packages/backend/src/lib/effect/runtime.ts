@@ -1,6 +1,7 @@
 import { Database } from "@blackwall/database/effect";
 import { Layer, ManagedRuntime } from "effect";
 import { Auth } from "../../features/auth/Auth";
+import { AttachmentService } from "../../features/issues/AttachmentService";
 import { CommentService } from "../../features/issues/CommentService";
 import { GlobalSearchService } from "../../features/global-search/GlobalSearchService";
 import { InvitationService } from "../../features/invitations/InvitationService";
@@ -26,6 +27,7 @@ const ServicesLive = Layer.mergeAll(
   InvitationService.layer,
   ProfileService.layer,
   SprintService.layer,
+  AttachmentService.layer,
 ).pipe(
   Layer.provideMerge(IssueService.layer),
   Layer.provideMerge(TeamService.layer),

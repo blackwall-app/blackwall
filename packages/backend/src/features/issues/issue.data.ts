@@ -1,5 +1,5 @@
 import { EmptyFilter, and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
-import { db, dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
+import { dbSchema, type DbHandle, type DbTransaction } from "@blackwall/database";
 import type { Issue, IssueStatus, NewIssue } from "@blackwall/database/schema";
 import {
   NextIssueNotInTargetColumn,
@@ -221,7 +221,7 @@ async function resolveAliasedIssueKey(
 
 export async function getIssueByKey(
   input: { workspaceId: string; issueKey: string },
-  handle: DbHandle = db,
+  handle: DbHandle,
 ) {
   const issue = await handle.query.issue.findFirst({
     where: {

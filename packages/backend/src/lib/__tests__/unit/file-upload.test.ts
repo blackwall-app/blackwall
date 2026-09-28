@@ -38,6 +38,15 @@ describe("file-upload", () => {
     expect(filePath).toMatch(/report-[^/]+\.custom$/);
   });
 
+  it("keeps path segments in the name from escaping the directory", async () => {
+    const filePath = await saveFile(new File(["x"], "../../escape.png", { type: "image/png" }), {
+      directory: "safe",
+      name: "../../escape",
+    });
+
+    expect(filePath).toMatch(/\/safe\/escape-[^/]+\.png$/);
+  });
+
   it("rejects files with an unknown MIME type when no extension is available", async () => {
     await expect(
       saveFile(new File(["mystery"], "mystery", { type: "application/octet-stream" }), {

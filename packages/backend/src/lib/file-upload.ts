@@ -1,6 +1,6 @@
 import { existsSync, unlinkSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { env } from "./zod-env";
 
 const SAVE_PATH = env.FILES_DIR;
@@ -37,7 +37,8 @@ export async function getFile(filePath: string): Promise<{ file: Bun.BunFile; ex
 
 export async function saveFile(file: File, options: SaveFileOptions): Promise<string> {
   const ext = getExtension(file);
-  const filename = `${options.name}-${crypto.randomUUID()}${ext}`;
+  // `name` can come from a client-supplied filename; keep it inside `directory`.
+  const filename = `${basename(options.name)}-${crypto.randomUUID()}${ext}`;
 
   const dirPath = join(SAVE_PATH, options.directory);
   const filePath = join(dirPath, filename);

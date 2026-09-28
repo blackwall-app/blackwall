@@ -1,7 +1,6 @@
 import { TiptapEditor } from "@/components/tiptap/tiptap-editor";
 import { useWorkspaceData } from "@/context/workspace-context";
 import type { Issue } from "@blackwall/shared";
-import { api, apiFetch } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { createEffect, createSignal } from "solid-js";
@@ -35,16 +34,9 @@ export function IssueDescription(props: { issue: Pick<Issue, "key" | "descriptio
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await apiFetch(
-      api.api.issues[":issueKey"].attachments.$url({
-        param: { issueKey: props.issue.key },
-      }),
-      {
-        method: "POST",
-        body: formData,
-      },
+    const { attachment } = await runApi((client) =>
+      client.attachments.upload({ params: { issueKey: props.issue.key }, payload: formData }),
     );
-    const { attachment } = await res.json();
     return attachment;
   };
 

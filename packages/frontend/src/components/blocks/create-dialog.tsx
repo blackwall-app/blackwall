@@ -1,6 +1,6 @@
 import { AssigneePickerPopover, StatusPickerPopover } from "@/components/issues/pickers";
 import { useAppForm } from "@/context/form-context";
-import type { IssueStatus, SerializedIssueAttachment } from "@blackwall/database/schema";
+import type { IssueStatus } from "@blackwall/database/schema";
 import type { CreateIssue, Team } from "@blackwall/shared";
 import { useDialogContext } from "@kobalte/core/dialog";
 import { Popover } from "@kobalte/core/popover";
@@ -31,7 +31,6 @@ import {
   useAction,
   useLocation,
 } from "@solidjs/router";
-import { api, apiFetch } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import type { CreateDialogDefaults } from "@/context/create-dialog.context";
 import { m } from "@/paraglide/messages.js";
@@ -59,12 +58,9 @@ const createIssueAction = action(
 );
 
 const uploadAttachmentAction = action(async (formData: FormData) => {
-  const res = await apiFetch(api.api.issues.attachments.$url(), {
-    method: "POST",
-    body: formData,
-  });
-
-  const { attachment } = (await res.json()) as { attachment: SerializedIssueAttachment };
+  const { attachment } = await runApi((client) =>
+    client.attachments.uploadOrphan({ payload: formData }),
+  );
 
   return json(attachment, { revalidate: [] });
 });

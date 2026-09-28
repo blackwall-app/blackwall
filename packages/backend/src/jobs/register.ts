@@ -4,9 +4,10 @@ import { renderToHTMLString } from "@tiptap/static-renderer";
 import StarterKit from "@tiptap/starter-kit";
 import { sendEmail } from "../lib/emails";
 import { commentData } from "../features/issues/comment.data";
-import { attachmentService } from "../features/issues/attachment.service";
+import { AttachmentService } from "../features/issues/AttachmentService";
 import { userData } from "../features/users/user.data";
 import { env } from "../lib/zod-env";
+import { runtime } from "../lib/effect/runtime";
 
 type InviteEmailPayload = {
   email: string;
@@ -107,6 +108,8 @@ type CleanupOrphanAttachmentPayload = {
 jobService.registerHandler(
   "cleanup-orphan-attachment",
   async (payload: CleanupOrphanAttachmentPayload) => {
-    await attachmentService.cleanupOrphanAttachment(payload);
+    await runtime.runPromise(
+      AttachmentService.use((attachments) => attachments.cleanupOrphanAttachment(payload)),
+    );
   },
 );

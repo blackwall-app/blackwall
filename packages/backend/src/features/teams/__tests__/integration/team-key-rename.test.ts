@@ -50,8 +50,8 @@ describe("team key renames", () => {
 
     await renameKey("TES", "NEW");
 
-    const byNewKey = await issueData.getIssueByKey({ workspaceId, issueKey: "NEW-1" });
-    const byOldKey = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" });
+    const byNewKey = await issueData.getIssueByKey({ workspaceId, issueKey: "NEW-1" }, testDb.db);
+    const byOldKey = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" }, testDb.db);
 
     expect(byNewKey?.id).toBe(issue.id);
     expect(byOldKey?.id).toBe(issue.id);
@@ -75,7 +75,7 @@ describe("team key renames", () => {
       }),
     );
 
-    const resolved = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" });
+    const resolved = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" }, testDb.db);
 
     expect(newIssue.key).toBe("TES-1");
     expect(resolved?.id).toBe(newIssue.id);
@@ -88,7 +88,7 @@ describe("team key renames", () => {
     await renameKey("NEW", "TES");
 
     const aliases = await testDb.db.query.teamKeyAlias.findMany({ where: { teamId } });
-    const issue = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" });
+    const issue = await issueData.getIssueByKey({ workspaceId, issueKey: "TES-1" }, testDb.db);
 
     expect(aliases.map((alias) => alias.key)).toEqual(["NEW"]);
     expect(issue?.key).toBe("TES-1");

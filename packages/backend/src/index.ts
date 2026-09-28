@@ -5,7 +5,6 @@ import { openAPIRouteHandler } from "hono-openapi";
 import { handleEffectRequest } from "./api";
 import { betterAuthRoutes } from "./features/auth/better-auth.routes";
 import { env } from "./lib/zod-env";
-import { attachmentRoutes, attachmentDownloadRoutes } from "./features/issues/attachment.routes";
 import type { AppEnv } from "./lib/hono-env";
 import { errorHandler } from "./lib/error-handler";
 import { csrf } from "hono/csrf";
@@ -31,14 +30,16 @@ const app = new Hono<AppEnv>()
   // mid-migration and move over group by group.
   .all("/api/effect/*", (c) => handleEffectRequest(c.req.raw))
 
+  // Stored issue descriptions link images to this path. Drop it once the
+  // HttpApi is served at /api.
+  .get("/api/issues/attachments/:attachmentId/download", (c) => {
+    const url = new URL(c.req.url);
+    url.pathname = url.pathname.replace(/^\/api/, "/api/effect");
+    return handleEffectRequest(new Request(url.href, c.req.raw));
+  })
+
   // Public routes
-  .route("/api/better-auth", betterAuthRoutes)
-
-  // Protected routes
-  .route("/api/issues", attachmentDownloadRoutes)
-
-  // Protected per-workspace routes
-  .route("/api/issues", attachmentRoutes);
+  .route("/api/better-auth", betterAuthRoutes);
 
 app.get(
   "/api/docs/openapi",

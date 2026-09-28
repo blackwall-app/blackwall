@@ -3,7 +3,6 @@ import { UserAvatar } from "../custom-ui/avatar";
 import { formatRelative } from "@/lib/dates";
 import { TiptapEditor } from "../tiptap/tiptap-editor";
 import { createEffect, createSignal, Show } from "solid-js";
-import { api, apiFetch } from "@/lib/api";
 import { runApi } from "@/lib/api-effect";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -160,16 +159,9 @@ export function IssueCommentForm(props: IssueCommentFormProps) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await apiFetch(
-      api.api.issues[":issueKey"].attachments.$url({
-        param: { issueKey: props.issue.key },
-      }),
-      {
-        method: "POST",
-        body: formData,
-      },
+    const { attachment } = await runApi((client) =>
+      client.attachments.upload({ params: { issueKey: props.issue.key }, payload: formData }),
     );
-    const { attachment } = await res.json();
     return attachment;
   };
 

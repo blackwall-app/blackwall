@@ -160,14 +160,4 @@ describe("better-auth routes", () => {
       expect(json).toBeNull();
     });
   });
-
-  describe("Protected routes without auth", () => {
-    it("should return 401 when accessing protected route without session", async () => {
-      const res = await client.api.issues[":issueKey"].attachments[":attachmentId"].$get({
-        param: { issueKey: "TES-1", attachmentId: "missing" },
-      });
-
-      expect(res.status).toBe(401);
-    });
-  });
 });

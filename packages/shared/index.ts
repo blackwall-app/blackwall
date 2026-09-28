@@ -18,3 +18,4 @@ export * from "./invitations";
 export * from "./auth-api";
 export * from "./settings";
 export * from "./sprints";
+export * from "./attachments";

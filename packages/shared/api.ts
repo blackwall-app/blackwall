@@ -1,4 +1,5 @@
 import { HttpApi } from "effect/unstable/httpapi";
+import { AttachmentsApi } from "./attachments";
 import { AuthApi } from "./auth-api";
 import { CommentsApi } from "./comments";
 import { RequestValidation } from "./errors";
@@ -26,4 +27,5 @@ export class Api extends HttpApi.make("blackwall-api")
   .add(SettingsApi)
   .add(SprintsApi)
   .add(IssuesApi)
+  .add(AttachmentsApi)
   .middleware(RequestValidation) {}

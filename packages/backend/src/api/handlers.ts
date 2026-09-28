@@ -1,4 +1,5 @@
 import { Layer } from "effect";
+import { AttachmentsHandlers } from "./attachments";
 import { AuthHandlers } from "./auth";
 import { AuthorizationLive } from "./authorization";
 import { CommentsHandlers } from "./comments";
@@ -37,4 +38,5 @@ export const HandlersLive = Layer.mergeAll(
   SettingsHandlers,
   SprintsHandlers,
   IssuesHandlers,
+  AttachmentsHandlers,
 ).pipe(Layer.provideMerge(MiddlewareLive));

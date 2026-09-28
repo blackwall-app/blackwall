@@ -17,6 +17,7 @@ import {
   User,
 } from "./models";
 import { TeamNotFoundOrAccessDenied } from "./teams";
+import { MemberNotFound } from "./workspaces";
 
 export class IssueNotFound extends ApiError<IssueNotFound>()("IssueNotFound", {
   code: ErrorCode.ISSUE_NOT_FOUND,
@@ -305,7 +306,7 @@ export class IssuesApi extends HttpApiGroup.make("issues")
     HttpApiEndpoint.post("create", "/", {
       payload: CreateIssueSchema,
       success: IssueResponse,
-      error: TeamNotFoundOrAccessDenied,
+      error: [TeamNotFoundOrAccessDenied, MemberNotFound],
     }),
   )
   .add(
@@ -325,7 +326,7 @@ export class IssuesApi extends HttpApiGroup.make("issues")
     HttpApiEndpoint.patch("bulkUpdate", "/bulk", {
       payload: BulkUpdateIssuesSchema,
       success: IssueBulkResponse,
-      error: IssuesNotAccessible,
+      error: [IssuesNotAccessible, MemberNotFound],
     }),
   )
   .add(
@@ -348,7 +349,7 @@ export class IssuesApi extends HttpApiGroup.make("issues")
       params: IssueParamsSchema,
       payload: UpdateIssueSchema,
       success: IssueResponse,
-      error: [IssueNotFound, TeamNotFoundOrAccessDenied],
+      error: [IssueNotFound, TeamNotFoundOrAccessDenied, MemberNotFound],
     }),
   )
   .add(

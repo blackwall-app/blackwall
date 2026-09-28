@@ -3,6 +3,7 @@ import type { Issue, IssueStatus } from "@blackwall/database/schema";
 import {
   IssueNotFound,
   IssuesNotAccessible,
+  MemberNotFound,
   NextIssueNotInTargetColumn,
   PreviousAndNextIssuesMustBeDifferent,
   PreviousIssueNotInTargetColumn,
@@ -10,8 +11,9 @@ import {
   TeamNotFoundOrAccessDenied,
   UnableToDetermineIssueSortOrder,
 } from "@blackwall/shared";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Predicate, Schema } from "effect";
 import { TeamService } from "../teams/TeamService";
+import { WorkspaceService } from "../workspaces/WorkspaceService";
 import {
   issueData,
   type CreateIssueInput,
@@ -82,26 +84,33 @@ export class IssueService extends Context.Service<
     readonly listIssuesAssignedToUser: (
       input: { workspaceId: string; userId: string } & ListIssuesPagination,
     ) => Effect.Effect<AssignedIssuePage>;
-    /** Creates an issue in one of the user's teams, with the team's next key. */
+    /**
+     * Creates an issue in one of the user's teams, with the team's next key.
+     * The assignee must be a workspace member.
+     */
     readonly createIssue: (input: {
       workspaceId: string;
       teamKey: string;
       userId: string;
       issue: CreateIssueInput;
-    }) => Effect.Effect<Issue, TeamNotFoundOrAccessDenied>;
+    }) => Effect.Effect<Issue, TeamNotFoundOrAccessDenied | MemberNotFound>;
+    /** The assignee must be a workspace member. */
     readonly updateIssue: (input: {
       workspaceId: string;
       issueKey: string;
       userId: string;
       updates: UpdateIssueInput;
-    }) => Effect.Effect<Issue, IssueNotFound | TeamNotFoundOrAccessDenied>;
-    /** Every issue must belong to one of the user's teams, or nothing changes. */
+    }) => Effect.Effect<Issue, IssueNotFound | TeamNotFoundOrAccessDenied | MemberNotFound>;
+    /**
+     * Every issue must belong to one of the user's teams, and the assignee must
+     * be a workspace member, or nothing changes.
+     */
     readonly updateIssuesBulk: (input: {
       workspaceId: string;
       issueKeys: ReadonlyArray<string>;
       userId: string;
       updates: UpdateIssueInput;
-    }) => Effect.Effect<Array<Issue>, IssuesNotAccessible>;
+    }) => Effect.Effect<Array<Issue>, IssuesNotAccessible | MemberNotFound>;
     readonly deleteIssue: (input: {
       workspaceId: string;
       issueKey: string;
@@ -138,6 +147,7 @@ export class IssueService extends Context.Service<
     Effect.gen(function* () {
       const database = yield* Database;
       const teams = yield* TeamService;
+      const workspaces = yield* WorkspaceService;
 
       const requireIssue = Effect.fn("IssueService.requireIssue")(
         function* (input: { workspaceId: string; issueKey: string }) {
@@ -165,6 +175,22 @@ export class IssueService extends Context.Service<
           userId: input.userId,
         });
         return issue;
+      });
+
+      const requireAssignee = Effect.fn("IssueService.requireAssignee")(function* (input: {
+        workspaceId: string;
+        assignedToId?: string | null | undefined;
+      }) {
+        if (!Predicate.isString(input.assignedToId)) {
+          return;
+        }
+        const isMember = yield* workspaces.isWorkspaceMember({
+          workspaceId: input.workspaceId,
+          userId: input.assignedToId,
+        });
+        if (!isMember) {
+          return yield* new MemberNotFound();
+        }
       });
 
       /** The issues with these keys, if they all belong to the user's teams. */
@@ -260,6 +286,10 @@ export class IssueService extends Context.Service<
           issue: CreateIssueInput;
         }) {
           const team = yield* teams.requireTeamForUser(input);
+          yield* requireAssignee({
+            workspaceId: input.workspaceId,
+            assignedToId: input.issue.assignedToId,
+          });
           return yield* database.transaction((tx) =>
             issueData.insertIssue(tx, {
               workspaceId: input.workspaceId,
@@ -281,6 +311,10 @@ export class IssueService extends Context.Service<
           updates: UpdateIssueInput;
         }) {
           const issue = yield* requireIssueForUser(input);
+          yield* requireAssignee({
+            workspaceId: input.workspaceId,
+            assignedToId: input.updates.assignedToId,
+          });
           return yield* database.transaction((tx) =>
             issueData.updateIssue(tx, {
               workspaceId: input.workspaceId,
@@ -301,6 +335,10 @@ export class IssueService extends Context.Service<
           updates: UpdateIssueInput;
         }) {
           const issues = yield* requireIssuesInUserTeams(input);
+          yield* requireAssignee({
+            workspaceId: input.workspaceId,
+            assignedToId: input.updates.assignedToId,
+          });
           return yield* database.transaction((tx) =>
             issueData.updateIssuesBulk(tx, {
               issues,

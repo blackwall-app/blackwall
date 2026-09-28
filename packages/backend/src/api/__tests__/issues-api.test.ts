@@ -19,6 +19,7 @@ import {
   createIssue,
   createIssueSprint,
   createTeam,
+  createUser,
   createWorkspace,
   seedTestSetup,
 } from "../../test/fixtures";
@@ -98,6 +99,8 @@ describe("issues api", () => {
       .where(eq(dbSchema.issueSprint.id, sprint.id));
     return sprint;
   };
+
+  const addOutsider = () => createUser(testDb, { email: "outsider@example.com" });
 
   const createLabel = (name: string, workspaceId = seed.workspace.id) =>
     labelData.insertLabel(testDb.db, { name, colorKey: "red", workspaceId })!;
@@ -254,6 +257,34 @@ describe("issues api", () => {
         ),
       );
       expect(error).toMatchObject({ code: "TEAM_NOT_FOUND_OR_ACCESS_DENIED" });
+    });
+
+    test("accepts any workspace member as the assignee", async () => {
+      const member = await createUser(testDb, { email: "member@example.com" });
+      await addUserToWorkspace(testDb, { userId: member.id, workspaceId: seed.workspace.id });
+
+      const issue = await create({ assignedToId: member.id });
+
+      expect(issue.assignedToId).toBe(member.id);
+    });
+
+    test("rejects assignees outside the workspace", async () => {
+      const outsider = await addOutsider();
+
+      for (const assignedToId of [outsider.id, "missing-user"]) {
+        const error = await runApi(authed(), (client) =>
+          flip(
+            client.issues.create({
+              payload: {
+                teamKey: seed.team.key,
+                issue: { summary: "Nope", description: emptyDoc, assignedToId },
+              },
+            }),
+          ),
+        );
+        expect(error).toMatchObject({ _tag: "MemberNotFound", code: "MEMBER_NOT_FOUND" });
+      }
+      expect((await listTeam()).issues).toEqual([]);
     });
 
     test("rejects invalid payloads", async () => {
@@ -449,6 +480,30 @@ describe("issues api", () => {
       expect(error).toMatchObject({ code: "TEAM_NOT_FOUND_OR_ACCESS_DENIED" });
       expect((await loadIssue(hidden.id))?.status).toBe("to_do");
     });
+
+    test("rejects assignees outside the workspace and allows unassigning", async () => {
+      const created = await create({ assignedToId: seed.user.id });
+      const outsider = await addOutsider();
+
+      const error = await runApi(authed(), (client) =>
+        flip(
+          client.issues.update({
+            params: { issueKey: created.key },
+            payload: { assignedToId: outsider.id },
+          }),
+        ),
+      );
+      expect(error).toMatchObject({ _tag: "MemberNotFound", code: "MEMBER_NOT_FOUND" });
+      expect((await loadIssue(created.id))?.assignedToId).toBe(seed.user.id);
+
+      const { issue } = await runApi(authed(), (client) =>
+        client.issues.update({
+          params: { issueKey: created.key },
+          payload: { assignedToId: null },
+        }),
+      );
+      expect(issue.assignedToId).toBeNull();
+    });
   });
 
   describe("bulk update", () => {
@@ -492,6 +547,24 @@ describe("issues api", () => {
         ),
       );
       expect(error).toMatchObject({ code: "ISSUES_NOT_ACCESSIBLE" });
+    });
+
+    test("changes nothing when the assignee is outside the workspace", async () => {
+      const first = await create();
+      const second = await create();
+      const outsider = await addOutsider();
+
+      const error = await runApi(authed(), (client) =>
+        flip(
+          client.issues.bulkUpdate({
+            payload: { issueKeys: [first.key, second.key], updates: { assignedToId: outsider.id } },
+          }),
+        ),
+      );
+
+      expect(error).toMatchObject({ _tag: "MemberNotFound", code: "MEMBER_NOT_FOUND" });
+      expect((await loadIssue(first.id))?.assignedToId).toBeNull();
+      expect((await loadIssue(second.id))?.assignedToId).toBeNull();
     });
   });
 
